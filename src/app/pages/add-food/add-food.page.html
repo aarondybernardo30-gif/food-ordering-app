@@ -1,0 +1,233 @@
+<ion-header class="ion-no-border shopee-add-food-header">
+  <ion-toolbar class="shopee-toolbar">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/admin" color="light"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Add New Food Item</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="add-food-page-content ion-padding">
+  <div class="add-food-container">
+    
+    <div class="page-intro-box">
+      <h3>Food Information</h3>
+      <p>Fill in all details below to publish this food item to the Food Ordering menu.</p>
+    </div>
+
+    <div class="form-card">
+      <!-- Food Name -->
+      <ion-item class="input-item">
+        <ion-input 
+          label="Food Name *" 
+          labelPlacement="floating" 
+          [(ngModel)]="newFoodName" 
+          placeholder="e.g. Special Chicken Adobo">
+        </ion-input>
+      </ion-item>
+
+      <!-- Category & Base Price Row -->
+      <div class="category-price-grid">
+        <ion-item class="input-item">
+          <ion-select 
+            label="Category *" 
+            labelPlacement="floating" 
+            [(ngModel)]="newFoodCategory" 
+            interface="popover">
+            <ion-select-option value="Burgers">Burgers</ion-select-option>
+            <ion-select-option value="Pizza">Pizza</ion-select-option>
+            <ion-select-option value="Pasta">Pasta</ion-select-option>
+            <ion-select-option value="Chicken">Chicken</ion-select-option>
+            <ion-select-option value="Drinks">Drinks</ion-select-option>
+            <ion-select-option value="Desserts">Desserts</ion-select-option>
+            <ion-select-option value="Snacks">Snacks</ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item class="input-item">
+          <ion-input 
+            label="Base Price (₱) *" 
+            labelPlacement="floating" 
+            [(ngModel)]="newFoodPrice" 
+            (ionChange)="onBasePriceChange()"
+            type="number" 
+            placeholder="e.g. 150">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Description -->
+      <ion-item class="input-item">
+        <ion-textarea 
+          label="Description" 
+          labelPlacement="floating" 
+          [(ngModel)]="newFoodDesc" 
+          rows="3" 
+          placeholder="Describe ingredients, taste, or serving portion...">
+        </ion-textarea>
+      </ion-item>
+
+      <!-- Discount Tag (Optional) -->
+      <ion-item class="input-item">
+        <ion-input 
+          label="Discount / Promo Tag (Optional)" 
+          labelPlacement="floating" 
+          [(ngModel)]="newFoodDiscount" 
+          placeholder="e.g. 10% OFF or Buy 1 Take 1">
+        </ion-input>
+      </ion-item>
+
+      <!-- ======================================================== -->
+      <!-- VARIATIONS TABLE & PRICE MANAGEMENT SECTION             -->
+      <!-- ======================================================== -->
+      <div class="variation-builder-section">
+        <div class="section-label-row">
+          <div>
+            <label class="var-title">Options / Variations (Optional)</label>
+            <small class="var-hint">Click on any variation in the table to edit its price, or click "+ Add Variation" to create a new one.</small>
+          </div>
+
+          <button type="button" class="btn-open-add-var" (click)="openAddVariation()">
+            <ion-icon name="add-circle-outline"></ion-icon>
+            <span>+ Add Variation</span>
+          </button>
+        </div>
+
+        <!-- Variations Table -->
+        <div class="variations-table-wrapper" *ngIf="variationList.length > 0">
+          <table class="shopee-var-table">
+            <thead>
+              <tr>
+                <th>Variation Choice</th>
+                <th>Price (₱)</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of variationList; let i = index" class="var-row" (click)="openEditVariation(i)">
+                <td>
+                  <span class="var-name-badge">{{ v.name }}</span>
+                </td>
+                <td>
+                <strong class="var-price-text">P{{ (v.price || 0).toFixed(2) }}</strong>
+                </td>
+                <td class="text-right" (click)="$event.stopPropagation()">
+                  <button type="button" class="action-btn edit-btn" (click)="openEditVariation(i)" title="Edit this price">
+                    <ion-icon name="pencil-outline"></ion-icon>
+                    <span>Edit Price</span>
+                  </button>
+                  <button type="button" class="action-btn delete-btn" (click)="removeVariation(i)" title="Delete variation">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Food Pictures Section -->
+      <div class="photo-upload-section">
+        <div class="upload-header">
+          <label>
+            <ion-icon name="image-outline"></ion-icon>
+            <strong>Food Pictures <span class="required-flag">*Required</span></strong>
+          </label>
+          <small>You can select multiple photos. The first photo will be used as the Main Cover Photo.</small>
+        </div>
+
+        <input 
+          type="file" 
+          #fileInput 
+          (change)="onImagesSelected($event)" 
+          accept="image/*" 
+          multiple 
+          style="display: none;" />
+
+        <div class="upload-dropzone" (click)="fileInput.click()">
+          <ion-icon name="camera-outline" class="camera-big-icon"></ion-icon>
+          <h4>Upload Food Pictures</h4>
+          <p>Click here to choose multiple photos from your gallery</p>
+          <button type="button" class="browse-btn">
+            <ion-icon name="images-outline"></ion-icon>
+            <span>Browse Pictures</span>
+          </button>
+        </div>
+
+        <!-- Uploaded Photos Grid -->
+        <div class="photos-preview-grid" *ngIf="uploadedImages.length > 0">
+          <div *ngFor="let photo of uploadedImages; let idx = index" class="preview-box">
+            <img [src]="photo" [alt]="'Photo ' + (idx + 1)" />
+            <span class="main-badge" *ngIf="idx === 0">Cover</span>
+            <button class="remove-btn" (click)="removePhoto(idx)" title="Remove photo">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save & Submit Button -->
+      <ion-button 
+        expand="block" 
+        size="large" 
+        (click)="saveNewFood()" 
+        class="save-food-btn">
+        <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+        Save & Add to Menu
+      </ion-button>
+    </div>
+
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL FORM TO ENTER / EDIT VARIATION PRICE & NAME        -->
+  <!-- ======================================================== -->
+  <ion-modal [isOpen]="isVariationFormOpen" (didDismiss)="closeVariationForm()" class="variation-form-modal">
+    <ng-template>
+      <div class="var-modal-content">
+        <div class="var-modal-header">
+          <h3>{{ isEditingVariation ? 'Edit Variation Price' : 'Add New Variation' }}</h3>
+          <button type="button" class="close-modal-icon" (click)="closeVariationForm()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="var-modal-body">
+          <p class="modal-sub-hint">
+            {{ isEditingVariation ? 'Update the name or set a different price for this specific choice.' : 'Enter the variation choice and the price customers will pay for it.' }}
+          </p>
+
+          <ion-item class="modal-input-item">
+            <ion-input 
+              label="Variation Name *" 
+              labelPlacement="floating" 
+              [(ngModel)]="modalVarName" 
+              placeholder="e.g. Regular, Spicy, Large, Double Patty">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="modal-input-item">
+            <ion-input 
+              label="Price (₱ PHP) *" 
+              labelPlacement="floating" 
+              [(ngModel)]="modalVarPrice" 
+              type="number" 
+              placeholder="e.g. 150">
+            </ion-input>
+          </ion-item>
+
+          <div class="modal-button-group">
+            <button type="button" class="btn-modal-cancel" (click)="closeVariationForm()">
+              Cancel
+            </button>
+
+            <button type="button" class="btn-modal-save" (click)="saveVariationFromForm()">
+              {{ isEditingVariation ? 'Save Changes' : 'Add to List' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+</ion-content>

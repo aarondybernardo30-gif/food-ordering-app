@@ -1,0 +1,594 @@
+<ion-content class="me-content" [class.dark-theme]="isDarkMode">
+  <div class="shopee-profile-wrapper">
+
+    <!-- ============================================
+         TOP ORANGE HEADER
+         ============================================ -->
+    <div class="profile-header-card">
+      <div class="top-action-icons">
+        <ion-icon
+          name="settings-outline"
+          class="action-icon"
+          (click)="openSettingsDrawer()" 
+          title="Account Settings">
+        </ion-icon>
+
+        <div class="cart-icon-wrapper" (click)="openPurchaseModal('all')">
+          <ion-icon name="cart-outline" class="action-icon"></ion-icon>
+          <span class="bubble-badge">{{ allOrders.length || 11 }}</span>
+        </div>
+
+        <div class="chat-icon-wrapper" routerLink="/notifications">
+          <ion-icon name="chatbubble-ellipses-outline" class="action-icon"></ion-icon>
+          <span class="bubble-badge">5</span>
+        </div>
+      </div>
+
+      <div class="user-info-row">
+        <div class="avatar-circle">
+          <img
+            src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200"
+            alt="User Avatar" />
+        </div>
+        <div class="name-meta-block">
+          <div class="username-row">
+            <h3 class="user-name">{{ username }}</h3>
+            <span class="tier-pill" (click)="openTierInfo()">
+              {{ userTier }}
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN BODY CONTAINER -->
+    <div class="profile-body-container">
+
+      <!-- ============================================
+           1. VERIFY EMAIL CARD
+           ============================================ -->
+      <div class="verify-email-card" *ngIf="showEmailBanner">
+        <div class="email-card-header">
+          <div class="email-title-row">
+            <ion-icon name="mail-outline" class="mail-icon"></ion-icon>
+            <h4>Verify Email</h4>
+          </div>
+          <ion-icon
+            name="close-outline"
+            class="close-card-btn"
+            (click)="dismissEmailBanner()">
+          </ion-icon>
+        </div>
+        <p class="email-card-sub">
+          Keep your email up to date to ensure you can always log in to your account
+        </p>
+        <div class="email-buttons-row">
+          <button type="button" class="btn-email-outline" (click)="verifyEmailAction()">
+            Change Email
+          </button>
+          <button type="button" class="btn-email-outline" (click)="verifyEmailAction()">
+            Verify Now
+          </button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           2. MY PURCHASES (4-Grid with Badges)
+           ============================================ -->
+      <div class="menu-white-card">
+        <div class="card-header-bar" (click)="openPurchaseModal('all')">
+          <h4 class="card-title">My Purchases</h4>
+          <span class="link-right">
+            View Purchase History
+            <ion-icon name="chevron-forward-outline"></ion-icon>
+          </span>
+        </div>
+
+        <div class="purchases-grid-row">
+          <!-- 1. TO PAY -->
+          <div class="purchase-item" (click)="openPurchaseModal('toPay')">
+            <div class="purchase-icon-box">
+              <ion-icon name="card-outline"></ion-icon>
+              <span class="counter-badge" *ngIf="toPayOrders.length">
+                {{ toPayOrders.length }}
+              </span>
+            </div>
+            <span class="purchase-label">To Pay</span>
+          </div>
+
+          <!-- 2. TO SHIP -->
+          <div class="purchase-item" (click)="openPurchaseModal('toShip')">
+            <div class="purchase-icon-box">
+              <ion-icon name="wallet-outline"></ion-icon>
+              <span class="counter-badge" *ngIf="toShipOrders.length">
+                {{ toShipOrders.length }}
+              </span>
+            </div>
+            <span class="purchase-label">To Ship</span>
+          </div>
+
+          <!-- 3. TO RECEIVE -->
+          <div class="purchase-item" (click)="openPurchaseModal('toReceive')">
+            <div class="purchase-icon-box">
+              <ion-icon name="time-outline"></ion-icon>
+              <span class="counter-badge" *ngIf="toReceiveOrders.length">
+                {{ toReceiveOrders.length }}
+              </span>
+            </div>
+            <span class="purchase-label">To Receive</span>
+          </div>
+
+          <!-- 4. TO RATE -->
+          <div class="purchase-item" (click)="openPurchaseModal('toRate')">
+            <div class="purchase-icon-box">
+              <ion-icon name="star-outline"></ion-icon>
+              <span class="counter-badge count-highlight">
+                {{ toRateOrders.length || 3 }}
+              </span>
+            </div>
+            <span class="purchase-label">To Rate</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============================================
+           3. MY WALLET & VOUCHERS
+           ============================================ -->
+      <div class="menu-white-card wallet-card">
+        <div class="card-header-bar card-header-no-border">
+          <h4 class="card-title">My Wallet</h4>
+        </div>
+
+        <div class="wallet-grid-row">
+          <!-- WALLET ITEM -->
+          <div class="wallet-item" (click)="openTopUpPrompt()">
+            <div class="wallet-badge-box">
+              <div class="w-logo-box">
+                <span class="w-letter">W</span>
+              </div>
+            </div>
+            <span class="wallet-title">Wallet</span>
+            <span class="wallet-balance">
+              ₱{{ (shopeePayBalance || 132.0).toFixed(2) }}
+            </span>
+            <span class="pill-btn">Top Up</span>
+          </div>
+
+          <!-- VOUCHERS ITEM -->
+          <div class="wallet-item" (click)="openVouchersModal()">
+            <div class="wallet-badge-box">
+              <div class="voucher-icon-badge">
+                <ion-icon name="ticket-outline"></ion-icon>
+              </div>
+            </div>
+            <span class="wallet-title">Vouchers</span>
+            <span class="wallet-balance vouchers-highlight">
+              {{ vouchersCount }} Vouchers
+            </span>
+            <span class="wallet-desc">Use to save</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================
+       VOUCHERS MODAL
+       ============================================ -->
+  <ion-modal [isOpen]="isVouchersModalOpen" (didDismiss)="closeVouchersModal()">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar color="primary">
+          <ion-title>Voucher Center ({{ vouchersCount }})</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeVouchersModal()">
+              <ion-icon name="close-outline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+
+        <!-- Promo Code Input Bar -->
+        <div class="voucher-claim-bar" [class.dark-theme]="isDarkMode">
+          <div class="claim-input-box">
+            <ion-icon name="pricetag-outline"></ion-icon>
+            <input 
+              type="text" 
+              placeholder="Enter Voucher Code..." 
+              [(ngModel)]="claimVoucherCode" 
+              (keyup.enter)="claimCustomCode()" />
+          </div>
+          <button type="button" class="btn-claim" (click)="claimCustomCode()">
+            Apply
+          </button>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="voucher-filter-tabs" [class.dark-theme]="isDarkMode">
+          <button 
+            type="button" 
+            class="v-tab-btn" 
+            [class.active]="selectedVoucherTab === 'all'" 
+            (click)="setVoucherTab('all')">
+            All ({{ myVouchers.length }})
+          </button>
+          <button 
+            type="button" 
+            class="v-tab-btn" 
+            [class.active]="selectedVoucherTab === 'shipping'" 
+            (click)="setVoucherTab('shipping')">
+            Free Shipping
+          </button>
+          <button 
+            type="button" 
+            class="v-tab-btn" 
+            [class.active]="selectedVoucherTab === 'discount'" 
+            (click)="setVoucherTab('discount')">
+            Food Deals
+          </button>
+          <button 
+            type="button" 
+            class="v-tab-btn" 
+            [class.active]="selectedVoucherTab === 'cashback'" 
+            (click)="setVoucherTab('cashback')">
+            Cashback
+          </button>
+        </div>
+      </ion-header>
+
+      <ion-content class="ion-padding vouchers-modal-bg" [class.dark-theme]="isDarkMode">
+        <div class="vouchers-list">
+          
+          <!-- Empty State -->
+          <div *ngIf="filteredVouchers.length === 0" class="empty-vouchers-box">
+            <ion-icon name="ticket-outline"></ion-icon>
+            <p>No vouchers available in this category.</p>
+          </div>
+
+          <!-- Shopee Ticket Card -->
+          <div 
+            class="voucher-ticket-card" 
+            *ngFor="let voucher of filteredVouchers"
+            [class.claimed]="voucher.isUsed">
+            
+            <!-- Left Side Ticket Stub -->
+            <div class="ticket-left" [ngClass]="voucher.category">
+              <span class="ticket-badge">{{ voucher.tag }}</span>
+              <span class="ticket-headline">{{ voucher.headline }}</span>
+              <span class="ticket-min-spend" *ngIf="voucher.minSpend > 0">
+                Min. Spend ₱{{ voucher.minSpend }}
+              </span>
+              <span class="ticket-min-spend" *ngIf="voucher.minSpend === 0">
+                No Min. Spend
+              </span>
+            </div>
+
+            <!-- Ticket Cutout Notches -->
+            <div class="ticket-divider">
+              <div class="notch notch-top"></div>
+              <div class="dashed-line"></div>
+              <div class="notch notch-bottom"></div>
+            </div>
+
+            <!-- Right Side Voucher Details -->
+            <div class="ticket-right">
+              <div class="ticket-body">
+                <div class="ticket-title-row">
+                  <span class="ticket-title">{{ voucher.title }}</span>
+                  <span class="code-pill">CODE: {{ voucher.code }}</span>
+                </div>
+                <p class="ticket-desc">{{ voucher.description }}</p>
+              </div>
+
+              <div class="ticket-footer-row">
+                <span class="ticket-expiry">
+                  <ion-icon name="time-outline"></ion-icon>
+                  {{ voucher.expiry }}
+                </span>
+                
+                <button 
+                  type="button" 
+                  class="btn-use-voucher" 
+                  (click)="useVoucher(voucher)"
+                  [disabled]="voucher.isUsed">
+                  {{ voucher.isUsed ? 'CLAIMED' : (returnUrl ? 'APPLY' : 'USE NOW') }}
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="vouchers-footnote">
+            <p *ngIf="!returnUrl">💡 Tip: Tap <strong>"USE NOW"</strong> to select a voucher and browse eligible meals!</p>
+            <p *ngIf="returnUrl">💡 Tip: Tap <strong>"APPLY"</strong> to use a voucher and return to your checkout!</p>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- ============================================
+       PURCHASE MODAL (To Pay, Ship, Receive, Rate)
+       ============================================ -->
+  <ion-modal [isOpen]="isPurchaseModalOpen" (didDismiss)="closePurchaseModal()">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar color="primary">
+          <ion-title>
+            {{
+              selectedModalType === 'toPay'
+                ? 'Orders To Pay'
+                : selectedModalType === 'toShip'
+                ? 'Orders To Ship'
+                : selectedModalType === 'toReceive'
+                ? 'Orders To Receive'
+                : selectedModalType === 'toRate'
+                ? 'Orders To Rate'
+                : 'Purchase History'
+            }}
+          </ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closePurchaseModal()">Close</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding modal-bg">
+        <!-- TO PAY -->
+        <div *ngIf="selectedModalType === 'toPay'">
+          <div *ngIf="toPayOrders.length === 0" class="empty-modal-box">
+            <ion-icon name="checkmark-circle"></ion-icon>
+            <p>You have no pending payments. All orders are settled!</p>
+          </div>
+
+          <div *ngFor="let order of toPayOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }}</span>
+              <ion-badge color="warning">Pending Payment</ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: <strong>₱{{ order.totalAmount.toFixed(2) }}</strong></span>
+              <button type="button" class="btn-shopee-pay" (click)="payPendingOrder(order)">Pay via Wallet</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TO SHIP -->
+        <div *ngIf="selectedModalType === 'toShip'">
+          <div *ngIf="toShipOrders.length === 0" class="empty-modal-box">
+            <ion-icon name="time-outline"></ion-icon>
+            <p>No orders being prepared right now.</p>
+          </div>
+          <div *ngFor="let order of toShipOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }}</span>
+              <ion-badge color="warning">Preparing</ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TO RECEIVE -->
+        <div *ngIf="selectedModalType === 'toReceive'">
+          <div *ngIf="toReceiveOrders.length === 0" class="empty-modal-box">
+            <ion-icon name="time-outline"></ion-icon>
+            <p>No orders in transit right now.</p>
+          </div>
+          <div *ngFor="let order of toReceiveOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }}</span>
+              <ion-badge color="primary">{{ order.status }}</ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TO RATE -->
+        <div *ngIf="selectedModalType === 'toRate'">
+          <div *ngIf="toRateOrders.length === 0" class="empty-modal-box">
+            <ion-icon name="star"></ion-icon>
+            <p>No food products waiting to be rated.</p>
+          </div>
+          <div *ngFor="let order of toRateOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }} (Completed)</span>
+              <ion-badge color="success">Delivered</ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+              <button type="button" class="btn-shopee-rate" (click)="openRatingModal(order)">⭐ Rate Meal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ALL PURCHASES -->
+        <div *ngIf="selectedModalType === 'all'">
+          <div *ngIf="allOrders.length === 0" class="empty-modal-box">
+            <p>No purchase records found.</p>
+          </div>
+          <div *ngFor="let order of allOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }}</span>
+              <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : 'primary')">
+                {{ order.status }}
+              </ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+              <button *ngIf="order.status === 'Completed' && !order.rating" type="button" class="btn-shopee-rate" (click)="openRatingModal(order)">
+                Rate
+              </button>
+            </div>
+          </div>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- ============================================
+       RATING REVIEW MODAL
+       ============================================ -->
+  <ion-modal [isOpen]="isRatingModalOpen" (didDismiss)="closeRatingModal()">
+    <ng-template>
+      <ion-header class="ion-no-border">
+        <ion-toolbar color="primary">
+          <ion-title>Rate Product</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeRatingModal()">Cancel</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+
+      <ion-content class="ion-padding modal-bg">
+        <div class="rating-dialog-box">
+          <h3>How was your food?</h3>
+          <p>Please share your rating for Order #{{ orderToRate?.id }}</p>
+
+          <div class="stars-row">
+            <ion-icon
+              *ngFor="let s of [1, 2, 3, 4, 5]"
+              [name]="s <= selectedRating ? 'star' : 'star-outline'"
+              class="rate-star"
+              (click)="setRating(s)">
+            </ion-icon>
+          </div>
+          <span class="rating-number-text">{{ selectedRating }} out of 5 Stars</span>
+
+          <textarea
+            [(ngModel)]="reviewComment"
+            rows="4"
+            placeholder="Write your feedback regarding the food quality, taste, and packaging..."
+            class="review-textarea">
+          </textarea>
+
+          <button type="button" class="btn-submit-review" (click)="submitReview()">
+            SUBMIT REVIEW
+          </button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+
+  <!-- ============================================
+       SETTINGS / ACCOUNT SIDEBAR DRAWER
+       ============================================ -->
+  <ion-modal
+    [isOpen]="isSettingsDrawerOpen"
+    (didDismiss)="closeSettingsDrawer()"
+    class="settings-drawer-modal">
+    <ng-template>
+      <div class="settings-drawer-wrapper" [class.dark-mode-drawer]="isDarkMode">
+
+        <div class="drawer-header">
+          <div class="drawer-avatar">
+            <ion-icon name="person-outline"></ion-icon>
+          </div>
+          <div class="drawer-user-info">
+            <h3>{{ username || 'Customer' }}</h3>
+            <p>{{ currentUserEmail || 'Food Ordering Member' }}</p>
+          </div>
+          <button class="close-drawer-icon" (click)="closeSettingsDrawer()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="drawer-menu-list">
+          <div class="drawer-item" (click)="openTopUpPrompt()">
+            <div class="item-icon-box orange">
+              <ion-icon name="wallet-outline"></ion-icon>
+            </div>
+            <div class="item-labels">
+              <span class="item-title">Wallet: ₱{{ shopeePayBalance.toFixed(2) }}</span>
+              <small class="item-subtitle">Tap here to top-up wallet</small>
+            </div>
+          </div>
+
+          <div class="drawer-item" (click)="openOrdersFromSettings()">
+            <div class="item-icon-box orange">
+              <ion-icon name="receipt-outline"></ion-icon>
+            </div>
+            <div class="item-labels">
+              <span class="item-title">Order History & Tracking</span>
+              <small class="item-subtitle">{{ allOrders.length }} orders &bull; Track status</small>
+            </div>
+          </div>
+
+          <div class="drawer-item toggle-item">
+            <div class="item-icon-box purple">
+              <ion-icon [name]="isDarkMode ? 'moon-outline' : 'sunny-outline'"></ion-icon>
+            </div>
+            <div class="item-labels">
+              <span class="item-title">Dark Mode</span>
+              <small class="item-subtitle">{{ isDarkMode ? 'Dark Theme Active' : 'Light Theme Active' }}</small>
+            </div>
+            <ion-toggle
+              [checked]="isDarkMode"
+              (ionChange)="toggleDarkMode($event)"
+              color="warning">
+            </ion-toggle>
+          </div>
+
+          <div class="drawer-item" (click)="openChangeCredentialsPrompt()">
+            <div class="item-icon-box blue">
+              <ion-icon name="key-outline"></ion-icon>
+            </div>
+            <div class="item-labels">
+              <span class="item-title">Change Name & Password</span>
+              <small class="item-subtitle">Manage login credentials</small>
+            </div>
+          </div>
+
+          <div class="drawer-divider"></div>
+
+          <div class="drawer-item logout-drawer-item" (click)="onLogout()">
+            <div class="item-icon-box red">
+              <ion-icon name="log-out-outline"></ion-icon>
+            </div>
+            <div class="item-labels">
+              <span class="item-title red-text">Logout</span>
+              <small class="item-subtitle">Sign out of this device</small>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <app-user-bottom-nav activeTab="me"></app-user-bottom-nav>
+</ion-content>

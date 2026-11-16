@@ -1,0 +1,84 @@
+.shopee-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background: #ffffff;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #f0f0f0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom);
+
+  .nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 6px 0;
+    cursor: pointer;
+    color: #666666;
+    transition: color 0.15s ease-in-out;
+
+    ion-icon {
+      font-size: 24px;
+      margin-bottom: 2px;
+    }
+
+    .tab-label {
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .icon-badge-wrapper {
+      position: relative;
+      display: inline-flex;
+
+      .tab-badge {
+        position: absolute;
+        top: -4px;
+        right: -8px;
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 10px;
+        border: 1px solid #ffffff;
+      }
+    }
+
+    &.active {
+      color: #ee4d2d;
+
+      ion-icon {
+        color: #ee4d2d;
+      }
+
+      .tab-label {
+        color: #ee4d2d;
+        font-weight: 700;
+      }
+    }
+  }
+}
+// Dark mode — follows the app-wide body.dark toggle (ThemeService)
+:host-context(body.dark) {
+  .shopee-bottom-nav {
+    background: #1e293b;
+    border-top: 1px solid #334155;
+
+    .nav-tab {
+      color: #94a3b8;
+
+      &.active {
+        color: #ee4d2d;
+      }
+    }
+  }
+}

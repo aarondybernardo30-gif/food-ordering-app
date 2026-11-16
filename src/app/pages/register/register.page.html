@@ -1,0 +1,121 @@
+<ion-header class="ion-no-border shopee-auth-header">
+  <ion-toolbar class="shopee-toolbar">
+    <div class="header-inner">
+      <div class="brand">
+        <h2>Food Ordering</h2>
+        <span>Order & Delivery</span>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="shopee-auth-content">
+  <div class="auth-wrapper">
+    <ion-card class="auth-card">
+      <!-- ONLY SIGN UP & SIGN IN (Rider and Admin removed) -->
+      <ion-segment [(ngModel)]="authMode">
+        <ion-segment-button value="signup">
+          <ion-icon name="person-add-outline"></ion-icon>
+          <ion-label>SIGN UP</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="login">
+          <ion-icon name="log-in-outline"></ion-icon>
+          <ion-label>SIGN IN</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <ion-card-content>
+        <!-- 1. SIGN UP SECTION -->
+        <div *ngIf="authMode === 'signup'">
+          <div class="section-heading">
+            <h3>Create an Account</h3>
+            <p>Sign up first to proceed to our delicious menu</p>
+          </div>
+
+          <form [formGroup]="registerForm" (ngSubmit)="onSignUp()">
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Full Name *" 
+                labelPlacement="floating" 
+                formControlName="fullName" 
+                type="text" 
+                placeholder="e.g. Juan Dela Cruz">
+              </ion-input>
+            </ion-item>
+
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Phone Number *" 
+                labelPlacement="floating" 
+                formControlName="phone" 
+                type="tel" 
+                placeholder="e.g. 09123456789">
+              </ion-input>
+            </ion-item>
+
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Create Password *" 
+                labelPlacement="floating" 
+                formControlName="password" 
+                type="password">
+              </ion-input>
+            </ion-item>
+
+            <ion-button 
+              expand="block" 
+              type="submit" 
+              [disabled]="registerForm.invalid" 
+              class="auth-action-btn">
+              CREATE ACCOUNT
+            </ion-button>
+          </form>
+
+          <p class="switch-prompt">
+            Already have an account? 
+            <a (click)="authMode = 'login'">Sign In</a>
+          </p>
+        </div>
+
+        <!-- 2. SIGN IN SECTION -->
+        <div *ngIf="authMode === 'login'">
+          <div class="section-heading">
+            <h3>Welcome Back!</h3>
+            <p>Enter your phone number & password to browse menu</p>
+          </div>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Phone Number" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginPhone" 
+              type="tel" 
+              placeholder="e.g. 09123456789">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Password" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginPassword" 
+              type="password">
+            </ion-input>
+          </ion-item>
+
+          <ion-button 
+            expand="block" 
+            (click)="onUserLogin()" 
+            class="auth-action-btn">
+            Sign In & Order Food
+          </ion-button>
+
+          <p class="switch-prompt">
+            Don't have an account? 
+            <a (click)="authMode = 'signup'">Create one now</a>
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

@@ -1,0 +1,122 @@
+<ion-header class="ion-no-border shopee-auth-header">
+  <ion-toolbar class="shopee-toolbar">
+    <div class="header-inner">
+      <div class="brand">
+        <h2>Food Ordering</h2>
+        <span>Admin Portal</span>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="shopee-auth-content">
+  <div class="auth-wrapper">
+    <ion-card class="auth-card">
+      <!-- Segment matching the Customer tabs -->
+      <ion-segment [(ngModel)]="authMode">
+        <ion-segment-button value="signup">
+          <ion-icon name="person-add-outline"></ion-icon>
+          <ion-label>SIGN UP</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="login">
+          <ion-icon name="log-in-outline"></ion-icon>
+          <ion-label>SIGN IN</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <ion-card-content>
+        <!-- 1. ADMIN SIGN UP -->
+        <div *ngIf="authMode === 'signup'">
+          <div class="section-heading">
+            <h3>Register Admin Account</h3>
+            <p>Create an administrator account to manage store orders & menu</p>
+          </div>
+
+          <form [formGroup]="adminRegisterForm" (ngSubmit)="onAdminSignUp()">
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Full Name *" 
+                labelPlacement="floating" 
+                formControlName="fullName" 
+                type="text" 
+                placeholder="e.g. Maria Santos">
+              </ion-input>
+            </ion-item>
+
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Admin Username *" 
+                labelPlacement="floating" 
+                formControlName="username" 
+                type="text" 
+                placeholder="e.g. admin_maria">
+              </ion-input>
+            </ion-item>
+
+            <ion-item class="custom-input-item">
+              <ion-input 
+                label="Create Password *" 
+                labelPlacement="floating" 
+                formControlName="password" 
+                type="password">
+              </ion-input>
+            </ion-item>
+
+            <ion-button 
+              expand="block" 
+              type="submit" 
+              [disabled]="adminRegisterForm.invalid" 
+              class="auth-action-btn">
+              CREATE ADMIN ACCOUNT
+            </ion-button>
+          </form>
+
+          <p class="switch-prompt">
+            Already have an admin account? 
+            <a (click)="authMode = 'login'">Sign In</a>
+          </p>
+        </div>
+
+        <!-- 2. ADMIN SIGN IN -->
+        <div *ngIf="authMode === 'login'">
+          <div class="section-heading">
+            <h3>Admin Sign In</h3>
+            <p>Sign in with your admin credentials to enter dashboard</p>
+          </div>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Admin Username" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginUsername" 
+              type="text" 
+              placeholder="e.g. admin">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Password" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginPassword" 
+              type="password" 
+              placeholder="e.g. admin123">
+            </ion-input>
+          </ion-item>
+
+          <ion-button 
+            expand="block" 
+            (click)="onAdminLogin()" 
+            class="auth-action-btn">
+            LOGIN AS ADMIN
+          </ion-button>
+
+          <p class="switch-prompt">
+            Need a new admin account? 
+            <a (click)="authMode = 'signup'">Sign Up</a>
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

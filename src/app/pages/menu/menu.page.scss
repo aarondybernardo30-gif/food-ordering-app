@@ -1,0 +1,2043 @@
+// ========================================================
+// 1. TOP HEADER & SHOPEEPAY QUICK BAR
+// ========================================================
+.shopee-header {
+  --background: #ee4d2d;
+  background: #ee4d2d;
+  color: #ffffff;
+}
+
+.shopee-top-bar {
+  background: #ee4d2d;
+  padding: 8px 14px 4px;
+
+  .top-bar-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .top-bar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .top-burger-btn {
+      background: transparent;
+      border: none;
+      color: #ffffff;
+      font-size: 1.6rem;
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .delivery-address-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #ffffff;
+      font-size: 0.85rem;
+
+      .pin-icon {
+        font-size: 1.1rem;
+      }
+
+      .deliver-label {
+        strong {
+          color: #ffffff;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+
+  .top-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .orders-btn {
+      position: relative;
+      background: rgba(255, 255, 255, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      border-radius: 20px;
+      padding: 6px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+
+      ion-icon {
+        font-size: 1.05rem;
+      }
+
+      .pulse-indicator {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 0 2px #ffffff;
+        animation: pulse 1.5s infinite;
+      }
+    }
+
+    .chat-btn {
+      --padding-start: 4px;
+      --padding-end: 4px;
+
+      .hdr-icon {
+        font-size: 1.35rem;
+        color: #ffffff;
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+  70% { transform: scale(1.15); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.shopee-toolbar {
+  --background: #ee4d2d;
+  --min-height: 56px;
+  padding: 0 10px 4px;
+
+  .shopee-header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .shopee-search-bar {
+    flex: 1;
+
+    ion-searchbar {
+      --background: #ffffff;
+      --color: #1e293b;
+      --placeholder-color: #64748b;
+      --icon-color: #ee4d2d;
+      --border-radius: 8px;
+      padding: 0;
+      font-size: 0.9rem;
+      height: 40px;
+    }
+
+    &.dark-search ion-searchbar {
+      --background: #1e293b;
+      --color: #f8fafc;
+      --placeholder-color: #94a3b8;
+    }
+  }
+
+  .cart-btn-wrapper {
+    position: relative;
+
+    .shopee-cart-button {
+      --background: transparent;
+      --box-shadow: none;
+      --padding-start: 6px;
+      --padding-end: 6px;
+
+      .shopee-cart-icon {
+        font-size: 1.7rem;
+        color: #ffffff;
+      }
+
+      .shopee-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background: #ffffff;
+        color: #ee4d2d;
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 10px;
+        border: 2px solid #ee4d2d;
+      }
+    }
+  }
+}
+
+// ========================================================
+// 2. MAIN BODY & THEMES
+// ========================================================
+.shopee-body {
+  --background: #f1f5f9;
+  background: #f1f5f9;
+
+  &.dark-theme {
+    --background: #0f172a;
+    background: #0f172a;
+    color: #f8fafc;
+
+    .shopee-card,
+    .shopee-categories-card,
+    .live-tracker-card,
+    .active-slide-stage,
+    .drawer-modal-wrapper,
+    .var-sheet-wrapper,
+    .history-card {
+      background: #1e293b !important;
+      color: #f8fafc !important;
+    }
+
+    .product-title,
+    .categories-header h3,
+    .title-text,
+    .var-meta-box,
+    .var-section-label,
+    .var-qty-label {
+      color: #f8fafc !important;
+    }
+
+    .product-description,
+    .categories-header span,
+    .count-text {
+      color: #94a3b8 !important;
+    }
+
+    // Daily Featured Meals section — keep its surface dark so the
+    // inherited light text stays readable.
+    .daily-featured-slider-section {
+      background: #1e293b;
+      color: #f8fafc;
+
+      // Mirrors the base rule's full nesting so the dark background
+      // wins the cascade (equal specificity would lose on source order).
+      .active-slide-stage .meals-cards-grid .featured-meal-card {
+        background: #0f172a;
+        border-color: #334155;
+
+        .meal-heading { color: #f8fafc; }
+        .meal-desc-text { color: #94a3b8; }
+      }
+
+      .subtitle-text,
+      .stage-sub-info {
+        color: #94a3b8;
+      }
+
+      .day-tab-pill {
+        background: #0f172a;
+        border-color: #334155;
+        color: #cbd5e1;
+
+        &.active {
+          background: #ee4d2d;
+          color: #ffffff;
+        }
+      }
+
+      .arrow-btn {
+        background: #334155;
+        border-color: #475569;
+        color: #f8fafc;
+      }
+    }
+
+    // Review chip on product cards (mirrors base nesting to win the cascade)
+    .shopee-card .product-info .customer-review-chip {
+      background: #0f172a;
+      border-color: #334155;
+      color: #cbd5e1;
+    }
+  }
+}
+
+.shopee-container {
+  padding: 10px 10px 80px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+// ========================================================
+// 3. LIVE ORDER TRACKER CARD
+// ========================================================
+.live-tracker-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  border-left: 4px solid #ee4d2d;
+
+  .tracker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    .tracker-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+        display: inline-block;
+      }
+
+      .order-mode {
+        color: #64748b;
+        font-size: 0.8rem;
+      }
+    }
+
+    .status-badge {
+      background: #e2e8f0;
+      color: #334155;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+
+      &.preparing {
+        background: #fef3c7;
+        color: #d97706;
+      }
+      &.delivering {
+        background: #e0e7ff;
+        color: #4f46e5;
+      }
+    }
+  }
+
+  .stepper-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+
+    .stepper-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+
+      .step-circle {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        color: #334155;
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .step-label {
+        font-size: 0.68rem;
+        color: #64748b;
+      }
+
+      &.completed {
+        .step-circle {
+          background: #ee4d2d;
+          color: #ffffff;
+        }
+        .step-label {
+          color: #ee4d2d;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: #e2e8f0;
+      margin: 0 4px 14px;
+
+      &.filled {
+        background: #ee4d2d;
+      }
+    }
+  }
+
+  .track-hint {
+    margin: 0;
+    font-size: 0.72rem;
+    color: #ee4d2d;
+    font-weight: 600;
+  }
+}
+
+// ========================================================
+// 5. DAILY FEATURED MEALS SLIDER
+// ========================================================
+.daily-featured-slider-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  .slider-main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .header-title-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .cal-ico {
+        font-size: 1.4rem;
+        color: #ee4d2d;
+      }
+
+      .title-bold {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      .subtitle-text {
+        margin: 0;
+        font-size: 0.7rem;
+        color: #64748b;
+      }
+    }
+
+    .slide-nav-arrows {
+      display: flex;
+      gap: 6px;
+
+      .arrow-btn {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+      }
+    }
+  }
+
+  .day-tabs-slider-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+
+    .day-tab-pill {
+      white-space: nowrap;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+
+      &.active {
+        background: #ee4d2d;
+        color: #ffffff;
+        border-color: #ee4d2d;
+      }
+    }
+  }
+
+  .active-slide-stage {
+    background: #fafaf9;
+    border-radius: 10px;
+    padding: 10px;
+
+    .stage-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+
+      .day-status-pill {
+        background: #f97316;
+        color: #ffffff;
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 2px 7px;
+        border-radius: 4px;
+      }
+
+      .stage-sub-info {
+        font-size: 0.72rem;
+        color: #64748b;
+      }
+    }
+
+    .meals-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+
+      .featured-meal-card {
+        background: #ffffff;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid #f1f5f9;
+        display: flex;
+        flex-direction: column;
+
+        .card-img-wrap {
+          position: relative;
+          height: 110px;
+
+          img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .top-day-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: #ee4d2d;
+            color: #ffffff;
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 2px 6px;
+            border-radius: 4px;
+          }
+        }
+
+        .card-body {
+          padding: 8px;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+
+          .meal-heading {
+            margin: 0;
+            font-size: 0.85rem;
+            font-weight: 700;
+          }
+
+          .meal-subhead {
+            font-size: 0.7rem;
+            color: #ea580c;
+            font-weight: 600;
+          }
+
+          .meal-desc-text {
+            font-size: 0.68rem;
+            color: #64748b;
+            margin: 4px 0 8px;
+            line-height: 1.25;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+
+          .card-bottom-actions {
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .meal-price-tag {
+              font-weight: 800;
+              color: #ee4d2d;
+              font-size: 0.9rem;
+            }
+
+            .btn-order-action {
+              background: #ee4d2d;
+              color: #ffffff;
+              border: none;
+              border-radius: 6px;
+              padding: 4px 8px;
+              font-size: 0.7rem;
+              font-weight: 700;
+              display: flex;
+              align-items: center;
+              gap: 4px;
+              cursor: pointer;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  .slider-dots-indicator {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 8px;
+
+    .slider-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #cbd5e1;
+
+      &.active {
+        width: 14px;
+        border-radius: 6px;
+        background: #ee4d2d;
+      }
+    }
+  }
+}
+
+// ========================================================
+// 6. CATEGORIES HORIZONTAL SCROLL
+// ========================================================
+.shopee-categories-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  .categories-header h3 {
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #475569;
+  }
+
+  .categories-scroll-wrapper {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+
+    &::-webkit-scrollbar { display: none; }
+
+    .category-item-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 62px;
+      cursor: pointer;
+
+      .category-img-circle {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 2px solid transparent;
+        transition: transform 0.2s;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+
+      .category-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #334155;
+        text-align: center;
+      }
+
+      &.active {
+        .category-img-circle {
+          border-color: #ee4d2d;
+          transform: scale(1.05);
+        }
+        .category-label {
+          color: #ee4d2d;
+          font-weight: 800;
+        }
+      }
+    }
+  }
+}
+
+// ========================================================
+// 7. FOOD MENU GRID & PRODUCT CARD
+// ========================================================
+.food-section-container {
+  .section-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+
+    .title-text {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+
+      .flame-icon {
+        color: #ee4d2d;
+      }
+    }
+
+    .count-text {
+      font-size: 0.72rem;
+      color: #64748b;
+    }
+  }
+}
+
+.product-grid {
+  padding: 0;
+
+  .product-col {
+    padding: 4px;
+  }
+}
+
+.shopee-card {
+  margin: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .card-gallery-wrapper {
+    position: relative;
+    width: 100%;
+    height: 135px;
+    background: #000000;
+
+    .card-image-slider {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar { display: none; }
+
+      .card-slide {
+        min-width: 100%;
+        height: 100%;
+        scroll-snap-align: start;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+      }
+    }
+
+    .card-nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+      border: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+
+      &.left { left: 4px; }
+      &.right { right: 4px; }
+    }
+
+    .card-gallery-dots {
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+
+      .dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+
+        &.active {
+          background: #ee4d2d;
+        }
+      }
+    }
+
+    .card-expand-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0, 0, 0, 0.4);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .badge-mall, .badge-preferred {
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      font-size: 0.55rem;
+      font-weight: 800;
+      color: #ffffff;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .badge-mall { background: #d0011b; }
+    .badge-preferred { background: #ee4d2d; }
+
+    .discount-flag {
+      position: absolute;
+      top: 0;
+      right: 32px;
+      background: #ffd839;
+      color: #ee4d2d;
+      font-size: 0.6rem;
+      font-weight: 800;
+      padding: 2px 4px;
+      border-bottom-left-radius: 3px;
+      border-bottom-right-radius: 3px;
+    }
+  }
+
+  .product-info {
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+
+    .product-title {
+      margin: 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #1e293b;
+      cursor: pointer;
+      line-height: 1.2;
+      height: 32px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .product-description {
+      margin: 4px 0;
+      font-size: 0.68rem;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .customer-review-chip {
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+      border-radius: 4px;
+      padding: 2px 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.65rem;
+      color: #475569;
+      cursor: pointer;
+      margin-bottom: 6px;
+
+      ion-icon {
+        color: #ee4d2d;
+      }
+
+      .chip-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+
+    .tags-row {
+      margin-bottom: 6px;
+      .cashback-tag {
+        font-size: 0.6rem;
+        color: #ee4d2d;
+        border: 1px solid #ee4d2d;
+        padding: 1px 4px;
+        border-radius: 2px;
+      }
+    }
+
+    .price-rating-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: auto;
+
+      .price-box {
+        color: #ee4d2d;
+        font-weight: 800;
+
+        .currency { font-size: 0.72rem; }
+        .amount { font-size: 0.95rem; }
+      }
+
+      .add-to-cart-text-btn {
+        background: #ee4d2d;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        padding: 4px 8px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+        }
+      }
+    }
+
+    .social-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 0.68rem;
+
+      .rating {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        color: #eab308;
+        font-weight: 700;
+      }
+
+      .sold-count {
+        color: #64748b;
+      }
+    }
+  }
+}
+
+// ========================================================
+// 8. PRODUCT VARIATIONS BOTTOM SHEET
+// ========================================================
+.shopee-variation-bottom-sheet {
+  --height: auto;
+  --max-height: 85%;
+  --border-radius: 16px 16px 0 0;
+  align-items: flex-end;
+
+  .var-sheet-wrapper {
+    background: #ffffff;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+
+    .var-top-header {
+      display: flex;
+      gap: 12px;
+      position: relative;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f1f5f9;
+
+      .var-thumb-box {
+        width: 80px;
+        height: 80px;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+        cursor: pointer;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .thumb-zoom-icon {
+          position: absolute;
+          bottom: 2px;
+          right: 2px;
+          background: rgba(0, 0, 0, 0.5);
+          color: #ffffff;
+          padding: 2px;
+          border-radius: 3px;
+          font-size: 0.7rem;
+        }
+      }
+
+      .var-meta-box {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+
+        .var-meal-name {
+          margin: 0 0 2px;
+          font-size: 0.95rem;
+          font-weight: 800;
+          color: #0f172a;
+        }
+
+        .var-price-row {
+          display: flex;
+          align-items: baseline;
+          gap: 6px;
+
+          .var-sale-price {
+            font-size: 1.25rem;
+            color: #ee4d2d;
+            font-weight: 800;
+          }
+
+          .var-orig-price {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            text-decoration: line-through;
+          }
+        }
+
+        .var-stock-text {
+          margin: 4px 0 0;
+          font-size: 0.72rem;
+          color: #64748b;
+        }
+      }
+
+      .var-close-btn {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: transparent;
+        border: none;
+        font-size: 1.3rem;
+        color: #64748b;
+        cursor: pointer;
+      }
+    }
+
+    .var-scrollable-body {
+      overflow-y: auto;
+      padding: 12px 0;
+
+      .var-options-section {
+        margin-bottom: 16px;
+
+        .var-section-label {
+          margin: 0 0 8px;
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+
+        .var-chips-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+
+          .var-chip {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #334155;
+            cursor: pointer;
+
+            &.active {
+              background: #fff1f0;
+              color: #ee4d2d;
+              border-color: #ee4d2d;
+            }
+          }
+        }
+      }
+
+      .var-quantity-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .var-qty-label {
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+
+        .var-stepper-box {
+          display: flex;
+          align-items: center;
+          border: 1px solid #94a3b8;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #ffffff;
+
+          .step-btn {
+            background: #e2e8f0;
+            color: #0f172a;
+            border: none;
+            width: 36px;
+            height: 36px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1;
+            cursor: pointer;
+            transition: background 0.15s ease;
+
+            &:hover {
+              background: #cbd5e1;
+            }
+
+            &:active {
+              background: #94a3b8;
+            }
+          }
+
+          .step-num {
+            width: 40px;
+            text-align: center;
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #0f172a;
+          }
+        }
+      }
+
+      .var-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 12px;
+        padding: 10px 14px;
+        background: #fff1f0;
+        border: 1px dashed #ee4d2d;
+        border-radius: 8px;
+
+        .var-total-label {
+          font-size: 0.85rem;
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .var-total-value {
+          font-size: 1.05rem;
+          font-weight: 800;
+          color: #ee4d2d;
+        }
+      }
+    }
+
+    .var-bottom-footer {
+      padding-top: 10px;
+
+      .var-submit-btn {
+        width: 100%;
+        background: #ee4d2d;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.95rem;
+        font-weight: 800;
+        cursor: pointer;
+
+        &:disabled {
+          background: #94a3b8;
+        }
+      }
+    }
+  }
+}
+
+// ========================================================
+// 9. FULL-SCREEN IMAGE VIEWER
+// ========================================================
+.shopee-fullscreen-viewer-modal {
+  --background: #000000;
+
+  .fs-viewer-container {
+    background: #000000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+
+    .fs-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      color: #ffffff;
+
+      .fs-round-btn {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+        border: none;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        position: relative;
+        cursor: pointer;
+
+        .fs-cart-badge {
+          position: absolute;
+          top: -3px;
+          right: -3px;
+          background: #ee4d2d;
+          font-size: 0.65rem;
+          padding: 1px 5px;
+          border-radius: 10px;
+        }
+      }
+
+      .fs-title-box {
+        text-align: center;
+        h4 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+        .fs-counter { font-size: 0.75rem; color: #94a3b8; }
+      }
+    }
+
+    .fs-horizontal-track {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+
+      &::-webkit-scrollbar { display: none; }
+
+      .fs-slide-item {
+        min-width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        scroll-snap-align: center;
+
+        img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+        }
+      }
+    }
+
+    .fs-nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.1rem;
+
+      &.left { left: 10px; }
+      &.right { right: 10px; }
+    }
+
+    .fs-bottom-dock {
+      background: rgba(0, 0, 0, 0.85);
+      padding: 12px 16px;
+
+      .fs-thumbnails-strip {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+        overflow-x: auto;
+
+        .fs-thumb-item {
+          width: 48px;
+          height: 48px;
+          border-radius: 6px;
+          overflow: hidden;
+          opacity: 0.5;
+          cursor: pointer;
+
+          img { width: 100%; height: 100%; object-fit: cover; }
+
+          &.active-thumb {
+            opacity: 1;
+            border: 2px solid #ee4d2d;
+          }
+        }
+      }
+
+      .fs-action-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .fs-meta {
+          .fs-price {
+            font-size: 1.25rem;
+            color: #ee4d2d;
+            font-weight: 800;
+            display: block;
+          }
+          .fs-status { font-size: 0.72rem; }
+        }
+
+        .fs-add-cart-btn {
+          background: #ee4d2d;
+          color: #ffffff;
+          border: none;
+          border-radius: 8px;
+          padding: 8px 14px;
+          font-size: 0.85rem;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+}
+
+// ========================================================
+// 10. SIDE DRAWER MODAL
+// ========================================================
+.drawer-side-modal {
+  --width: 280px;
+  --height: 100%;
+  --border-radius: 0;
+
+  .drawer-modal-wrapper {
+    background: #ffffff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 14px;
+
+    &.dark-mode-drawer {
+      background: #0f172a;
+      color: #ffffff;
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+
+      .drawer-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        background: #fee2e2;
+        color: #ee4d2d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+      }
+
+      .drawer-user-info {
+        h3 { margin: 0; font-size: 0.95rem; font-weight: 700; }
+        p { margin: 2px 0 0; font-size: 0.75rem; color: #64748b; }
+      }
+
+      .close-drawer-icon {
+        position: absolute;
+        top: 0;
+        right: 0;
+        background: transparent;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        color: #64748b;
+      }
+    }
+
+    .drawer-menu-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 14px;
+
+      .drawer-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px;
+        border-radius: 8px;
+        cursor: pointer;
+
+        &:hover { background: #f8fafc; }
+
+        .item-icon-box {
+          width: 34px;
+          height: 34px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.1rem;
+
+          &.orange { background: #ffedd5; color: #ea580c; }
+          &.purple { background: #f3e8ff; color: #9333ea; }
+          &.blue { background: #e0f2fe; color: #0284c7; }
+          &.red { background: #fee2e2; color: #dc2626; }
+        }
+
+        .item-labels {
+          flex: 1;
+          .item-title { font-size: 0.85rem; font-weight: 600; display: block; }
+          .item-subtitle { font-size: 0.68rem; color: #64748b; }
+          .red-text { color: #dc2626; }
+        }
+
+        &.toggle-item {
+          cursor: default;
+        }
+      }
+
+      .drawer-divider {
+        height: 1px;
+        background: #e2e8f0;
+        margin: 8px 0;
+      }
+    }
+  }
+}
+
+// ========================================================
+// 11. ORDER HISTORY & TRACKING MODAL
+// ========================================================
+.orders-modal-content {
+  .orders-modal-container {
+    max-width: 600px;
+    margin: 0 auto;
+
+    .empty-orders-state {
+      text-align: center;
+      padding: 40px 10px;
+      color: #94a3b8;
+
+      ion-icon { font-size: 3.5rem; margin-bottom: 10px; }
+      p { margin: 0; font-size: 0.95rem; }
+    }
+
+    .history-card {
+      margin: 0 0 14px;
+      border-radius: 12px;
+
+      &.active-border {
+        border-left: 4px solid #ee4d2d;
+      }
+
+      .history-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .order-id { margin: 0; font-size: 0.95rem; font-weight: 700; }
+        .order-date { font-size: 0.72rem; color: #64748b; }
+      }
+
+      .modal-stepper {
+        margin-bottom: 12px;
+        .stepper-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; }
+      }
+
+      .history-meta {
+        font-size: 0.75rem;
+        color: #475569;
+        p { margin: 2px 0; }
+        .history-note { color: #ea580c; }
+      }
+
+      .history-items-list {
+        background: transparent;
+        margin: 8px 0;
+
+        ion-item {
+          --padding-start: 0;
+          --inner-padding-end: 0;
+          font-size: 0.8rem;
+        }
+      }
+
+      .history-total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid #e2e8f0;
+        padding-top: 8px;
+        font-weight: 800;
+
+        .total-val {
+          color: #ee4d2d;
+          font-size: 1.05rem;
+        }
+      }
+
+      .completed-feedback-area {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #cbd5e1;
+
+        .stars-display {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          margin-top: 4px;
+        }
+      }
+    }
+  }
+}
+
+// ========================================================
+// 12. LEGACY OPTION MODAL
+// ========================================================
+.modal-choice-box {
+  .choice-food-header {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 14px;
+
+    img {
+      width: 65px;
+      height: 65px;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    h3 { margin: 0; font-size: 1rem; font-weight: 700; }
+    .price-text { margin: 2px 0 0; color: #ee4d2d; font-weight: 800; }
+  }
+
+  h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; }
+
+  .options-choice-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+
+      &.checked {
+        border-color: #ee4d2d;
+        background: #fff1f0;
+        color: #ee4d2d;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .btn-confirm-add {
+    width: 100%;
+    background: #ee4d2d;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+}
+// ========================================================
+// 10. DARK MODE — follows the app-wide ThemeService toggle
+// ========================================================
+.shopee-body.dark-theme {
+  .shopee-container {
+    color: #f8fafc;
+  }
+
+  // Live order tracker
+  .live-tracker-card {
+    .tracker-title strong {
+      color: #f8fafc;
+    }
+
+    .order-mode {
+      color: #94a3b8;
+    }
+
+    .step-label {
+      color: #cbd5e1;
+    }
+  }
+
+  .track-hint {
+    color: #cbd5e1;
+  }
+
+  // Categories
+  .category-label {
+    color: #e2e8f0;
+  }
+
+  // Food cards
+  .shopee-card {
+    border: 1px solid #334155;
+  }
+
+  .sold-count {
+    color: #94a3b8;
+  }
+
+  .cashback-tag {
+    background: rgba(234, 88, 12, 0.16);
+    color: #fb923c;
+  }
+}
+
+// ========================================================
+// DARK MODE — variation & meal bottom sheets
+// Ionic hoists presented modals to ion-app (outside
+// .shopee-body), so these rules key on the sheet's own
+// .dark-theme wrapper and mirror the base selectors'
+// nesting to win the cascade.
+// ========================================================
+.shopee-variation-bottom-sheet .var-sheet-wrapper.dark-theme {
+  background: #1e293b;
+
+  .var-top-header {
+    border-bottom-color: #334155;
+
+    .var-meta-box {
+      .var-meal-name { color: #f8fafc; }
+      .var-stock-text { color: #94a3b8; }
+    }
+
+    .var-close-btn { color: #94a3b8; }
+  }
+
+  .var-scrollable-body {
+    .var-options-section .var-chips-grid .var-chip {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+
+      &.active {
+        background: rgba(238, 77, 45, 0.18);
+        color: #fb923c;
+        border-color: #ee4d2d;
+      }
+    }
+
+    .var-quantity-section .var-stepper-box {
+      background: #0f172a;
+      border-color: #475569;
+
+      .step-btn {
+        background: #334155;
+        color: #f8fafc;
+
+        &:hover { background: #475569; }
+      }
+
+      .step-num { color: #f8fafc; }
+    }
+
+    .var-total-row {
+      background: rgba(238, 77, 45, 0.12);
+
+      .var-total-label { color: #f8fafc; }
+    }
+  }
+}
+
+// ========================================================
+// 11. CARD ACTION BUTTONS (Order Now + Add to Cart)
+// ========================================================
+.card-action-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+
+  .order-now-btn,
+  .add-to-cart-text-btn {
+    flex: 1;
+    border-radius: 6px;
+    padding: 7px 4px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+    text-align: center;
+
+    &:disabled {
+      background: #94a3b8;
+      color: #ffffff;
+      cursor: not-allowed;
+    }
+  }
+
+  .order-now-btn {
+    background: #ee4d2d;
+    color: #ffffff;
+    border: 1px solid #ee4d2d;
+
+    &:hover:not(:disabled) {
+      background: #e33d1c;
+    }
+  }
+
+  .add-to-cart-text-btn {
+    background: #ffffff;
+    color: #ee4d2d;
+    border: 1px solid #ee4d2d;
+
+    &:hover:not(:disabled) {
+      background: #fff1f0;
+    }
+  }
+}
+
+// Meal popup: two side-by-side footer buttons
+.var-bottom-footer.meal-footer {
+  display: flex;
+  gap: 10px;
+
+  .var-submit-btn {
+    flex: 1;
+    width: auto;
+  }
+
+  .add-cart-submit {
+    background: #ffffff;
+    color: #ee4d2d;
+    border: 2px solid #ee4d2d;
+
+    &:disabled {
+      background: #94a3b8;
+      color: #ffffff;
+      border-color: #94a3b8;
+    }
+  }
+}
+
+// ========================================================
+// RATE & FEEDBACK (completed orders)
+// ========================================================
+.submitted-comment {
+  margin: 6px 0 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: #475569;
+}
+
+.rate-order-btn {
+  width: 100%;
+  background: #fff7ed;
+  color: #ea580c;
+  border: 1px dashed #fb923c;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  ion-icon {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    background: #fff1f0;
+  }
+}
+
+// --- Rating modal (bottom sheet) ---
+ion-modal.rating-modal {
+  --width: 92%;
+  --max-width: 420px;
+  --border-radius: 16px;
+
+  &::part(content) {
+    border-radius: 16px;
+    background: #ffffff;
+  }
+}
+
+.rating-sheet {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+
+  .rating-sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid #eef2f7;
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #0f172a;
+    }
+
+    .rate-close {
+      background: transparent;
+      border: none;
+      font-size: 1.4rem;
+      color: #64748b;
+      cursor: pointer;
+      padding: 4px;
+    }
+  }
+
+  .rating-body {
+    padding: 14px 18px 18px;
+
+    .rate-order-line {
+      margin: 0 0 10px;
+      font-size: 0.8rem;
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .rate-label {
+      margin: 0 0 8px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      color: #0f172a;
+      text-align: center;
+    }
+
+    .rate-stars {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 6px;
+
+      ion-icon {
+        font-size: 2.1rem;
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: color 0.12s ease, transform 0.12s ease;
+
+        &.lit {
+          color: #f59e0b;
+        }
+
+        &:hover {
+          transform: scale(1.15);
+        }
+      }
+    }
+
+    .rate-caption {
+      margin: 0 0 14px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #64748b;
+    }
+
+    .rate-comment {
+      --background: #f8fafc;
+      --color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      margin-bottom: 14px;
+    }
+
+    .rate-submit {
+      width: 100%;
+      background: #ee4d2d;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+
+      &:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
+
+// ========================================================
+// DARK MODE — side drawer (mirrors the Me page settings drawer)
+// ========================================================
+.drawer-side-modal .drawer-modal-wrapper.dark-mode-drawer {
+  .drawer-header {
+    border-bottom-color: #334155;
+
+    .drawer-user-info h3 { color: #f8fafc; }
+    .drawer-user-info p { color: #94a3b8; }
+
+    .close-drawer-icon { color: #94a3b8; }
+  }
+
+  .drawer-menu-list .drawer-item {
+    &:hover { background: #1e293b; }
+
+    .item-labels {
+      .item-title { color: #f8fafc; }
+      .item-subtitle { color: #94a3b8; }
+      .red-text { color: #f87171; }
+    }
+  }
+
+  .drawer-menu-list .drawer-divider { background: #334155; }
+}
+
+// ========================================================
+// DARK MODE — order history modal
+// Modals are hoisted to ion-app, so this keys on the modal
+// content's own .dark-theme class instead of .shopee-body.
+// ========================================================
+.orders-modal-content.dark-theme {
+  --background: #0f172a;
+  background: #0f172a;
+  color: #f8fafc;
+
+  .empty-orders-state {
+    color: #94a3b8;
+  }
+
+  .orders-modal-container .history-card {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+
+    .history-card-header {
+      .order-id { color: #f8fafc; }
+      .order-date { color: #94a3b8; }
+    }
+
+    .modal-stepper .stepper-title { color: #f8fafc; }
+
+    .history-items-list ion-item {
+      --background: transparent;
+      --color: #e2e8f0;
+      color: #e2e8f0;
+    }
+
+    .history-meta {
+      color: #cbd5e1;
+
+      .history-note { color: #fb923c; }
+    }
+
+    .history-total-row {
+      border-top-color: #334155;
+      color: #f8fafc;
+    }
+
+    .completed-feedback-area {
+      border-top-color: #475569;
+    }
+
+    .submitted-comment {
+      color: #94a3b8;
+    }
+  }
+}
+
+// ========================================================
+// DARK MODE — legacy "Select Choice" modal
+// ========================================================
+.modal-choice-content.dark-theme {
+  --background: #0f172a;
+  color: #f8fafc;
+
+  .modal-choice-box {
+    .choice-food-header {
+      h3 { color: #f8fafc; }
+    }
+
+    h4 { color: #f8fafc; }
+
+    .options-choice-list .radio-label {
+      background: #1e293b;
+      border-color: #334155;
+      color: #e2e8f0;
+
+      &.checked {
+        background: rgba(238, 77, 45, 0.16);
+        border-color: #ee4d2d;
+        color: #fb923c;
+      }
+    }
+  }
+}

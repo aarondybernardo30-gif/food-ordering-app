@@ -1,0 +1,297 @@
+<ion-header class="ion-no-border shopee-auth-header">
+  <ion-toolbar class="shopee-toolbar">
+    <div class="header-inner">
+      <div class="brand">
+        <h2>FOOD ORDERING</h2>
+        <span>Rider Fleet</span>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="shopee-auth-content">
+  <div class="auth-wrapper">
+    <ion-card class="auth-card">
+      <!-- Segment matching the Customer tabs -->
+      <ion-segment [(ngModel)]="authMode">
+        <ion-segment-button value="signup">
+          <ion-icon name="person-add-outline"></ion-icon>
+          <ion-label>SIGN UP</ion-label>
+        </ion-segment-button>
+        <ion-segment-button value="login">
+          <ion-icon name="log-in-outline"></ion-icon>
+          <ion-label>SIGN IN</ion-label>
+        </ion-segment-button>
+      </ion-segment>
+
+      <ion-card-content>
+        <!-- 1. RIDER SIGN UP — JOB APPLICATION FORM -->
+        <div *ngIf="authMode === 'signup'">
+          <div class="section-heading">
+            <h3>Rider Job Application</h3>
+            <p>Complete the application form to join our delivery fleet</p>
+          </div>
+
+          <form [formGroup]="riderRegisterForm">
+            <!-- SECTION A: PERSONAL INFORMATION -->
+            <div class="form-section">
+              <div class="form-section-header">
+                <ion-icon name="person-outline"></ion-icon>
+                <div>
+                  <h4>A. Personal Information</h4>
+                  <span>Tell us who you are</span>
+                </div>
+              </div>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('fullName')">
+                <ion-input
+                  label="Full Name *"
+                  labelPlacement="floating"
+                  formControlName="fullName"
+                  type="text"
+                  placeholder="e.g. Pedro R. Cruz">
+                </ion-input>
+              </ion-item>
+
+              <div class="field-row">
+                <ion-item class="custom-input-item" [class.has-error]="isInvalid('age')">
+                  <ion-input
+                    label="Age *"
+                    labelPlacement="floating"
+                    formControlName="age"
+                    type="number"
+                    inputmode="numeric"
+                    placeholder="18–75">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item class="custom-input-item" [class.has-error]="isInvalid('email')">
+                  <ion-input
+                    label="Email Address"
+                    labelPlacement="floating"
+                    formControlName="email"
+                    type="email"
+                    placeholder="e.g. pedro@email.com">
+                  </ion-input>
+                </ion-item>
+              </div>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('address')">
+                <ion-input
+                  label="Complete Address *"
+                  labelPlacement="floating"
+                  formControlName="address"
+                  type="text"
+                  placeholder="House no., street, barangay, city">
+                </ion-input>
+              </ion-item>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('phone')">
+                <ion-input
+                  label="Contact Number *"
+                  labelPlacement="floating"
+                  formControlName="phone"
+                  type="tel"
+                  placeholder="09XXXXXXXXX">
+                </ion-input>
+              </ion-item>
+            </div>
+
+            <!-- SECTION B: VEHICLE INFORMATION -->
+            <div class="form-section">
+              <div class="form-section-header">
+                <ion-icon name="car-sport-outline"></ion-icon>
+                <div>
+                  <h4>B. Vehicle Information</h4>
+                  <span>What you'll be delivering with</span>
+                </div>
+              </div>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('vehicleType')">
+                <ion-select
+                  label="Vehicle Type *"
+                  labelPlacement="floating"
+                  formControlName="vehicleType"
+                  interface="popover"
+                  placeholder="Select vehicle">
+                  <ion-select-option value="Motorcycle">Motorcycle</ion-select-option>
+                  <ion-select-option value="Bicycle">Bicycle</ion-select-option>
+                  <ion-select-option value="Car">Car</ion-select-option>
+                  <ion-select-option value="Scooter">Scooter</ion-select-option>
+                  <ion-select-option value="Van">Van</ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <div class="field-row">
+                <ion-item class="custom-input-item">
+                  <ion-input
+                    label="Plate Number"
+                    labelPlacement="floating"
+                    formControlName="plateNumber"
+                    type="text"
+                    placeholder="e.g. NBX 1234">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item class="custom-input-item">
+                  <ion-input
+                    label="Driver's License No."
+                    labelPlacement="floating"
+                    formControlName="licenseNumber"
+                    type="text"
+                    placeholder="e.g. N02-01-123456">
+                  </ion-input>
+                </ion-item>
+              </div>
+            </div>
+
+            <!-- SECTION C: EMPLOYMENT BACKGROUND -->
+            <div class="form-section">
+              <div class="form-section-header">
+                <ion-icon name="briefcase-outline"></ion-icon>
+                <div>
+                  <h4>C. Employment Background</h4>
+                  <span>Your delivery experience</span>
+                </div>
+              </div>
+
+              <ion-item class="custom-input-item">
+                <ion-select
+                  label="Years of Driving Experience"
+                  labelPlacement="floating"
+                  formControlName="yearsExperience"
+                  interface="popover"
+                  placeholder="Select experience">
+                  <ion-select-option value="Less than 1 year">Less than 1 year</ion-select-option>
+                  <ion-select-option value="1–2 years">1–2 years</ion-select-option>
+                  <ion-select-option value="3–5 years">3–5 years</ion-select-option>
+                  <ion-select-option value="More than 5 years">More than 5 years</ion-select-option>
+                </ion-select>
+              </ion-item>
+            </div>
+
+            <!-- SECTION D: EMERGENCY CONTACT -->
+            <div class="form-section">
+              <div class="form-section-header">
+                <ion-icon name="call-outline"></ion-icon>
+                <div>
+                  <h4>D. Emergency Contact</h4>
+                  <span>Who we can reach in case of emergency</span>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <ion-item class="custom-input-item">
+                  <ion-input
+                    label="Contact Person"
+                    labelPlacement="floating"
+                    formControlName="emergencyContactName"
+                    type="text"
+                    placeholder="e.g. Maria Cruz">
+                  </ion-input>
+                </ion-item>
+
+                <ion-item class="custom-input-item">
+                  <ion-input
+                    label="Contact Number"
+                    labelPlacement="floating"
+                    formControlName="emergencyContactNumber"
+                    type="tel"
+                    placeholder="09XXXXXXXXX">
+                  </ion-input>
+                </ion-item>
+              </div>
+            </div>
+
+            <!-- SECTION E: ACCOUNT CREDENTIALS -->
+            <div class="form-section">
+              <div class="form-section-header">
+                <ion-icon name="lock-closed-outline"></ion-icon>
+                <div>
+                  <h4>E. Account Credentials</h4>
+                  <span>For signing in to the rider app</span>
+                </div>
+              </div>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('username')">
+                <ion-input
+                  label="Rider Username *"
+                  labelPlacement="floating"
+                  formControlName="username"
+                  type="text"
+                  placeholder="e.g. rider_pedro">
+                </ion-input>
+              </ion-item>
+
+              <ion-item class="custom-input-item" [class.has-error]="isInvalid('password')">
+                <ion-input
+                  label="Create Password *"
+                  labelPlacement="floating"
+                  formControlName="password"
+                  type="password"
+                  placeholder="Minimum 4 characters">
+                </ion-input>
+              </ion-item>
+            </div>
+
+            <p class="form-note">Fields marked with * are required.</p>
+
+            <ion-button
+              expand="block"
+              type="button"
+              (click)="onRiderSignUp()"
+              class="auth-action-btn">
+              SUBMIT APPLICATION
+            </ion-button>
+          </form>
+
+          <p class="switch-prompt">
+            Already registered as rider?
+            <a (click)="authMode = 'login'">Sign In</a>
+          </p>
+        </div>
+
+        <!-- 2. RIDER SIGN IN -->
+        <div *ngIf="authMode === 'login'">
+          <div class="section-heading">
+            <h3>Rider Sign In</h3>
+            <p>Access your active delivery tasks & live GPS tracking</p>
+          </div>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Rider Username or Phone" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginUsername" 
+              type="text" 
+              placeholder="e.g. rider1 or aaaaa">
+            </ion-input>
+          </ion-item>
+
+          <ion-item class="custom-input-item">
+            <ion-input 
+              label="Password" 
+              labelPlacement="floating" 
+              [(ngModel)]="loginPassword" 
+              type="password" 
+              placeholder="Enter password">
+            </ion-input>
+          </ion-item>
+
+          <ion-button 
+            expand="block" 
+            type="button"
+            (click)="onRiderLogin()" 
+            class="auth-action-btn">
+            LOGIN AS RIDER
+          </ion-button>
+
+          <p class="switch-prompt">
+            Need a new rider account? 
+            <a (click)="authMode = 'signup'">Sign Up</a>
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

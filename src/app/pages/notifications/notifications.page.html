@@ -1,0 +1,69 @@
+<ion-header class="ion-no-border notif-header">
+  <ion-toolbar>
+    <div class="notif-header-inner">
+      <div class="notif-hdr-icon-box">
+        <ion-icon name="notifications-outline"></ion-icon>
+      </div>
+      <div class="notif-hdr-texts">
+        <h2>Notifications</h2>
+        <span>Order updates &amp; promo alerts</span>
+      </div>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="notifications-content" [class.dark-theme]="isDarkMode">
+  <div class="notifications-container">
+
+    <div *ngIf="orders.length === 0" class="empty-state">
+      <div class="empty-icon-box">
+        <ion-icon name="notifications-off-outline"></ion-icon>
+      </div>
+      <h3>No Notifications Yet</h3>
+      <p>Your order status updates and promos will appear here.</p>
+      <button type="button" class="browse-btn" (click)="goToOrderAction()">
+        Browse the Menu
+      </button>
+    </div>
+
+    <div class="notifications-list" *ngIf="orders.length > 0">
+      <div
+        class="notification-card"
+        *ngFor="let order of orders"
+        (click)="goToOrderAction(order)"
+      >
+        <div class="notif-icon-circle" [ngClass]="order.status.toLowerCase().replace(' ', '-')">
+          <ion-icon [name]="order.status === 'Completed' ? 'checkmark-circle-outline' : (order.status === 'Out for Delivery' ? 'bicycle-outline' : 'fast-food-outline')"></ion-icon>
+        </div>
+
+        <div class="notif-body">
+          <div class="notif-title-row">
+            <h4 class="notif-title">
+              {{ order.status === 'Completed' ? 'Order Delivered!' : (order.status === 'Out for Delivery' ? 'Rider is on the way!' : 'Order ' + order.status) }}
+            </h4>
+            <span class="notif-time">{{ order.createdAt | date:'shortTime' }}</span>
+          </div>
+
+          <p class="notif-desc">
+            Order #{{ order.id }} ({{ order.items ? order.items.length : 0 }} items) - Total: ₱{{ order.totalAmount.toFixed(2) }}
+          </p>
+
+          <div class="notif-tags">
+            <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : 'primary')">
+              {{ order.status }}
+            </ion-badge>
+            <span *ngIf="order.status === 'Completed' && !order.rating" class="rate-prompt-tag">
+              ⭐ Tap to rate this order
+            </span>
+          </div>
+        </div>
+
+        <ion-icon name="chevron-forward-outline" class="notif-chevron"></ion-icon>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Bar -->
+  <app-user-bottom-nav activeTab="notifications"></app-user-bottom-nav>
+</ion-content>

@@ -1,0 +1,151 @@
+$shopee-orange: #ee4d2d;
+$shopee-orange-dark: #d73211;
+$shopee-bg: #f5f5f5;
+
+.shopee-auth-header {
+  .shopee-toolbar {
+    --background: #{$shopee-orange};
+    --color: #ffffff;
+    padding: 6px 12px;
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+
+    .brand {
+      h2 {
+        margin: 0;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+        font-size: 1.5rem;
+        color: #ffffff;
+      }
+      span {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.9);
+      }
+    }
+  }
+}
+
+.shopee-auth-content {
+  --background: #{$shopee-bg};
+}
+
+.auth-wrapper {
+  max-width: 480px;
+  margin: 40px auto;
+  padding: 0 16px;
+
+  @media (max-width: 576px) {
+    margin: 16px auto;
+    padding: 0 8px;
+  }
+}
+
+.auth-card {
+  margin: 0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+
+  ion-segment {
+    --background: #f0f0f0;
+    border-bottom: 1px solid #e0e0e0;
+
+    ion-segment-button {
+      --color: #444444;
+      --color-checked: #{$shopee-orange};
+      --indicator-color: #{$shopee-orange};
+      color: #444444;
+      font-weight: 700;
+      font-size: 0.9rem;
+      min-height: 48px;
+
+      &.segment-button-checked {
+        color: #{$shopee-orange};
+      }
+    }
+  }
+
+  ion-card-content {
+    padding: 24px 20px;
+  }
+}
+
+.section-heading {
+  text-align: center;
+  margin-bottom: 22px;
+
+  h3 {
+    margin: 0 0 6px 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #111111;
+  }
+
+  p {
+    margin: 0;
+    color: #666666;
+    font-size: 0.88rem;
+  }
+}
+
+.custom-input-item {
+  --background: #ffffff;
+  --color: #111111;
+  --border-color: transparent;
+  margin-bottom: 16px;
+  border-radius: 6px;
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  color: #111111;
+
+  ion-input {
+    --color: #111111 !important;
+    --placeholder-color: #777777 !important;
+    --highlight-color-focused: #{$shopee-orange};
+    color: #111111 !important;
+    font-weight: 500;
+    font-size: 0.95rem;
+
+    input {
+      color: #111111 !important;
+      -webkit-text-fill-color: #111111 !important;
+    }
+  }
+
+  ion-label, [slot="label"] {
+    color: #444444 !important;
+    font-weight: 600;
+  }
+}
+
+.auth-action-btn {
+  --background: #{$shopee-orange};
+  --background-hover: #{$shopee-orange-dark};
+  --color: #ffffff;
+  color: #ffffff;
+  --border-radius: 6px;
+  font-weight: 700;
+  margin-top: 22px;
+  height: 46px;
+}
+
+.switch-prompt {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 0.88rem;
+  color: #555555;
+
+  a {
+    color: #{$shopee-orange};
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 4px;
+  }
+}

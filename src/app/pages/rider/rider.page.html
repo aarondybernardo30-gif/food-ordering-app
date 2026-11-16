@@ -1,0 +1,171 @@
+<ion-header class="ion-no-border shopee-rider-header">
+  <ion-toolbar class="shopee-toolbar">
+    <div class="rider-header-container">
+      <!-- Left: Portal Title & Rider Name -->
+      <div class="rider-title-box">
+        <div class="brand-row">
+          <ion-icon name="bicycle-outline" class="rider-bike-icon"></ion-icon>
+          <h2>Rider Portal</h2>
+        </div>
+        <span class="rider-welcome-text" *ngIf="currentRider">
+          Courier: <strong>{{ currentRider.fullName || currentRider.username }}</strong>
+          <small *ngIf="currentRider.phone"> ({{ currentRider.phone }})</small>
+        </span>
+      </div>
+
+      <!-- Right: Rider Profile Badge & Logout -->
+      <div class="rider-header-right">
+        <div class="rider-name-chip" *ngIf="currentRider">
+          <ion-icon name="person-circle-outline"></ion-icon>
+          <span>{{ currentRider.fullName || currentRider.username }}</span>
+        </div>
+
+        <ion-button fill="clear" color="light" (click)="onRiderLogout()" class="logout-btn">
+          <ion-icon name="log-out-outline" slot="start"></ion-icon>
+          Logout
+        </ion-button>
+      </div>
+    </div>
+  </ion-toolbar>
+
+  <!-- Segment Tabs: ACTIVE DELIVERIES vs DELIVERED -->
+  <ion-toolbar class="rider-segment-toolbar">
+    <ion-segment [(ngModel)]="selectedSegment">
+      <ion-segment-button value="active">
+        <ion-icon name="bicycle-outline"></ion-icon>
+        <ion-label>ACTIVE DELIVERIES ({{ activeOrders.length }})</ion-label>
+      </ion-segment-button>
+
+      <ion-segment-button value="delivered">
+        <ion-icon name="checkmark-done-outline"></ion-icon>
+        <ion-label>DELIVERED ({{ deliveredOrders.length }})</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="rider-page-content ion-padding">
+  <div class="rider-orders-container">
+
+    <!-- 1. ACTIVE DELIVERIES TAB -->
+    <div *ngIf="selectedSegment === 'active'">
+      <div *ngIf="activeOrders.length === 0" class="empty-state-box">
+        <ion-icon name="bicycle-outline"></ion-icon>
+        <h3>No Active Deliveries</h3>
+        <p>No orders currently assigned to you. Dispatched orders will appear here automatically.</p>
+      </div>
+
+      <ion-card *ngFor="let order of activeOrders" class="rider-order-card">
+        <ion-card-header>
+          <div class="card-head-row">
+            <div>
+              <ion-card-title>Order #{{ order.id }}</ion-card-title>
+              <ion-card-subtitle>{{ order.createdAt | date:'shortTime' }}</ion-card-subtitle>
+            </div>
+            <ion-badge color="warning">Out for Delivery</ion-badge>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <!-- Assigned Rider Notice -->
+          <div class="assigned-notice-pill">
+            <ion-icon name="bicycle-outline"></ion-icon>
+            <span>Assigned to: <strong>{{ currentRider?.fullName || order.assignedRiderName }}</strong></span>
+          </div>
+
+          <!-- Customer Destination Box -->
+          <div class="destination-box" *ngIf="order.deliveryAddress">
+            <div class="dest-title">
+              <ion-icon name="location-outline"></ion-icon>
+              <strong>Delivery Destination:</strong>
+            </div>
+            <p class="dest-address">{{ order.deliveryAddress }}</p>
+          </div>
+
+          <!-- Payment Info -->
+          <p class="payment-collect-line">
+            <strong>Payment to Collect: </strong>
+            <span *ngIf="order.paymentMethod === 'cod'" class="cod-text">
+              Collect Cash on Delivery: ₱{{ order.totalAmount.toFixed(2) }}
+            </span>
+            <span *ngIf="order.paymentMethod === 'shopeepay'" class="paid-text">
+              Wallet (Already Paid)
+            </span>
+            <span *ngIf="order.paymentMethod !== 'cod' && order.paymentMethod !== 'shopeepay'" class="paid-text">
+              Paid Online
+            </span>
+          </p>
+
+          <p *ngIf="order.customerName" class="customer-info-line">
+            <strong>Customer: </strong> {{ order.customerName }} 
+            <span *ngIf="order.customerPhone">({{ order.customerPhone }})</span>
+          </p>
+
+          <p *ngIf="order.notes" class="order-notes-line">
+            <strong>Note: </strong> {{ order.notes }}
+          </p>
+
+          <!-- Food items -->
+          <div class="order-items-wrapper">
+            <div *ngFor="let item of order.items" class="item-line">
+              <span>{{ item.quantity }}x {{ item.food.name }}</span>
+              <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <ion-button 
+            expand="block" 
+            color="primary" 
+            (click)="trackExactLocation(order)" 
+            class="action-btn-gps">
+            <ion-icon name="navigate-outline" slot="start"></ion-icon>
+            TRACK EXACT LOCATION (GPS)
+          </ion-button>
+
+          <ion-button 
+            expand="block" 
+            color="success" 
+            (click)="setDelivered(order)" 
+            class="action-btn-delivered">
+            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+            SET AS DELIVERED
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- 2. DELIVERED HISTORY TAB -->
+    <div *ngIf="selectedSegment === 'delivered'">
+      <div *ngIf="deliveredOrders.length === 0" class="empty-state-box">
+        <ion-icon name="checkmark-done-outline"></ion-icon>
+        <h3>No Delivered Orders Yet</h3>
+        <p>Completed deliveries will be archived here.</p>
+      </div>
+
+      <ion-card *ngFor="let order of deliveredOrders" class="rider-order-card completed-card">
+        <ion-card-header>
+          <div class="card-head-row">
+            <div>
+              <ion-card-title>Order #{{ order.id }}</ion-card-title>
+              <ion-card-subtitle>{{ order.createdAt | date:'medium' }}</ion-card-subtitle>
+            </div>
+            <ion-badge color="success">Completed</ion-badge>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <p><strong>Delivered by:</strong> {{ currentRider?.fullName || order.assignedRiderName }}</p>
+          <p *ngIf="order.deliveryAddress"><strong>Delivered To:</strong> {{ order.deliveryAddress }}</p>
+          <p><strong>Amount Collected:</strong> ₱{{ order.totalAmount.toFixed(2) }}</p>
+
+          <div *ngFor="let item of order.items" class="item-line">
+            <span>{{ item.quantity }}x {{ item.food.name }}</span>
+            <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+  </div>
+</ion-content>

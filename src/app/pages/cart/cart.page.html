@@ -1,0 +1,95 @@
+<ion-header class="ion-no-border shopee-cart-header">
+  <ion-toolbar class="shopee-toolbar" color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/menu" color="light"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Your Cart ({{ cartCount }})</ion-title>
+  </ion-toolbar>
+
+  <!-- Wallet Quick Balance Status -->
+  <div class="cart-wallet-banner">
+    <div class="wallet-left">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Wallet Balance:</span>
+      <strong>₱{{ walletBalance.toFixed(2) }}</strong>
+    </div>
+  </div>
+</ion-header>
+
+<ion-content class="cart-page-content" [class.dark-theme]="isDarkMode">
+  <div class="cart-page-container">
+
+    <!-- Empty State -->
+    <div *ngIf="cartItems.length === 0" class="empty-cart-view">
+      <ion-icon name="cart-outline"></ion-icon>
+      <h3>Your Cart is Empty</h3>
+      <p>Browse our meals and satisfy your cravings!</p>
+      <ion-button color="primary" (click)="goToMenu()" class="browse-btn">
+        Browse Menu
+      </ion-button>
+    </div>
+
+    <!-- Cart Items List -->
+    <div *ngIf="cartItems.length > 0" class="cart-items-wrapper">
+      <!-- Select All Row -->
+      <div class="select-all-row">
+        <label class="select-all-label">
+          <input
+            type="checkbox"
+            class="nice-check"
+            [checked]="allSelected"
+            (change)="toggleSelectAll($event)" />
+          <span>Select All</span>
+        </label>
+        <span class="select-all-hint">{{ checkedCount }} of {{ cartItems.length }} selected</span>
+      </div>
+
+      <div *ngFor="let item of cartItems" class="cart-food-card" [class.item-unchecked]="!isChecked(item)">
+        <label class="item-select">
+          <input
+            type="checkbox"
+            class="nice-check"
+            [checked]="isChecked(item)"
+            (change)="toggleItem(item, $event)" />
+        </label>
+        <img [src]="item.food.imageUrl" [alt]="item.food.name" class="food-thumb" />
+
+        <div class="food-info">
+          <div class="top-row">
+            <h4>{{ item.food.name }}</h4>
+            <button class="delete-icon-btn" (click)="removeItem(item.food.id, item.selectedOption)" title="Remove item">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+          <p class="variant-name" *ngIf="variantLabel(item.selectedOption)">{{ variantLabel(item.selectedOption) }}</p>
+          <p class="variant-name" *ngIf="item.note" style="color: #2563eb;">{{ item.note }}</p>
+          <p class="unit-price">₱{{ unitPriceOf(item).toFixed(2) }} each</p>
+
+          <div class="controls-row">
+            <!-- Stepper [-] [qty] [+] -->
+            <div class="stepper-box">
+              <button class="stepper-btn" (click)="decreaseQty(item.food.id, item.selectedOption)">-</button>
+              <span class="qty-display">{{ item.quantity }}</span>
+              <button class="stepper-btn" (click)="increaseQty(item.food.id, item.selectedOption)">+</button>
+            </div>
+
+            <span class="subtotal-text">₱{{ lineTotal(item).toFixed(2) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checkout Summary Card -->
+      <div class="checkout-summary-card">
+        <div class="summary-line">
+          <span>Total ({{ checkedQuantity }} item{{ checkedQuantity === 1 ? '' : 's' }} checked):</span>
+          <strong class="total-price">₱{{ checkedTotal.toFixed(2) }}</strong>
+        </div>
+
+        <ion-button expand="block" size="large" (click)="proceedToCheckout()" class="checkout-submit-btn">
+          Proceed to Checkout &rarr;
+        </ion-button>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

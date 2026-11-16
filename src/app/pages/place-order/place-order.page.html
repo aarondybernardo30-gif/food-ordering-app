@@ -1,0 +1,413 @@
+<ion-header class="ion-no-border shopee-checkout-header">
+  <ion-toolbar class="checkout-toolbar" color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/menu" color="light"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Checkout & Place Order</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="checkout-content ion-padding">
+  <div class="checkout-container">
+
+    <!-- FULFILLMENT MODE SELECTION -->
+    <ion-card class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Fulfillment Mode</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-segment [(ngModel)]="orderType">
+          <ion-segment-button value="delivery">
+            <ion-icon name="bicycle"></ion-icon>
+            <ion-label>Delivery</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="dine-in">
+            <ion-icon name="restaurant"></ion-icon>
+            <ion-label>Dine-In</ion-label>
+          </ion-segment-button>
+          <ion-segment-button value="pickup">
+            <ion-icon name="bag-handle-outline"></ion-icon>
+            <ion-label>Pick-Up</ion-label>
+          </ion-segment-button>
+        </ion-segment>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 1. LOCATION & GPS DISTANCE CARD (DELIVERY ONLY) -->
+    <ion-card *ngIf="orderType === 'delivery'" class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Delivery Location & Distance</ion-card-title>
+        <ion-card-subtitle>Shipping fee is calculated at ₱15.00 per kilometer from our kitchen</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item class="custom-input-item">
+          <ion-input 
+            label="Delivery Address / Landmarks *" 
+            labelPlacement="floating" 
+            [(ngModel)]="deliveryAddress" 
+            placeholder="e.g. Block 4 Lot 12, Emerald St.">
+          </ion-input>
+        </ion-item>
+        
+        <ion-button expand="block" fill="outline" color="primary" (click)="detectCurrentLocation()" class="gps-btn">
+          <ion-icon name="navigate" slot="start"></ion-icon>
+          Use Current GPS Location
+        </ion-button>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 2. TABLE NUMBER CARD (DINE-IN ONLY) -->
+    <ion-card *ngIf="orderType === 'dine-in'" class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Dine-In Details</ion-card-title>
+        <ion-card-subtitle>Enter your table number so staff can deliver to your table</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item class="custom-input-item">
+          <ion-input 
+            label="Table Number *" 
+            labelPlacement="floating" 
+            [(ngModel)]="tableNumber" 
+            placeholder="e.g. Table 12">
+          </ion-input>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 3. STORE PICK-UP INFORMATION CARD (PICK-UP ONLY) -->
+    <ion-card *ngIf="orderType === 'pickup'" class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Store Pick-Up Information</ion-card-title>
+        <ion-card-subtitle>Pick up your fresh order directly at our restaurant counter</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="pickup-details-box">
+          <p><strong>Store Address: </strong> Food Ordering Kitchen, Ground Floor, Central Mall</p>
+          <p><strong>Operating Hours: </strong> 9:00 AM - 10:00 PM</p>
+          <p><strong style="color: #16a34a;">Delivery Fee: FREE (₱0.00)</strong></p>
+        </div>
+
+        <ion-item class="custom-input-item">
+          <ion-input 
+            label="Estimated Pick-Up Time" 
+            labelPlacement="floating" 
+            [(ngModel)]="pickupTime" 
+            placeholder="e.g. In 20 minutes / 1:30 PM">
+          </ion-input>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 4. ORDER NOTES -->
+    <ion-card class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Special Instructions / Notes</ion-card-title>
+        <ion-card-subtitle>Add kitchen requests, allergies, or pickup/rider instructions</ion-card-subtitle>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-item class="custom-input-item">
+          <ion-textarea 
+            label="Order Notes (Optional)" 
+            labelPlacement="floating" 
+            [(ngModel)]="orderNotes" 
+            rows="3" 
+            placeholder="e.g. Less spicy, separate sauce, or extra napkins...">
+          </ion-textarea>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 5. APPLIED VOUCHER CARD -->
+    <ion-card class="checkout-card voucher-card-block">
+      <ion-card-header>
+        <ion-card-title>Voucher / Promo Code</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <div class="voucher-display-box" *ngIf="appliedVoucher">
+          <div class="v-left">
+            <ion-icon name="ticket-outline" class="v-icon"></ion-icon>
+            <div>
+              <strong class="v-code">{{ appliedVoucher.code }}</strong>
+              <span class="v-sub">{{ appliedVoucher.headline }} &bull; {{ appliedVoucher.title }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-remove-voucher" (click)="removeVoucher()">
+            <ion-icon name="close-circle-outline"></ion-icon>
+            Remove
+          </button>
+        </div>
+
+        <div class="no-voucher-box" *ngIf="!appliedVoucher">
+          <span>No voucher applied</span>
+          <ion-button fill="clear" size="small" color="primary" (click)="selectVoucherFromMe()">
+            Select from Me <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 6. PAYMENT METHOD CARD (WALLET, CASH, ONLINE QR CASHIER) -->
+    <ion-card class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Payment Method</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <ion-radio-group [(ngModel)]="paymentMethod">
+          <ion-item class="radio-item shopeepay-radio">
+            <ion-radio value="shopeepay">
+              <div class="sp-radio-content">
+                <span class="sp-badge">Wallet</span>
+                <span class="sp-radio-bal">Balance: ₱{{ walletBalance.toFixed(2) }}</span>
+              </div>
+            </ion-radio>
+          </ion-item>
+
+          <ion-item class="radio-item">
+            <ion-radio value="cod">
+              {{ orderType === 'delivery' ? 'Cash on Delivery (COD)' : (orderType === 'dine-in' ? 'Cash (Pay at Counter / Table)' : 'Cash upon Pick-Up') }}
+            </ion-radio>
+          </ion-item>
+
+          <ion-item class="radio-item">
+            <ion-radio value="online">Online Payment (GCash / Maya / QR Ph)</ion-radio>
+          </ion-item>
+        </ion-radio-group>
+
+        <!-- WALLET STATUS & TOP-UP PROMPT -->
+        <div *ngIf="paymentMethod === 'shopeepay'" class="shopeepay-card-details">
+          <div class="sp-status-box" [class.success]="isBalanceSufficient" [class.danger]="!isBalanceSufficient">
+            <div class="sp-row">
+              <span>Order Amount:</span>
+              <strong>₱{{ totalAmount.toFixed(2) }}</strong>
+            </div>
+            <div class="sp-row">
+              <span>Wallet Balance:</span>
+              <strong>₱{{ walletBalance.toFixed(2) }}</strong>
+            </div>
+
+            <p *ngIf="isBalanceSufficient" class="sp-success-msg">
+              ✓ Sufficient Balance! 1-click instant payment.
+            </p>
+            <p *ngIf="!isBalanceSufficient" class="sp-error-msg">
+              ✕ Insufficient Balance (Short by ₱{{ (totalAmount - walletBalance).toFixed(2) }}).
+            </p>
+          </div>
+
+          <ion-button expand="block" fill="outline" color="warning" (click)="promptTopUp()" class="topup-action-btn">
+            <ion-icon name="wallet-outline" slot="start"></ion-icon>
+            Top-Up Wallet
+          </ion-button>
+        </div>
+
+        <!-- ONLINE QR PAYMENT NOTICE -->
+        <div *ngIf="paymentMethod === 'online'" class="online-qr-notice">
+          <ion-icon name="qr-code-outline"></ion-icon>
+          <div>
+            <strong>QR Code Payment</strong>
+            <p>Tap <strong>Confirm &amp; Place Order</strong> below to generate your payment QR code (GCash / Maya / Bank QR Ph).</p>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- 7. ORDER SUMMARY (WITH CHOSEN OPTION & BILL BREAKDOWN) -->
+    <ion-card class="checkout-card">
+      <ion-card-header>
+        <ion-card-title>Order Summary</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <!-- Item Lines -->
+        <div *ngFor="let item of checkoutItems" class="checkout-summary-item">
+          <div class="item-name-box">
+            <strong>
+              {{ item.food.name }}
+              <span style="color: #ea580c; font-weight: 700;">({{ variantLabel(item.selectedOption) || 'Regular' }})</span>
+            </strong>
+            <small>₱{{ unitPriceOf(item).toFixed(2) }} each</small>
+            <small *ngIf="item.note" style="color: #2563eb; display: block;">{{ item.note }}</small>
+          </div>
+
+          <div class="summary-qty-stepper">
+            <button class="step-btn" (click)="decreaseQty(item.food.id, item.selectedOption)">-</button>
+            <span class="step-val">{{ item.quantity }}</span>
+            <button class="step-btn" (click)="increaseQty(item.food.id, item.selectedOption)">+</button>
+          </div>
+
+          <div class="item-subtotal-box">
+            <span>₱{{ lineTotal(item).toFixed(2) }}</span>
+            <button class="item-del-btn" (click)="removeItem(item.food.id, item.selectedOption)" title="Remove item">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- PAYMENT DETAILS / BREAKDOWN -->
+        <div class="bill-breakdown-box">
+          <div class="bill-row">
+            <span>Food Subtotal:</span>
+            <strong>₱{{ subtotal.toFixed(2) }}</strong>
+          </div>
+
+          <!-- GPS Distance-based Shipping Line -->
+          <div class="bill-row" *ngIf="orderType === 'delivery'">
+            <span>Shipping Fee ({{ userCoords ? distanceInKm + ' km @ ₱15/km' : 'GPS required' }}):</span>
+            <span>
+              <span
+                [style.text-decoration]="finalShippingFee === 0 && rawShippingFee > 0 ? 'line-through' : 'none'"
+                [style.color]="finalShippingFee === 0 && rawShippingFee > 0 ? '#94a3b8' : 'inherit'">
+                ₱{{ rawShippingFee.toFixed(2) }}
+              </span>
+              <strong *ngIf="finalShippingFee === 0 && rawShippingFee > 0" style="color: #16a34a; margin-left: 6px;">
+                FREE
+              </strong>
+            </span>
+          </div>
+
+          <!-- Pick-Up / Dine-In Free Delivery Notice -->
+          <div class="bill-row" *ngIf="orderType !== 'delivery'">
+            <span>Delivery Fee:</span>
+            <span style="color: #16a34a; font-weight: 700;">FREE (₱0.00)</span>
+          </div>
+
+          <!-- Applied Voucher Discount -->
+          <div class="bill-row discount-line" *ngIf="discountAmount > 0">
+            <span>Voucher Discount ({{ appliedVoucher?.code }}):</span>
+            <span class="discount-num">-₱{{ discountAmount.toFixed(2) }}</span>
+          </div>
+
+          <div class="total-row">
+            <span>Total Amount:</span>
+            <span class="total-price">₱{{ totalAmount.toFixed(2) }}</span>
+          </div>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- SUBMIT BUTTON -->
+    <ion-button 
+      expand="block" 
+      size="large" 
+      (click)="submitOrder()" 
+      [disabled]="checkoutItems.length === 0"
+      class="confirm-order-btn">
+      Confirm & Place Order &bull; ₱{{ totalAmount.toFixed(2) }}
+    </ion-button>
+  </div>
+
+  <!-- ============================================
+       QR CASHIER PAYMENT MODAL
+       ============================================ -->
+  <ion-modal [isOpen]="isQrCashierOpen" (didDismiss)="closeQrCashier()" class="qr-cashier-modal">
+    <ng-template>
+      <div class="cashier-screen">
+        <!-- Top Bar -->
+        <div class="cashier-topbar">
+          <span class="cashier-brand">QR Cashier</span>
+          <button type="button" class="cashier-close-btn" (click)="closeQrCashier()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="cashier-scroll">
+          <!-- TOP ORDER DETAILS CARD -->
+          <div class="cashier-card cashier-meta-card">
+            <div class="expiry-banner" [class.expired]="cashierSecondsLeft <= 0">
+              <span *ngIf="cashierSecondsLeft > 0">Order expires in <strong>{{ formattedCashierTimer }}</strong></span>
+              <span *ngIf="cashierSecondsLeft <= 0">Order timer expired — tap Refresh below</span>
+            </div>
+
+            <div class="meta-row">
+              <span>Merchant Order ID</span>
+              <strong>{{ cashierOrderId }}</strong>
+            </div>
+            <div class="meta-row">
+              <span>Transaction ID</span>
+              <strong>{{ cashierTransactionId }}</strong>
+            </div>
+            <div class="meta-row">
+              <span>Order Time</span>
+              <strong>{{ cashierOrderTime }}</strong>
+            </div>
+            <div class="meta-row">
+              <span>Description</span>
+              <strong class="meta-desc">{{ cashierDescription }}</strong>
+            </div>
+            <div class="meta-row meta-total-row">
+              <span>Total</span>
+              <strong class="meta-total">PHP {{ totalAmount.toFixed(2) }}</strong>
+            </div>
+          </div>
+
+          <!-- BOTTOM QR PAYMENT CARD -->
+          <div class="cashier-card cashier-qr-card">
+            <div class="merchant-head">
+              <div class="merchant-avatar">{{ adminGcash.accountName.charAt(0).toUpperCase() }}</div>
+              <span class="merchant-name">{{ adminGcash.accountName }}</span>
+            </div>
+
+            <div class="qr-amount-display">
+              <span class="currency-prefix">PHP</span>
+              <span class="amount-big">{{ totalAmount.toFixed(2) }}</span>
+            </div>
+
+            <div class="qr-white-frame">
+              <img [src]="cashierQrImageUrl" alt="Payment QR Code" class="qr-img" />
+              <div class="qr-center-emblem">
+                <span class="qr-emblem-dot"></span>
+              </div>
+            </div>
+
+            <div class="gcash-number-pill">
+              <span>GCash No: <strong>{{ adminGcash.number }}</strong></span>
+              <button type="button" class="copy-mini-btn" (click)="copyAdminGcashNumber()">
+                <ion-icon name="copy-outline"></ion-icon> Copy
+              </button>
+            </div>
+
+            <button type="button" class="btn-open-gcash" (click)="openInGcash()">
+              <span>Open in</span>
+              <span class="gcash-inline-badge">G</span>
+              <strong>GCash</strong>
+            </button>
+
+            <p class="scan-subtext">or scan this QR to pay</p>
+
+            <button type="button" class="btn-save-qr" (click)="saveQrCode()">
+              <ion-icon name="download-outline"></ion-icon>
+              Save QR Code
+            </button>
+
+            <p class="pay-with-label">PAY WITH ANY OF</p>
+            <div class="bank-logos-row">
+              <span class="bank-chip ub">UB</span>
+              <span class="bank-chip maya">maya</span>
+              <span class="bank-chip bdo">BDO</span>
+              <span class="bank-chip gcash">G GCash</span>
+              <span class="bank-chip bpi">BPI</span>
+              <span class="bank-chip grab">GrabPay</span>
+            </div>
+
+            <!-- Confirm Payment Reference Section -->
+            <div class="confirm-ref-box">
+              <label class="ref-label">After paying, enter your GCash / Bank Reference No. *</label>
+              <input
+                type="text"
+                maxlength="24"
+                [(ngModel)]="gcashReferenceNumber"
+                placeholder="e.g. 1002345678901"
+                class="ref-dark-input" />
+
+              <button
+                type="button"
+                class="btn-confirm-paid"
+                (click)="confirmQrPaymentAndPlaceOrder()">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                I Have Paid &bull; Confirm Order
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+</ion-content>

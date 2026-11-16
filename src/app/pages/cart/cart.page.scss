@@ -1,0 +1,315 @@
+$shopee-orange: #ee4d2d;
+$shopee-orange-dark: #d73211;
+$dark-bg: #121212;
+$dark-card: #1e1e1e;
+$dark-border: #333333;
+
+.shopee-cart-header {
+  background: $shopee-orange;
+
+  .shopee-toolbar {
+    --background: #{$shopee-orange};
+    --color: #ffffff;
+    --border-width: 0;
+
+    ion-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+  }
+
+  .cart-wallet-banner {
+    background: #ffffff;
+    padding: 8px 16px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .wallet-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.88rem;
+      color: #475569;
+
+      ion-icon {
+        color: $shopee-orange;
+        font-size: 1.25rem;
+      }
+
+      strong {
+        color: $shopee-orange;
+        font-size: 0.95rem;
+      }
+    }
+  }
+}
+
+.cart-page-content {
+  --background: #f8fafc;
+
+  &.dark-theme {
+    --background: #{$dark-bg};
+
+    .shopee-cart-header .cart-wallet-banner {
+      background: #1e1e1e;
+      border-bottom-color: #333333;
+      .wallet-left { color: #cbd5e1; }
+    }
+
+    .cart-food-card {
+      background: #{$dark-card};
+      border-color: #{$dark-border};
+
+      .food-info {
+        h4 { color: #f8fafc; }
+        .unit-price { color: #94a3b8; }
+        .controls-row .stepper-box {
+          background: #27272a;
+          border-color: #{$dark-border};
+          .stepper-btn, .qty-display { color: #ffffff; }
+        }
+      }
+    }
+
+    .checkout-summary-card {
+      background: #{$dark-card};
+      border-color: #{$dark-border};
+      .summary-line span { color: #f8fafc; }
+    }
+
+    // "Select All" label sits on the dark select-all row
+    .select-all-label { color: #f8fafc; }
+
+    // Empty-cart heading on the dark page background
+    .empty-cart-view h3 { color: #f8fafc; }
+  }
+}
+
+.cart-page-container {
+  max-width: 650px;
+  margin: 0 auto;
+  padding: 16px 12px;
+}
+
+.empty-cart-view {
+  text-align: center;
+  padding: 80px 20px;
+  color: #94a3b8;
+
+  ion-icon {
+    font-size: 4.5rem;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+  }
+
+  h3 {
+    margin: 0 0 6px 0;
+    font-weight: 800;
+    color: #334155;
+  }
+
+  p {
+    margin: 0 0 20px 0;
+    font-size: 0.95rem;
+  }
+
+  .browse-btn {
+    --background: #{$shopee-orange};
+    font-weight: 700;
+  }
+}
+
+.cart-food-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+
+  .food-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .food-info {
+    flex: 1;
+
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+
+      h4 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+      }
+
+      .delete-icon-btn {
+        background: transparent;
+        border: none;
+        color: #ef4444;
+        font-size: 1.25rem;
+        cursor: pointer;
+      }
+    }
+
+    .unit-price {
+      margin: 2px 0 10px 0;
+      font-size: 0.82rem;
+      color: #64748b;
+    }
+
+    .controls-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .stepper-box {
+        display: inline-flex;
+        align-items: center;
+        background: #f1f5f9;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+
+        .stepper-btn {
+          background: transparent;
+          border: none;
+          width: 32px;
+          height: 32px;
+          font-size: 1.15rem;
+          font-weight: 800;
+          color: #0f172a;
+          cursor: pointer;
+        }
+
+        .qty-display {
+          font-weight: 700;
+          font-size: 0.95rem;
+          padding: 0 10px;
+          color: #0f172a;
+        }
+      }
+
+      .subtotal-text {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: $shopee-orange;
+      }
+    }
+  }
+}
+
+.checkout-summary-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 18px;
+  margin-top: 24px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+  .summary-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.15rem;
+    color: #0f172a;
+    margin-bottom: 16px;
+
+    .total-price {
+      color: $shopee-orange;
+      font-size: 1.35rem;
+      font-weight: 800;
+    }
+  }
+
+  .checkout-submit-btn {
+    --background: #{$shopee-orange};
+    --background-hover: #{$shopee-orange-dark};
+    font-weight: 800;
+    --border-radius: 8px;
+  }
+}
+
+// ========================================================
+// CHECKOUT SELECTION (checkboxes)
+// ========================================================
+.select-all-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+
+  ion-checkbox {
+    --checkbox-background-checked: #ee4d2d;
+    --border-color-checked: #ee4d2d;
+  }
+
+  .select-all-hint {
+    font-size: 0.78rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+}
+
+.cart-food-card {
+  .item-select-box {
+    --checkbox-background-checked: #ee4d2d;
+    --border-color-checked: #ee4d2d;
+    flex-shrink: 0;
+    margin-right: 2px;
+  }
+}
+
+// Dark mode variants
+.cart-page-content.dark-theme {
+  .select-all-row {
+    background: #1e293b;
+    border: 1px solid #334155;
+
+    .select-all-hint {
+      color: #94a3b8;
+    }
+  }
+}
+
+// Native checkboxes — orange accent, robust change events
+.nice-check {
+  width: 20px;
+  height: 20px;
+  accent-color: #ee4d2d;
+  cursor: pointer;
+  margin: 0;
+}
+
+.select-all-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.item-select {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cart-food-card.item-unchecked {
+  opacity: 0.55;
+}

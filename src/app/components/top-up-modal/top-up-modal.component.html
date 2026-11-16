@@ -1,0 +1,187 @@
+<div class="topup-wrapper">
+
+  <!-- Modal Header -->
+  <div class="topup-top-bar">
+    <div class="topup-title-group">
+      <h3>Top Up Wallet</h3>
+      <div class="topup-subtitle">Scan the QR code with your online wallet</div>
+    </div>
+    <button type="button" class="topup-close-btn" (click)="dismiss()">
+      <ion-icon name="close-outline"></ion-icon>
+    </button>
+  </div>
+
+  <!-- STEP 1: Choose amount -->
+  <div class="topup-body" *ngIf="step === 'choose'">
+    <div class="topup-balance-box">
+      <ion-icon name="wallet-outline"></ion-icon>
+      <span>Choose how much you want to add</span>
+    </div>
+
+    <div class="preset-grid">
+      <button
+        type="button"
+        *ngFor="let p of presets"
+        class="preset-chip"
+        [class.active]="!usingCustom && selectedAmount === p"
+        (click)="choosePreset(p)">
+        <span class="preset-amount">₱{{ p.toLocaleString() }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="preset-chip custom-chip"
+        [class.active]="usingCustom"
+        (click)="chooseCustom()">
+        <ion-icon name="cash-outline"></ion-icon>
+        <span class="preset-amount">Custom</span>
+      </button>
+    </div>
+
+    <div class="custom-amount-box" *ngIf="usingCustom">
+      <span class="peso-sign">₱</span>
+      <ion-input
+        type="number"
+        [(ngModel)]="customAmount"
+        min="1"
+        placeholder="Enter amount"
+        class="custom-input">
+      </ion-input>
+    </div>
+
+    <button
+      type="button"
+      class="topup-primary-btn"
+      [disabled]="!canGenerate"
+      (click)="generateQr()">
+      <ion-icon name="qr-code-outline"></ion-icon>
+      Generate QR Code
+    </button>
+  </div>
+
+  <!-- STEP 2: Scan the wallet QR -->
+  <div class="topup-body" *ngIf="step === 'qr'">
+    <div class="qr-amount-line">
+      <span class="qr-amount">₱{{ (amount || 0).toFixed(2) }}</span>
+      <span class="qr-ref" *ngIf="qrMode !== 'real'">Ref: {{ reference }}</span>
+    </div>
+
+    <!-- Mode 1: the store's uploaded wallet QR (scannable in GCash/Maya) -->
+    <ng-container *ngIf="qrMode === 'real'">
+      <div class="qr-frame">
+        <img [src]="qrDataUrl" alt="Store wallet QR code" class="qr-img real-qr" />
+      </div>
+
+      <div class="payto-box" *ngIf="walletQrService.getSettings().accountName || walletQrService.getSettings().accountNumber">
+        <p class="payto-label">Send payment to:</p>
+        <p class="payto-line" *ngIf="walletQrService.getSettings().walletLabel">
+          <strong>{{ walletQrService.getSettings().walletLabel }}</strong>
+        </p>
+        <p class="payto-line" *ngIf="walletQrService.getSettings().accountName">
+          {{ walletQrService.getSettings().accountName }}
+        </p>
+        <p class="payto-line" *ngIf="walletQrService.getSettings().accountNumber">
+          {{ walletQrService.getSettings().accountNumber }}
+        </p>
+      </div>
+
+      <p class="qr-instructions">
+        Scan the store's QR code in your <strong>{{ walletQrService.getSettings().walletLabel || 'wallet' }}</strong> app,
+        enter the <strong>exact amount of ₱{{ (amount || 0).toFixed(2) }}</strong>, and send.
+        Then tap the button below to credit your wallet.
+      </p>
+    </ng-container>
+
+    <!-- Mode 2: generated QR Ph (national standard — scannable in GCash/Maya) -->
+    <ng-container *ngIf="qrMode === 'qrph'">
+      <div class="qr-frame" *ngIf="qrDataUrl; else qrError">
+        <img [src]="qrDataUrl" alt="QR Ph code" class="qr-img real-qr" />
+      </div>
+      <ng-template #qrError>
+        <div class="qr-frame qr-error">Could not generate the QR code. Please try again.</div>
+      </ng-template>
+
+      <div class="qrph-tag">QR PH &bull; Scannable with GCash / Maya</div>
+
+      <div class="payto-box">
+        <p class="payto-label">Send payment to:</p>
+        <p class="payto-line">
+          <strong>{{ walletQrService.getSettings().walletLabel }}</strong> &bull;
+          {{ walletQrService.getSettings().accountName }}
+        </p>
+        <p class="payto-line">{{ walletQrService.getSettings().accountNumber }}</p>
+      </div>
+
+      <p class="qr-instructions">
+        Scan this QR with your <strong>GCash</strong> or <strong>Maya</strong> app.
+        Once your app shows <strong>{{ walletQrService.getSettings().accountName }}</strong>,
+        enter <strong>₱{{ (amount || 0).toFixed(2) }}</strong> as the amount and send.
+        Tap the button below once paid to credit your wallet.
+      </p>
+    </ng-container>
+
+    <!-- Mode 3: demo preview (nothing configured) -->
+    <ng-container *ngIf="qrMode === 'demo'">
+      <div class="qr-frame" *ngIf="qrDataUrl; else qrError">
+        <img [src]="qrDataUrl" alt="Preview QR code" class="qr-img" />
+        <div class="qr-corner tl"></div>
+        <div class="qr-corner br"></div>
+      </div>
+      <ng-template #qrError>
+        <div class="qr-frame qr-error">Could not generate the QR code. Please try again.</div>
+      </ng-template>
+
+      <div class="demo-note">
+        ⚠️ <strong>Demo preview only</strong> — this QR is not scannable in GCash.
+        The store admin should add the store's wallet mobile number or upload the
+        store's real GCash/Maya QR in <strong>Admin → WALLET QR</strong>.
+      </div>
+    </ng-container>
+
+    <button type="button" class="topup-primary-btn" (click)="confirmPaid()">
+      <ion-icon name="checkmark-circle"></ion-icon>
+      I Have Completed the Payment
+    </button>
+    <button type="button" class="topup-back-btn" (click)="backToChoose()">
+      <ion-icon name="arrow-back-outline"></ion-icon>
+      Choose a Different Amount
+    </button>
+  </div>
+
+  <!-- STEP 3: Result (instant credit for demo, pending approval for real payments) -->
+  <div class="topup-body" *ngIf="step === 'done'">
+
+    <ng-container *ngIf="!needsApproval">
+      <div class="success-circle">
+        <ion-icon name="checkmark-circle"></ion-icon>
+      </div>
+      <h3 class="success-title">Top Up Successful!</h3>
+      <p class="success-amount">₱{{ paidAmount.toFixed(2) }}</p>
+      <p class="success-note">has been added to your wallet</p>
+      <div class="success-balance-box">
+        <span>New Wallet Balance</span>
+        <strong>₱{{ newBalance.toFixed(2) }}</strong>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="needsApproval">
+      <div class="pending-circle">
+        <ion-icon name="hourglass-outline"></ion-icon>
+      </div>
+      <h3 class="success-title">Payment Submitted!</h3>
+      <p class="success-amount">₱{{ paidAmount.toFixed(2) }}</p>
+      <div class="pending-note-box">
+        <p>
+          Your payment is now <strong>pending confirmation</strong> by the store admin.
+          Your wallet will be credited as soon as it is approved.
+        </p>
+        <p class="pending-ref">Reference: <strong>{{ reference }}</strong></p>
+      </div>
+    </ng-container>
+
+    <button type="button" class="topup-primary-btn" (click)="dismiss()">
+      Done
+    </button>
+  </div>
+
+</div>

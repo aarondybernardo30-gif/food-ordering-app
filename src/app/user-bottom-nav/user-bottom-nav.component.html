@@ -1,0 +1,39 @@
+<div class="shopee-bottom-nav">
+  <!-- 1. Home -->
+  <button 
+    type="button" 
+    class="nav-tab" 
+    [class.active]="activeTab === 'home'" 
+    (click)="switchTab('home')"
+  >
+    <ion-icon [name]="activeTab === 'home' ? 'home' : 'home-outline'"></ion-icon>
+    <span class="tab-label">Home</span>
+  </button>
+
+  <!-- 2. Notifications -->
+  <button 
+    type="button" 
+    class="nav-tab" 
+    [class.active]="activeTab === 'notifications'" 
+    (click)="switchTab('notifications')"
+  >
+    <div class="icon-badge-wrapper">
+      <ion-icon [name]="activeTab === 'notifications' ? 'notifications' : 'notifications-outline'"></ion-icon>
+      <ion-badge color="danger" class="tab-badge" *ngIf="notificationCount > 0">
+        {{ notificationCount > 9 ? '9+' : notificationCount }}
+      </ion-badge>
+    </div>
+    <span class="tab-label">Notifications</span>
+  </button>
+
+  <!-- 3. Me -->
+  <button 
+    type="button" 
+    class="nav-tab" 
+    [class.active]="activeTab === 'me'" 
+    (click)="switchTab('me')"
+  >
+    <ion-icon [name]="activeTab === 'me' ? 'person' : 'person-outline'"></ion-icon>
+    <span class="tab-label">Me</span>
+  </button>
+</div>

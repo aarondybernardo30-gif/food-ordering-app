@@ -1,19 +1,16 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { CloudSyncService } from './cloud-sync';
 
-/**
- * Single source of truth for the customer wallet balance and coins.
- * All pages must use this service (never raw localStorage) so every
- * screen stays in sync.
- */
 @Injectable({
   providedIn: 'root'
 })
 export class WalletService {
+  private cloudSync = inject(CloudSyncService);
+
   private readonly BALANCE_KEY = 'wallet_balance';
   private readonly COINS_KEY = 'wallet_coins';
 
-  // Keys used by earlier versions of the app; migrated on first load.
   private readonly LEGACY_BALANCE_KEY = 'shopeepay_balance';
   private readonly LEGACY_COINS_KEY = 'shopee_coins';
 
@@ -30,7 +27,6 @@ export class WalletService {
     this.coinsSubject = new BehaviorSubject<number>(this.readInitialCoins());
     this.coins$ = this.coinsSubject.asObservable();
 
-    // Keep wallet state in sync when it changes in another tab.
     window.addEventListener('storage', (e) => {
       if (e.key === this.BALANCE_KEY && e.newValue !== null) {
         const parsed = parseFloat(e.newValue);
@@ -40,6 +36,21 @@ export class WalletService {
       }
       if (e.key === this.COINS_KEY && e.newValue !== null) {
         const parsed = parseInt(e.newValue, 10);
+        if (!isNaN(parsed)) {
+          this.coinsSubject.next(parsed);
+        }
+      }
+    });
+
+    this.cloudSync.changes$.subscribe(({ key, data }) => {
+      if (key === this.BALANCE_KEY) {
+        const parsed = typeof data === 'number' ? data : parseFloat(String(data));
+        if (!isNaN(parsed)) {
+          this.balanceSubject.next(parsed);
+        }
+      }
+      if (key === this.COINS_KEY) {
+        const parsed = typeof data === 'number' ? data : parseInt(String(data), 10);
         if (!isNaN(parsed)) {
           this.coinsSubject.next(parsed);
         }
@@ -86,9 +97,9 @@ export class WalletService {
     const newBalance = this.balanceSubject.value + amount;
     this.balanceSubject.next(newBalance);
     localStorage.setItem(this.BALANCE_KEY, newBalance.toString());
+    this.cloudSync.pushKey(this.BALANCE_KEY, newBalance);
   }
 
-  /** Returns false when the balance is insufficient; otherwise deducts. */
   deduct(amount: number): boolean {
     if (!(amount > 0) || amount > this.balanceSubject.value) {
       return false;
@@ -96,6 +107,7 @@ export class WalletService {
     const newBalance = this.balanceSubject.value - amount;
     this.balanceSubject.next(newBalance);
     localStorage.setItem(this.BALANCE_KEY, newBalance.toString());
+    this.cloudSync.pushKey(this.BALANCE_KEY, newBalance);
     return true;
   }
 }

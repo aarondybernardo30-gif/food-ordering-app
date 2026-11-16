@@ -1,11 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { FoodItem, FoodReview } from '../models/food.model';
+import { CloudSyncService } from './cloud-sync';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FoodService {
+  private cloudSync = inject(CloudSyncService);
+
   private initialFoods: FoodItem[] = [
     {
       id: 1,
@@ -60,7 +63,6 @@ export class FoodService {
     }
   ];
 
-  /** Placeholder names/descriptions written by earlier versions of the app. */
   private readonly legacySeedNames: Record<string, { name: string; description: string }> = {
     'adobo': {
       name: 'Chicken Adobo',
@@ -90,6 +92,12 @@ export class FoodService {
         } catch {}
       }
     });
+
+    this.cloudSync.changes$.subscribe(({ key, data }) => {
+      if (key === 'app_foods' && Array.isArray(data)) {
+        this.foodsSubject.next(data);
+      }
+    });
   }
 
   getStoredFoods(): FoodItem[] {
@@ -111,7 +119,6 @@ export class FoodService {
     return this.initialFoods;
   }
 
-  /** Renames placeholder seed items left over from earlier versions. */
   private migrateLegacySeeds(foods: FoodItem[]): FoodItem[] {
     let changed = false;
     const migrated = foods.map((food) => {
@@ -127,6 +134,12 @@ export class FoodService {
 
   getFoods(): FoodItem[] {
     return this.foodsSubject.value.length > 0 ? this.foodsSubject.value : this.getStoredFoods();
+  }
+
+  private saveAndSync(updated: FoodItem[]): Promise<void> {
+    this.foodsSubject.next(updated);
+    localStorage.setItem('app_foods', JSON.stringify(updated));
+    return this.cloudSync.pushKey('app_foods', updated);
   }
 
   async addFood(newFood: Omit<FoodItem, 'id'> | FoodItem): Promise<void> {
@@ -149,47 +162,35 @@ export class FoodService {
       reviews: []
     };
 
-    const updated = [createdItem, ...current];
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    await this.saveAndSync([createdItem, ...current]);
   }
 
   async deleteFood(id: number): Promise<void> {
-    const current = this.getFoods();
-    const updated = current.filter(item => item.id !== id);
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    const updated = this.getFoods().filter(item => item.id !== id);
+    await this.saveAndSync(updated);
   }
 
   async updatePrice(id: number, newPrice: number): Promise<void> {
-    const current = this.getFoods();
-    const updated = current.map(item => item.id === id ? { ...item, price: newPrice } : item);
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    const updated = this.getFoods().map(item => item.id === id ? { ...item, price: newPrice } : item);
+    await this.saveAndSync(updated);
   }
 
   async toggleAvailability(id: number): Promise<void> {
-    const current = this.getFoods();
-    const updated = current.map(item => item.id === id ? { ...item, available: !item.available } : item);
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    const updated = this.getFoods().map(item => item.id === id ? { ...item, available: !item.available } : item);
+    await this.saveAndSync(updated);
   }
 
   async updateFoodItem(updatedFood: FoodItem): Promise<void> {
-    const current = this.getFoods();
-    const updated = current.map(item => item.id === updatedFood.id ? { ...updatedFood } : item);
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    const updated = this.getFoods().map(item => item.id === updatedFood.id ? { ...updatedFood } : item);
+    await this.saveAndSync(updated);
   }
 
   updateFood(food: FoodItem): void {
     this.updateFoodItem(food);
   }
 
-  // --- ADD REVIEW METHOD (Resolves TS2305 & TS2571 in order.ts) ---
   async addReviewToFood(foodId: number, review: FoodReview): Promise<void> {
-    const current = this.getFoods();
-    const updated = current.map(item => {
+    const updated = this.getFoods().map(item => {
       if (item.id === foodId) {
         const revs = item.reviews || [];
         const newRevs = [review, ...revs];
@@ -199,7 +200,6 @@ export class FoodService {
       return item;
     });
 
-    this.foodsSubject.next(updated);
-    localStorage.setItem('app_foods', JSON.stringify(updated));
+    await this.saveAndSync(updated);
   }
 }

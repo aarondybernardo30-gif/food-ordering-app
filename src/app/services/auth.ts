@@ -1,24 +1,23 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Rider, User } from '../models/food.model';
+import { CloudSyncService } from './cloud-sync';
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
-  // Customer session keys
+  private cloudSync = inject(CloudSyncService);
+
   private readonly USER_KEY = 'currentUser';
   private readonly USERS_LIST_KEY = 'registered_users';
 
-  // Admin session keys
   private readonly ADMIN_KEY = 'admin_session';
   private readonly ADMINS_LIST_KEY = 'registered_admins';
 
-  // Rider session keys
   private readonly RIDER_KEY = 'current_rider';
   private readonly RIDERS_LIST_KEY = 'registered_riders';
 
-  /** Built-in accounts referenced by the sign-in screens' hints. */
   private readonly DEFAULT_ADMIN = {
     fullName: 'Master Admin',
     username: 'admin',
@@ -51,7 +50,6 @@ export class AuthService {
     this.seedDefaultAccounts();
   }
 
-  /** Makes sure the advertised default admin & rider accounts exist exactly once. */
   private seedDefaultAccounts(): void {
     try {
       const admins = this.readList(this.ADMINS_LIST_KEY);
@@ -108,10 +106,6 @@ export class AuthService {
     return this.readList(this.USERS_LIST_KEY);
   }
 
-  /**
-   * Creates a customer account. Returns false when the phone number is
-   * already registered so the Sign Up screen can ask the user to sign in.
-   */
   register(userData: Partial<User> & { name?: string }): boolean {
     const phone = (userData.phone || '').trim();
     if (!phone) {
@@ -133,13 +127,10 @@ export class AuthService {
 
     registeredUsers.push(newUser);
     localStorage.setItem(this.USERS_LIST_KEY, JSON.stringify(registeredUsers));
+    this.cloudSync.pushKey(this.USERS_LIST_KEY, registeredUsers);
     return true;
   }
 
-  /**
-   * Signs a customer in with phone (or email) + password.
-   * Only exact matches against registered accounts are accepted.
-   */
   userLogin(phoneOrEmail: string, password: string): boolean {
     const input = (phoneOrEmail || '').trim();
     const pass = password || '';
@@ -168,7 +159,6 @@ export class AuthService {
     this.currentUserSubject.next(null);
   }
 
-  /** Persists profile changes to the active session and the registered list. */
   updateProfile(changes: { fullName?: string; password?: string }): void {
     const current = this.getCurrentUser();
     if (!current) {
@@ -188,6 +178,7 @@ export class AuthService {
     if (index !== -1) {
       users[index] = updated;
       localStorage.setItem(this.USERS_LIST_KEY, JSON.stringify(users));
+      this.cloudSync.pushKey(this.USERS_LIST_KEY, users);
     }
   }
 
@@ -204,7 +195,6 @@ export class AuthService {
     return localStorage.getItem(this.ADMIN_KEY) === 'true';
   }
 
-  /** Creates an admin account; rejects duplicate usernames. */
   registerAdmin(adminData: { fullName?: string; username: string; password: string }): boolean {
     const username = (adminData.username || '').trim().toLowerCase();
     if (!username) {
@@ -222,10 +212,10 @@ export class AuthService {
       password: adminData.password || ''
     });
     localStorage.setItem(this.ADMINS_LIST_KEY, JSON.stringify(admins));
+    this.cloudSync.pushKey(this.ADMINS_LIST_KEY, admins);
     return true;
   }
 
-  /** Signs an admin in; unknown usernames or wrong passwords are rejected. */
   adminLogin(username: string, password: string): boolean {
     const input = (username || '').trim().toLowerCase();
     const pass = password || '';
@@ -275,7 +265,6 @@ export class AuthService {
     return this.readList(this.RIDERS_LIST_KEY);
   }
 
-  /** Creates a rider account; rejects duplicate usernames or phone numbers. */
   registerRider(riderData: Rider & { username: string; password: string }): boolean {
     const username = (riderData.username || '').trim().toLowerCase();
     const phone = (riderData.phone || '').trim();
@@ -293,10 +282,10 @@ export class AuthService {
 
     riders.push({ ...riderData, username });
     localStorage.setItem(this.RIDERS_LIST_KEY, JSON.stringify(riders));
+    this.cloudSync.pushKey(this.RIDERS_LIST_KEY, riders);
     return true;
   }
 
-  /** Establishes the rider session after credentials have been verified. */
   setRiderSession(rider: Rider): void {
     localStorage.setItem(this.RIDER_KEY, JSON.stringify(rider));
     localStorage.setItem('is_rider_logged_in', 'true');

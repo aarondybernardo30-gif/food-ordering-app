@@ -110,7 +110,7 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   private router = inject(Router);
 
   // Replace with your deployed Xendit Node backend URL
-  private readonly XENDIT_BACKEND_URL = 'https://YOUR-BACKEND-URL.com';
+private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
   cart: CartItem[] = [];
   isBuyNow: boolean = false;

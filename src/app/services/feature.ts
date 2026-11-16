@@ -1,11 +1,7 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { CloudSyncService } from './cloud-sync';
 
-/**
- * A promotional feature shown on the customer home screen:
- * big hero carousel banners and the small side promo cards.
- * Managed by the admin via the "Edit Features" dashboard tab.
- */
 export interface PromoFeature {
   id: string;
   placement: 'hero' | 'side';
@@ -14,7 +10,6 @@ export interface PromoFeature {
   description?: string;
   image: string;
   badge?: string;
-  /** Ionic color name used for the hero badge (warning, success, etc.). */
   badgeColor?: string;
   tag?: string;
   actionText?: string;
@@ -67,11 +62,12 @@ const SEED_FEATURES: PromoFeature[] = [
   providedIn: 'root'
 })
 export class FeatureService {
+  private cloudSync = inject(CloudSyncService);
+
   private featuresSubject = new BehaviorSubject<PromoFeature[]>(this.readFeatures());
   public features$: Observable<PromoFeature[]> = this.featuresSubject.asObservable();
 
   constructor() {
-    // Keep promos in sync when edited in another tab (admin <-> customer).
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
@@ -80,6 +76,12 @@ export class FeatureService {
             this.featuresSubject.next(parsed);
           }
         } catch {}
+      }
+    });
+
+    this.cloudSync.changes$.subscribe(({ key, data }) => {
+      if (key === STORAGE_KEY && Array.isArray(data)) {
+        this.featuresSubject.next(data);
       }
     });
   }
@@ -108,6 +110,7 @@ export class FeatureService {
     const updated = [created, ...this.featuresSubject.value];
     this.featuresSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 
   updateFeature(feature: PromoFeature): void {
@@ -116,11 +119,13 @@ export class FeatureService {
     );
     this.featuresSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 
   deleteFeature(id: string): void {
     const updated = this.featuresSubject.value.filter(f => f.id !== id);
     this.featuresSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 }

@@ -1,13 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { CloudSyncService } from './cloud-sync';
 
 export type MealSchedule = 'today' | 'tomorrow' | 'friday' | 'weekend';
 
-/**
- * A meal in the customer's "Daily Featured Meals" slider.
- * The admin manages these via the FEATURED MEALS dashboard tab;
- * `schedule` decides which day group the meal appears in.
- */
 export interface FeaturedMealItem {
   id: number;
   title: string;
@@ -99,11 +95,12 @@ const SEED_MEALS: FeaturedMealItem[] = [
   providedIn: 'root'
 })
 export class FeaturedMealService {
+  private cloudSync = inject(CloudSyncService);
+
   private mealsSubject = new BehaviorSubject<FeaturedMealItem[]>(this.readMeals());
   public meals$: Observable<FeaturedMealItem[]> = this.mealsSubject.asObservable();
 
   constructor() {
-    // Sync when meals are edited in another tab (admin <-> customer).
     window.addEventListener('storage', (e) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
@@ -112,6 +109,12 @@ export class FeaturedMealService {
             this.mealsSubject.next(parsed);
           }
         } catch {}
+      }
+    });
+
+    this.cloudSync.changes$.subscribe(({ key, data }) => {
+      if (key === STORAGE_KEY && Array.isArray(data)) {
+        this.mealsSubject.next(data);
       }
     });
   }
@@ -140,6 +143,7 @@ export class FeaturedMealService {
     const updated = [created, ...this.mealsSubject.value];
     this.mealsSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 
   updateMeal(meal: FeaturedMealItem): void {
@@ -148,11 +152,13 @@ export class FeaturedMealService {
     );
     this.mealsSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 
   deleteMeal(id: number): void {
     const updated = this.mealsSubject.value.filter(m => m.id !== id);
     this.mealsSubject.next(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    this.cloudSync.pushKey(STORAGE_KEY, updated);
   }
 }

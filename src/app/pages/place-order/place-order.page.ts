@@ -52,6 +52,8 @@ import {
   downloadOutline,
   qrCodeOutline
 } from 'ionicons/icons';
+import { Capacitor } from '@capacitor/core';
+import { AppLauncher } from '@capacitor/app-launcher';
 import { Geolocation } from '@capacitor/geolocation';
 import { CartService } from '../../services/cart';
 import { OrderService } from '../../services/order';
@@ -407,13 +409,47 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
       await navigator.clipboard.writeText(cleanNum);
     } catch {}
 
+    if (Capacitor.isNativePlatform()) {
+      this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
+      try {
+        // Launch GCash directly by Android package name
+        const { value: hasPackage } = await AppLauncher.canOpenUrl({
+          url: 'com.globe.gcash.android',
+        });
+
+        if (hasPackage) {
+          await AppLauncher.openUrl({ url: 'com.globe.gcash.android' });
+          return;
+        }
+
+        // Fallback to gcash:// scheme (e.g. iOS)
+        const { value: hasScheme } = await AppLauncher.canOpenUrl({
+          url: 'gcash://',
+        });
+
+        if (hasScheme) {
+          await AppLauncher.openUrl({ url: 'gcash://' });
+          return;
+        }
+
+        // Fallback if GCash is not installed on Android
+        if (Capacitor.getPlatform() === 'android') {
+          await AppLauncher.openUrl({
+            url: 'https://play.google.com/store/apps/details?id=com.globe.gcash.android',
+          });
+          return;
+        }
+      } catch (error) {
+        console.error('Could not launch GCash:', error);
+      }
+    }
+
     const ua = navigator.userAgent || '';
     const isAndroid = /android/i.test(ua);
     const isIOS = /iphone|ipad|ipod/i.test(ua);
 
     if (isAndroid) {
       this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
-      // Opens the installed GCash Android app directly
       window.location.href = 'intent://#Intent;scheme=gcash;package=com.globe.gcash.android;end';
       return;
     }

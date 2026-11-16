@@ -109,6 +109,9 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   private toastCtrl = inject(ToastController);
   private router = inject(Router);
 
+  // Replace with your deployed Xendit Node backend URL
+  private readonly XENDIT_BACKEND_URL = 'https://YOUR-BACKEND-URL.com';
+
   cart: CartItem[] = [];
   isBuyNow: boolean = false;
   checkoutItems: CartItem[] = [];
@@ -126,6 +129,7 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   isQrCashierOpen: boolean = false;
   cashierOrderId: string = '';
   cashierTransactionId: string = '';
+  cashierQrId: string = '';
   cashierOrderTime: string = '';
   cashierDescription: string = '';
   cashierQrImageUrl: string = '';
@@ -344,7 +348,7 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   }
 
   // ============================================
-  // QR CASHIER MODAL ACTIONS
+  // QR CASHIER MODAL ACTIONS (XENDIT QR PH)
   // ============================================
 
   get formattedCashierTimer(): string {
@@ -353,19 +357,55 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
     return `${mins}min ${secs < 10 ? '0' + secs : secs}s`;
   }
 
-  private openQrCashierModal(orderId: string) {
+  private async openQrCashierModal(orderId: string) {
     this.cashierOrderId = orderId;
     this.cashierTransactionId = `TXN${Date.now().toString().slice(-10)}`;
+    this.cashierQrId = '';
     this.cashierOrderTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     this.cashierDescription = this.checkoutItems.map(i => `${i.quantity}x ${i.food.name}`).join(', ');
     this.gcashReferenceNumber = '';
+    this.cashierQrImageUrl = '';
 
-    // Use Admin's uploaded GCash QR if available, otherwise generate a QR for the order
-    if (this.adminGcash.qrImage) {
-      this.cashierQrImageUrl = this.adminGcash.qrImage;
-    } else {
-      const qrData = `GCASH|TO:${this.adminGcash.number}|NAME:${this.adminGcash.accountName}|AMT:${this.totalAmount.toFixed(2)}|ORD:${this.cashierOrderId}|TXN:${this.cashierTransactionId}`;
-      this.cashierQrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=6&data=${encodeURIComponent(qrData)}`;
+    const loading = await this.loadingCtrl.create({
+      message: `Generating Xendit QR Ph for ₱${this.totalAmount.toFixed(2)}...`,
+    });
+    await loading.present();
+
+    try {
+      const response = await fetch(`${this.XENDIT_BACKEND_URL}/api/create-qrph`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amountPhp: this.totalAmount,
+          orderId: this.cashierOrderId,
+          description: `Order #${this.cashierOrderId}: ${this.cashierDescription}`.slice(0, 250),
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.qrImageUrl) {
+        throw new Error(data.error || 'Could not generate Xendit QR Ph code');
+      }
+
+      this.cashierQrId = data.qrId;
+      this.cashierQrImageUrl = data.qrImageUrl; // Base64 QR Ph image with exact amount embedded
+    } catch (err) {
+      console.error('Xendit QR Ph generation failed:', err);
+      if (this.adminGcash.qrImage) {
+        this.cashierQrImageUrl = this.adminGcash.qrImage;
+        this.showToast('Using uploaded store QR (Xendit server unavailable).', 'warning');
+      } else {
+        await loading.dismiss();
+        const alert = await this.alertCtrl.create({
+          header: 'Xendit QR Ph Setup Required',
+          message: 'Could not reach the Xendit backend to generate a pre-filled QR code. Check XENDIT_BACKEND_URL or upload a real GCash QR image in Admin settings.',
+          buttons: ['OK']
+        });
+        await alert.present();
+        return;
+      }
+    } finally {
+      await loading.dismiss();
     }
 
     this.cashierSecondsLeft = 15 * 60;
@@ -412,7 +452,6 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
     if (Capacitor.isNativePlatform()) {
       this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
       try {
-        // Launch GCash directly by Android package name
         const { value: hasPackage } = await AppLauncher.canOpenUrl({
           url: 'com.globe.gcash.android',
         });
@@ -422,7 +461,6 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
           return;
         }
 
-        // Fallback to gcash:// scheme (e.g. iOS)
         const { value: hasScheme } = await AppLauncher.canOpenUrl({
           url: 'gcash://',
         });
@@ -432,7 +470,6 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
           return;
         }
 
-        // Fallback if GCash is not installed on Android
         if (Capacitor.getPlatform() === 'android') {
           await AppLauncher.openUrl({
             url: 'https://play.google.com/store/apps/details?id=com.globe.gcash.android',
@@ -460,11 +497,10 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
       return;
     }
 
-    // Desktop browser fallback (GCash app is mobile-only)
     const alert = await this.alertCtrl.create({
       header: 'Send via GCash App',
       subHeader: `Number Copied: ${cleanNum}`,
-      message: `Open GCash on your phone → tap Send → Express Send → paste ${cleanNum}, enter exact amount ₱${this.totalAmount.toFixed(2)}, then type the GCash Reference Number below.`,
+      message: `Open GCash on your phone → tap QR → Upload QR (or send to ${cleanNum}) for ₱${this.totalAmount.toFixed(2)}.`,
       buttons: ['OK']
     });
     await alert.present();
@@ -495,6 +531,39 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   }
 
   async confirmQrPaymentAndPlaceOrder() {
+    // If Xendit QR Ph is active, verify payment status automatically with Xendit
+    if (this.cashierQrId) {
+      const loading = await this.loadingCtrl.create({
+        message: 'Verifying QR Ph payment with Xendit...',
+      });
+      await loading.present();
+
+      try {
+        const resp = await fetch(
+          `${this.XENDIT_BACKEND_URL}/api/check-payment/${this.cashierQrId}`
+        );
+        const data = await resp.json();
+
+        if (!data.paid && data.status !== 'SUCCEEDED') {
+          await loading.dismiss();
+          this.showToast('Payment not completed yet. Please scan and pay the QR Ph code first.', 'warning');
+          return;
+        }
+
+        const verifiedRef = data.paymentId || this.cashierQrId;
+        await loading.dismiss();
+        const orderId = this.cashierOrderId || Math.floor(100000 + Math.random() * 900000).toString();
+        this.closeQrCashier();
+        await this.finalizeOrderRecord(orderId, verifiedRef);
+        return;
+      } catch (err) {
+        await loading.dismiss();
+        this.showToast('Could not verify payment status with Xendit. Please try again.', 'danger');
+        return;
+      }
+    }
+
+    // Fallback: manual reference number verification when using static uploaded QR
     const cleanRef = this.gcashReferenceNumber.replace(/\s+/g, '').trim();
     if (cleanRef.length < 6) {
       this.showToast('Please enter your GCash / Bank Reference Number (at least 6 characters).', 'warning');
@@ -528,7 +597,7 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
       ctx.fillRect(24, 92, 210, 30);
       ctx.fillStyle = '#92400e';
       ctx.font = 'bold 14px Arial, sans-serif';
-      ctx.fillText('FOR ADMIN VERIFICATION', 34, 112);
+      ctx.fillText('PAYMENT RECORD', 34, 112);
 
       ctx.fillStyle = '#0f172a';
       ctx.font = 'bold 28px Arial, sans-serif';
@@ -691,9 +760,8 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
 
     const orderId = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Open QR Cashier Modal when Online Payment is chosen
     if (this.paymentMethod === 'online') {
-      this.openQrCashierModal(orderId);
+      await this.openQrCashierModal(orderId);
       return;
     }
 

@@ -207,116 +207,114 @@
         <span class="count-text">{{ filteredFoods.length }} items available</span>
       </div>
 
-      <ion-grid class="product-grid">
-        <ion-row>
-          <ion-col size="6" size-sm="6" size-md="4" size-lg="3" *ngFor="let item of filteredFoods" class="product-col">
-            <ion-card class="shopee-card" [style.opacity]="item.available === false ? '0.6' : '1'">
-              
-              <div class="card-gallery-wrapper">
-                <div 
-                  class="card-image-slider" 
-                  [id]="'card-slider-' + item.id"
-                  (scroll)="onCardImageScroll($event, item)"
-                  (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)">
-                  <div class="card-slide" *ngFor="let img of getFoodImages(item)">
-                    <img [src]="img" [alt]="item.name" draggable="false" loading="lazy" />
-                  </div>
-                </div>
-
-                <button 
-                  type="button" 
-                  class="card-nav-arrow left" 
-                  *ngIf="(activeCardImageIndex[item.id] || 0) > 0" 
-                  (click)="prevCardImage(item, $event)">
-                  <ion-icon name="chevron-back-outline"></ion-icon>
-                </button>
-                <button 
-                  type="button" 
-                  class="card-nav-arrow right" 
-                  *ngIf="(activeCardImageIndex[item.id] || 0) < getFoodImages(item).length - 1" 
-                  (click)="nextCardImage(item, $event)">
-                  <ion-icon name="chevron-forward-outline"></ion-icon>
-                </button>
-
-                <div class="card-gallery-dots" *ngIf="getFoodImages(item).length > 1">
-                  <span 
-                    *ngFor="let dot of getFoodImages(item); let dIdx = index" 
-                    class="dot" 
-                    [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)">
-                  </span>
-                </div>
-
-                <button 
-                  type="button" 
-                  class="card-expand-btn" 
-                  (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)"
-                  title="View Full-Screen">
-                  <ion-icon name="expand-outline"></ion-icon>
-                </button>
-
-                <span class="badge-mall" *ngIf="item.available === false" style="background: #555555;">Sold Out</span>
-                <div class="discount-flag" *ngIf="item.discount && item.available !== false">
-                  <span class="discount-text">{{ item.discount }}</span>
+      <div class="product-grid">
+        <div *ngFor="let item of filteredFoods" class="product-col">
+          <ion-card class="shopee-card" [style.opacity]="item.available === false ? '0.6' : '1'">
+            
+            <div class="card-gallery-wrapper">
+              <div 
+                class="card-image-slider" 
+                [id]="'card-slider-' + item.id"
+                (scroll)="onCardImageScroll($event, item)"
+                (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)">
+                <div class="card-slide" *ngFor="let img of getFoodImages(item)">
+                  <img [src]="img" [alt]="item.name" draggable="false" loading="lazy" />
                 </div>
               </div>
 
-              <div class="product-info">
-                <h3 class="product-title" (click)="openFullScreenViewer(item, 0, $event)">{{ item.name }}</h3>
-                <p class="product-description">{{ item.description }}</p>
+              <button 
+                type="button" 
+                class="card-nav-arrow left" 
+                *ngIf="(activeCardImageIndex[item.id] || 0) > 0" 
+                (click)="prevCardImage(item, $event)">
+                <ion-icon name="chevron-back-outline"></ion-icon>
+              </button>
+              <button 
+                type="button" 
+                class="card-nav-arrow right" 
+                *ngIf="(activeCardImageIndex[item.id] || 0) < getFoodImages(item).length - 1" 
+                (click)="nextCardImage(item, $event)">
+                <ion-icon name="chevron-forward-outline"></ion-icon>
+              </button>
 
-                <div 
-                  *ngIf="item.reviews && item.reviews.length > 0" 
-                  class="customer-review-chip" 
-                  (click)="openReviewsModal(item, $event)" 
-                  title="Click to see all customer reviews">
-                  <ion-icon name="chatbubbles-outline"></ion-icon>
-                  <span class="chip-text">"{{ item.reviews[0]?.comment }}"</span>
-                </div>
+              <div class="card-gallery-dots" *ngIf="getFoodImages(item).length > 1">
+                <span 
+                  *ngFor="let dot of getFoodImages(item); let dIdx = index" 
+                  class="dot" 
+                  [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)">
+                </span>
+              </div>
 
-                <div class="tags-row">
-                  <span class="cashback-tag" *ngIf="item.available !== false">Wallet Accepted</span>
-                  <span class="cashback-tag" *ngIf="item.available === false" style="color: red; border-color: red;">Out of Stock</span>
-                </div>
+              <button 
+                type="button" 
+                class="card-expand-btn" 
+                (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)"
+                title="View Full-Screen">
+                <ion-icon name="expand-outline"></ion-icon>
+              </button>
 
-                <div class="price-rating-row">
-                  <div class="price-box">
-                    <span class="currency">₱</span>
-                    <span class="amount">{{ item.price.toFixed(0) }}</span>
-                  </div>
-                </div>
+              <span class="badge-mall" *ngIf="item.available === false" style="background: #555555;">Sold Out</span>
+              <div class="discount-flag" *ngIf="item.discount && item.available !== false">
+                <span class="discount-text">{{ item.discount }}</span>
+              </div>
+            </div>
 
-                <div class="card-action-buttons">
-                  <button
-                    type="button"
-                    class="order-now-btn"
-                    (click)="openVariationModal(item, 'buy', $event)"
-                    [disabled]="item.available === false">
-                    {{ item.available === false ? 'Out of Stock' : 'Order Now' }}
-                  </button>
-                  <button
-                    type="button"
-                    class="add-to-cart-text-btn"
-                    (click)="openVariationModal(item, 'cart', $event)"
-                    [disabled]="item.available === false">
-                    Add to Cart
-                  </button>
-                </div>
+            <div class="product-info">
+              <h3 class="product-title" (click)="openFullScreenViewer(item, 0, $event)">{{ item.name }}</h3>
+              <p class="product-description">{{ item.description }}</p>
 
-                <div class="social-row">
-                  <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View customer reviews">
-                    <ion-icon name="star"></ion-icon>
-                    {{ item.rating || 5.0 }} 
-                    <small style="color: #64748b; font-size: 0.65rem;">({{ item.reviews?.length || 0 }})</small>
-                  </span>
-                  <span class="sold-count">
-                    {{ formatEverydaySold(item.soldCount) }}
-                  </span>
+              <div 
+                *ngIf="item.reviews && item.reviews.length > 0" 
+                class="customer-review-chip" 
+                (click)="openReviewsModal(item, $event)" 
+                title="Click to see all customer reviews">
+                <ion-icon name="chatbubbles-outline"></ion-icon>
+                <span class="chip-text">"{{ item.reviews[0]?.comment }}"</span>
+              </div>
+
+              <div class="tags-row">
+                <span class="cashback-tag" *ngIf="item.available !== false">Wallet Accepted</span>
+                <span class="cashback-tag" *ngIf="item.available === false" style="color: red; border-color: red;">Out of Stock</span>
+              </div>
+
+              <div class="price-rating-row">
+                <div class="price-box">
+                  <span class="currency">₱</span>
+                  <span class="amount">{{ item.price.toFixed(0) }}</span>
                 </div>
               </div>
-            </ion-card>
-          </ion-col>
-        </ion-row>
-      </ion-grid>
+
+              <div class="card-action-buttons">
+                <button
+                  type="button"
+                  class="order-now-btn"
+                  (click)="openVariationModal(item, 'buy', $event)"
+                  [disabled]="item.available === false">
+                  {{ item.available === false ? 'Out of Stock' : 'Order Now' }}
+                </button>
+                <button
+                  type="button"
+                  class="add-to-cart-text-btn"
+                  (click)="openVariationModal(item, 'cart', $event)"
+                  [disabled]="item.available === false">
+                  Add to Cart
+                </button>
+              </div>
+
+              <div class="social-row">
+                <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View customer reviews">
+                  <ion-icon name="star"></ion-icon>
+                  {{ item.rating || 5.0 }} 
+                  <small style="color: #64748b; font-size: 0.65rem;">({{ item.reviews?.length || 0 }})</small>
+                </span>
+                <span class="sold-count">
+                  {{ formatEverydaySold(item.soldCount) }}
+                </span>
+              </div>
+            </div>
+          </ion-card>
+        </div>
+      </div>
     </div>
 
   </div>

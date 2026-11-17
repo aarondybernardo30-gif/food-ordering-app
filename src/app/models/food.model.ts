@@ -106,4 +106,7 @@ export interface Order {
   reviewedAt?: Date | string;
   assignedRiderName?: string;
   assignedRiderPhone?: string;
+  /** Proof of Delivery — photo (data URL) the rider attaches when completing the delivery */
+  deliveryProof?: string;
+  deliveredAt?: Date | string;
 }

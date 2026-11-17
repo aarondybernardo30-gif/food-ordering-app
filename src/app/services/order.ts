@@ -156,4 +156,16 @@ export class OrderService {
       }
     }
   }
+
+  /** Proof of Delivery: attach the rider's photo and mark the order Completed. */
+  async submitDeliveryProof(orderId: string, proofDataUrl: string): Promise<void> {
+    const orders = this.getStoredOrders();
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      order.deliveryProof = proofDataUrl;
+      order.deliveredAt = new Date();
+      order.status = 'Completed';
+      await this.saveToStorage(orders);
+    }
+  }
 }

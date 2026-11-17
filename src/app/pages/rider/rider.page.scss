@@ -231,3 +231,289 @@ $shopee-orange-dark: #d73211;
     margin-top: 8px;
   }
 }
+// ========================================================
+// PROOF OF DELIVERY MODAL
+// ========================================================
+.proof-delivery-modal {
+  --width: 92%;
+  --max-width: 420px;
+  --border-radius: 16px;
+
+  &::part(content) {
+    border-radius: 16px;
+    background: #ffffff;
+  }
+}
+
+.proof-sheet {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px 16px;
+
+  .proof-sheet-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+
+    h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #111111;
+    }
+
+    span {
+      font-size: 0.78rem;
+      color: #777777;
+    }
+  }
+
+  .proof-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.4rem;
+    color: #888888;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .proof-instruction {
+    margin: 12px 0;
+    font-size: 0.82rem;
+    color: #666666;
+    line-height: 1.4;
+  }
+
+  .proof-photo-area {
+    margin: 8px 0 4px;
+
+    .proof-capture-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border: 2px dashed #16a34a;
+      background: #f0fdf4;
+      border-radius: 12px;
+      padding: 26px 16px;
+      cursor: pointer;
+      text-align: center;
+
+      ion-icon {
+        font-size: 2.2rem;
+        color: #16a34a;
+      }
+
+      span {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #16a34a;
+      }
+
+      small {
+        font-size: 0.72rem;
+        color: #888888;
+      }
+
+      input[type='file'] {
+        display: none;
+      }
+    }
+  }
+
+  .proof-preview-box {
+    margin: 8px 0 4px;
+    text-align: center;
+
+    .proof-preview-img {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border-radius: 10px;
+      border: 1px solid #e5e5e5;
+      background: #fafafa;
+    }
+
+    .proof-remove-btn {
+      margin-top: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #dc2626;
+      font-size: 0.8rem;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 7px 12px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+  }
+
+  .proof-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+
+    .proof-cancel-btn {
+      flex: 0 0 auto;
+      font-weight: 700;
+    }
+
+    .proof-confirm-btn {
+      flex: 1;
+      font-weight: 800;
+    }
+  }
+}
+
+// ========================================================
+// PROOF THUMBNAIL (Delivered tab) + FULL VIEW
+// ========================================================
+.proof-thumb-box {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e0e0e0;
+  cursor: pointer;
+
+  .proof-thumb {
+    width: 100%;
+    max-height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e5e5e5;
+    display: block;
+  }
+
+  .proof-thumb-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #16a34a;
+  }
+}
+
+.view-proof-modal {
+  --width: 92%;
+  --max-width: 480px;
+  --border-radius: 16px;
+
+  &::part(content) {
+    border-radius: 16px;
+    background: #ffffff;
+  }
+}
+
+.view-proof-sheet {
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+
+  .view-proof-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px 10px;
+
+    h3 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: #111111;
+    }
+
+    .proof-close-btn {
+      background: transparent;
+      border: none;
+      font-size: 1.4rem;
+      color: #888888;
+      cursor: pointer;
+      padding: 4px;
+    }
+  }
+
+  .view-proof-img {
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    background: #fafafa;
+    padding: 0 16px 16px;
+  }
+}
+
+// ========================================================
+// LIVE CAMERA VIEWFINDER (Proof of Delivery)
+// ========================================================
+.camera-viewfinder {
+  margin: 8px 0 4px;
+  background: #000000;
+  border-radius: 12px;
+  overflow: hidden;
+  padding-bottom: 10px;
+
+  video {
+    width: 100%;
+    max-height: 300px;
+    object-fit: cover;
+    display: block;
+    background: #000000;
+  }
+
+  .camera-hint {
+    margin: 8px 12px 6px;
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    text-align: center;
+  }
+
+  .camera-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 26px;
+    padding: 6px 0 4px;
+
+    .camera-cancel-btn {
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      border-radius: 20px;
+      padding: 9px 16px;
+      cursor: pointer;
+    }
+
+    .camera-shutter-btn {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 4px solid rgba(255, 255, 255, 0.45);
+      outline: 4px solid #16a34a;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+
+      &:active {
+        transform: scale(0.9);
+      }
+    }
+  }
+}
+
+.camera-error {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  color: #b45309;
+  text-align: center;
+}
+
+.proof-hidden-file-input {
+  display: none;
+}

@@ -2,16 +2,19 @@ import { Routes } from '@angular/router';
 import { authGuard } from './guards/auth-guard';
 import { adminGuard } from './guards/admin-guard';
 import { riderGuard } from './guards/rider-guard';
+import { APP_MODE } from './app.mode';
+
+const DEFAULT_ROUTE = APP_MODE === 'rider' ? 'rider' : 'menu';
 
 export const routes: Routes = [
   {
     path: '',
-    redirectTo: 'menu',
+    redirectTo: DEFAULT_ROUTE,
     pathMatch: 'full'
   },
   {
     path: 'home',
-    redirectTo: 'menu',
+    redirectTo: DEFAULT_ROUTE,
     pathMatch: 'full'
   },
 
@@ -64,6 +67,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/admin/admin.page').then((m) => m.AdminPage)
   },
   {
+    path: 'admin-reports',
+    canActivate: [adminGuard],
+    loadComponent: () => import('./pages/admin-reports/admin-reports.page').then((m) => m.AdminReportsPage)
+  },
+  {
     path: 'add-food',
     canActivate: [adminGuard],
     loadComponent: () => import('./pages/add-food/add-food.page').then((m) => m.AddFoodPage)
@@ -82,6 +90,6 @@ export const routes: Routes = [
 
   {
     path: '**',
-    redirectTo: 'menu'
+    redirectTo: DEFAULT_ROUTE
   }
 ];

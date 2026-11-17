@@ -1,0 +1,124 @@
+<ion-header class="ion-no-border reports-header">
+  <ion-toolbar class="reports-toolbar">
+    <ion-buttons slot="start">
+      <ion-button (click)="goBackToDashboard()" class="back-btn">
+        <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <div class="header-brand">
+      <h2>Reports &amp; Analytics</h2>
+      <span>Sales overview from live order data</span>
+    </div>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="reports-content">
+  <div class="reports-container">
+
+    <!-- Summary stat cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon orange"><ion-icon name="receipt-outline"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ totalOrders }}</span>
+          <span class="stat-label">Total Orders</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green"><ion-icon name="cash-outline"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">₱{{ totalRevenue.toFixed(2) }}</span>
+          <span class="stat-label">Total Revenue</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon blue"><ion-icon name="checkmark-done-outline"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ completedCount }}</span>
+          <span class="stat-label">Completed Orders</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon red"><ion-icon name="pulse-outline"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ activeCount }}</span>
+          <span class="stat-label">Active Orders</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="reports-two-col">
+      <!-- Orders by status -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <ion-icon name="time-outline"></ion-icon>
+          <h3>Orders by Status</h3>
+        </div>
+
+        <div *ngIf="statusRows.length === 0" class="report-empty">
+          No orders have been placed yet.
+        </div>
+
+        <div class="status-row" *ngFor="let row of statusRows">
+          <span class="status-name">{{ row.label }}</span>
+          <div class="status-bar-track">
+            <div class="status-bar" [ngClass]="row.cls" [style.width.%]="row.percent"></div>
+          </div>
+          <span class="status-count">{{ row.count }} ({{ row.percent }}%)</span>
+        </div>
+
+        <div class="report-footnote">
+          Average order value: ₱{{ avgOrderValue.toFixed(2) }}
+        </div>
+      </div>
+
+      <!-- Top selling items -->
+      <div class="report-card">
+        <div class="report-card-head">
+          <ion-icon name="restaurant-outline"></ion-icon>
+          <h3>Top Selling Items</h3>
+        </div>
+
+        <div *ngIf="topItems.length === 0" class="report-empty">
+          No item sales recorded yet.
+        </div>
+
+        <div class="top-item-row" *ngFor="let item of topItems; let i = index">
+          <span class="top-rank">{{ i + 1 }}</span>
+          <span class="top-name">{{ item.name }}</span>
+          <span class="top-qty">{{ item.qty }} sold</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent orders -->
+    <div class="report-card">
+      <div class="report-card-head">
+        <ion-icon name="document-text-outline"></ion-icon>
+        <h3>Recent Orders</h3>
+      </div>
+
+      <div *ngIf="recentOrders.length === 0" class="report-empty">
+        No orders have been placed yet.
+      </div>
+
+      <div class="recent-order-row" *ngFor="let order of recentOrders">
+        <div class="recent-main">
+          <span class="recent-id">Order #{{ order.id }}</span>
+          <span class="recent-customer">{{ order.customerName || 'Guest' }}</span>
+        </div>
+        <div class="recent-side">
+          <span class="recent-total">₱{{ (order.totalAmount || 0).toFixed(2) }}</span>
+          <span class="recent-status" [ngClass]="order.status.toLowerCase().replace(' ', '-')">
+            {{ order.status }}
+          </span>
+          <span class="recent-date">{{ order.createdAt | date:'shortDate' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</ion-content>

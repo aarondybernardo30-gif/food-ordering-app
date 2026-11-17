@@ -31,6 +31,7 @@ import {
 } from 'ionicons/icons';
 import { Rider } from '../../models/food.model';
 import { AuthService } from '../../services/auth';
+import { CloudSyncService } from '../../services/cloud-sync';
 
 @Component({
   selector: 'app-rider-auth',
@@ -62,6 +63,8 @@ export class RiderAuthPage implements OnInit {
   private router = inject(Router);
   private toastCtrl = inject(ToastController);
   private authService = inject(AuthService);
+  /** Pushes rider registrations to the cloud so the Admin panel's rider list stays in sync. */
+  private cloudSync = inject(CloudSyncService);
 
   authMode: 'signup' | 'login' = 'login';
 
@@ -239,6 +242,8 @@ export class RiderAuthPage implements OnInit {
 
       riders.push(newRider);
       localStorage.setItem('registered_riders', JSON.stringify(riders));
+      // Sync to the cloud so the Admin rider-selection list includes this rider everywhere
+      this.cloudSync.pushKey('registered_riders', riders);
       this.saveRiderSession(newRider);
 
       await this.presentToast(`Account created! Welcome, ${newRider.fullName}!`, 'success');
@@ -295,6 +300,8 @@ export class RiderAuthPage implements OnInit {
           };
           riders.push(rider);
           localStorage.setItem('registered_riders', JSON.stringify(riders));
+          // Keep the cloud rider list in sync for the Admin panel too
+          this.cloudSync.pushKey('registered_riders', riders);
         }
       }
 

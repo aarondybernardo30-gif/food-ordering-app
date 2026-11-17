@@ -17,6 +17,7 @@ import {
   IonSegment,
   IonSegmentButton,
   IonLabel,
+  IonModal,
   ToastController,
   AlertController
 } from '@ionic/angular';
@@ -27,7 +28,11 @@ import {
   navigateOutline,
   checkmarkDoneOutline,
   locationOutline,
-  personCircleOutline
+  personCircleOutline,
+  cameraOutline,
+  imageOutline,
+  closeOutline,
+  trashOutline
 } from 'ionicons/icons';
 import { Order, Rider } from '../../models/food.model';
 import { OrderService } from '../../services/order';
@@ -54,7 +59,8 @@ import { AuthService } from '../../services/auth';
     IonCardContent,
     IonSegment,
     IonSegmentButton,
-    IonLabel
+    IonLabel,
+    IonModal
   ]
 })
 export class RiderPage implements OnInit {
@@ -75,7 +81,11 @@ export class RiderPage implements OnInit {
       navigateOutline,
       checkmarkDoneOutline,
       locationOutline,
-      personCircleOutline
+      personCircleOutline,
+      cameraOutline,
+      imageOutline,
+      closeOutline,
+      trashOutline
     });
   }
 
@@ -175,38 +185,104 @@ export class RiderPage implements OnInit {
     this.openNavigation(order);
   }
 
-  // --- SET AS DELIVERED ---
+  // --- PROOF OF DELIVERY ---
+  proofModalOrder: Order | null = null;
+  isProofModalOpen: boolean = false;
+  proofImage: string = '';
+  isConfirmingDelivery: boolean = false;
+
+  // --- LIVE CAMERA (Proof of Delivery) ---
+  isCameraOpen: boolean = false;
+  cameraError: string = '';
+  private cameraStream: MediaStream | null = null;
+
+  /**
+   * Opens a live in-app camera viewfinder (rear camera on phones).
+   * Falls back to the native capture input when getUserMedia is
+   * unavailable (e.g. insecure context) or permission is denied.
+   */
+  async openCamera() {
+    this.cameraError = '';
+
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      try {
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+        this.isCameraOpen = true;
+        // Attach the stream once the video element renders
+        setTimeout(() => {
+          const video = document.querySelector('.camera-viewfinder video') as HTMLVideoElement | null;
+          if (video && this.cameraStream) {
+            video.srcObject = this.cameraStream;
+            video.play().catch(() => {});
+          }
+        }, 80);
+        return;
+      } catch (e) {
+        this.cameraError = 'Camera is unavailable or permission was denied.';
+      }
+    } else {
+      this.cameraError = 'Live camera is not supported on this connection.';
+    }
+
+    // Fallback: native capture input — opens the camera directly on mobile browsers
+    this.triggerFileInput();
+  }
+
+  /** Captures the current video frame as the proof photo (resized to keep storage small). */
+  captureCameraPhoto() {
+    const video = document.querySelector('.camera-viewfinder video') as HTMLVideoElement | null;
+    if (!video || !video.videoWidth) return;
+
+    const MAX_SIZE = 640;
+    let width = video.videoWidth;
+    let height = video.videoHeight;
+    if (width > height && width > MAX_SIZE) {
+      height *= MAX_SIZE / width;
+      width = MAX_SIZE;
+    } else if (height >= width && height > MAX_SIZE) {
+      width *= MAX_SIZE / height;
+      height = MAX_SIZE;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d')?.drawImage(video, 0, 0, width, height);
+    this.proofImage = canvas.toDataURL('image/jpeg', 0.7);
+
+    this.stopCamera();
+    this.isCameraOpen = false;
+  }
+
+  cancelCamera() {
+    this.stopCamera();
+    this.isCameraOpen = false;
+  }
+
+  /** Opens the hidden capture input (native camera on mobile / file picker on desktop). */
+  triggerFileInput() {
+    const input = document.querySelector('.proof-hidden-file-input') as HTMLInputElement | null;
+    if (input) input.click();
+  }
+
+  private stopCamera() {
+    if (this.cameraStream) {
+      this.cameraStream.getTracks().forEach(track => track.stop());
+      this.cameraStream = null;
+    }
+  }
+
+  /** Opens the Proof of Delivery sheet for the given order. */
   async setDelivered(order?: Order) {
     const targetOrder = order || this.activeOrders[0];
     if (!targetOrder) return;
 
-    this.orderService.updateOrderStatus(targetOrder.id, 'Completed');
-
-    const keys = ['app_orders', 'food_orders', 'orders'];
-    for (const key of keys) {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const list: Order[] = Array.isArray(parsed) ? parsed : (parsed.orders || []);
-          const idx = list.findIndex(o => o.id === targetOrder.id);
-          if (idx !== -1) {
-            list[idx].status = 'Completed';
-            localStorage.setItem(key, JSON.stringify(list));
-          }
-        } catch (e) {}
-      }
-    }
-
-    targetOrder.status = 'Completed';
-
-    const toast = await this.toastCtrl.create({
-      message: `Order #${targetOrder.id} marked as Delivered! Great job!`,
-      duration: 2500,
-      color: 'success',
-      position: 'top'
-    });
-    await toast.present();
+    this.proofModalOrder = targetOrder;
+    this.proofImage = '';
+    this.isProofModalOpen = true;
   }
 
   completeDelivery(order?: Order) {
@@ -215,6 +291,123 @@ export class RiderPage implements OnInit {
 
   markDelivered(order?: Order) {
     this.setDelivered(order);
+  }
+
+  closeProofModal() {
+    this.isProofModalOpen = false;
+    this.proofModalOrder = null;
+    this.proofImage = '';
+    this.isConfirmingDelivery = false;
+    this.isCameraOpen = false;
+    this.cameraError = '';
+    this.stopCamera();
+  }
+
+  /** Photo chosen via camera capture or file upload — resized to keep storage small. */
+  onProofSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const img = new Image();
+      img.src = e.target.result;
+      img.onload = () => {
+        const MAX_SIZE = 640;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height >= width && height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        this.proofImage = canvas.toDataURL('image/jpeg', 0.7);
+      };
+    };
+    reader.readAsDataURL(file);
+    // Allow choosing the same file again later
+    event.target.value = '';
+  }
+
+  removeProofImage() {
+    this.proofImage = '';
+  }
+
+  /** Attaches the proof photo, marks the order Completed, and syncs the legacy storage keys. */
+  async confirmDeliveryWithProof() {
+    if (!this.proofModalOrder || !this.proofImage || this.isConfirmingDelivery) return;
+
+    const targetOrder = this.proofModalOrder;
+    this.isConfirmingDelivery = true;
+
+    try {
+      await this.orderService.submitDeliveryProof(targetOrder.id, this.proofImage);
+
+      // Mirror into the legacy storage keys so older views pick it up too
+      const keys = ['app_orders', 'food_orders', 'orders'];
+      for (const key of keys) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            const list: Order[] = Array.isArray(parsed) ? parsed : (parsed.orders || []);
+            const idx = list.findIndex(o => o.id === targetOrder.id);
+            if (idx !== -1) {
+              list[idx].status = 'Completed';
+              list[idx].deliveryProof = this.proofImage;
+              list[idx].deliveredAt = new Date();
+              localStorage.setItem(key, JSON.stringify(list));
+            }
+          } catch (e) {}
+        }
+      }
+
+      targetOrder.status = 'Completed';
+      targetOrder.deliveryProof = this.proofImage;
+
+      const toast = await this.toastCtrl.create({
+        message: `Order #${targetOrder.id} delivered — proof of delivery saved! Great job!`,
+        duration: 2500,
+        color: 'success',
+        position: 'top'
+      });
+      await toast.present();
+
+      this.closeProofModal();
+    } catch (e: any) {
+      this.isConfirmingDelivery = false;
+      const toast = await this.toastCtrl.create({
+        message: `Could not save the proof of delivery: ${e?.message || e}`,
+        duration: 2500,
+        color: 'danger',
+        position: 'top'
+      });
+      await toast.present();
+    }
+  }
+
+  /** Full-screen view of a saved proof photo from the Delivered tab. */
+  viewProofUrl: string | null = null;
+  isViewProofOpen: boolean = false;
+
+  viewProof(order: Order) {
+    if (!order.deliveryProof) return;
+    this.viewProofUrl = order.deliveryProof;
+    this.isViewProofOpen = true;
+  }
+
+  closeViewProof() {
+    this.isViewProofOpen = false;
+    this.viewProofUrl = null;
   }
 
   // --- LOGOUT ---

@@ -163,9 +163,108 @@
             <span>{{ item.quantity }}x {{ item.food.name }}</span>
             <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
           </div>
+
+          <!-- Proof of Delivery thumbnail -->
+          <div *ngIf="order.deliveryProof" class="proof-thumb-box" (click)="viewProof(order)">
+            <img [src]="order.deliveryProof" alt="Proof of delivery" class="proof-thumb" />
+            <span class="proof-thumb-label">
+              <ion-icon name="image-outline"></ion-icon>
+              Proof of Delivery — tap to view
+            </span>
+          </div>
         </ion-card-content>
       </ion-card>
     </div>
 
   </div>
+
+  <!-- ============================================
+       PROOF OF DELIVERY MODAL
+       ============================================ -->
+  <ion-modal [isOpen]="isProofModalOpen" (didDismiss)="closeProofModal()" class="proof-delivery-modal">
+    <ng-template>
+      <div class="proof-sheet" *ngIf="proofModalOrder">
+        <div class="proof-sheet-head">
+          <div>
+            <h3>Proof of Delivery</h3>
+            <span>Order #{{ proofModalOrder.id }}</span>
+          </div>
+          <button type="button" class="proof-close-btn" (click)="closeProofModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <p class="proof-instruction">
+          Please attach a photo of the delivered package or hand-over to the customer
+          as proof that this order was successfully delivered.
+        </p>
+
+        <!-- Live camera viewfinder -->
+        <div class="camera-viewfinder" *ngIf="isCameraOpen">
+          <video autoplay playsinline muted></video>
+          <p class="camera-hint">Point at the delivered package, then capture</p>
+          <div class="camera-controls">
+            <button type="button" class="camera-cancel-btn" (click)="cancelCamera()">CANCEL</button>
+            <button type="button" class="camera-shutter-btn" (click)="captureCameraPhoto()" title="Capture photo"></button>
+          </div>
+        </div>
+
+        <div class="proof-photo-area" *ngIf="!proofImage && !isCameraOpen">
+          <p class="camera-error" *ngIf="cameraError">{{ cameraError }} Using the camera app instead.</p>
+          <button type="button" class="proof-capture-btn" (click)="openCamera()">
+            <ion-icon name="camera-outline"></ion-icon>
+            <span>Take a Photo</span>
+            <small>Opens your camera to capture the proof</small>
+          </button>
+          <!-- Fallback input: native camera app on mobile browsers -->
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="proof-hidden-file-input"
+            (change)="onProofSelected($event)" />
+        </div>
+
+        <div class="proof-preview-box" *ngIf="proofImage">
+          <img [src]="proofImage" alt="Proof preview" class="proof-preview-img" />
+          <button type="button" class="proof-remove-btn" (click)="removeProofImage()">
+            <ion-icon name="trash-outline"></ion-icon>
+            Retake / Remove Photo
+          </button>
+        </div>
+
+        <div class="proof-actions">
+          <ion-button fill="outline" color="medium" (click)="closeProofModal()" class="proof-cancel-btn">
+            Cancel
+          </ion-button>
+          <ion-button
+            expand="block"
+            color="success"
+            [disabled]="!proofImage || isConfirmingDelivery"
+            (click)="confirmDeliveryWithProof()"
+            class="proof-confirm-btn">
+            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+            {{ isConfirmingDelivery ? 'SAVING...' : 'CONFIRM DELIVERY' }}
+          </ion-button>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- ============================================
+       VIEW PROOF PHOTO (full screen)
+       ============================================ -->
+  <ion-modal [isOpen]="isViewProofOpen" (didDismiss)="closeViewProof()" class="view-proof-modal">
+    <ng-template>
+      <div class="view-proof-sheet" *ngIf="viewProofUrl">
+        <div class="view-proof-head">
+          <h3>Proof of Delivery</h3>
+          <button type="button" class="proof-close-btn" (click)="closeViewProof()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+        <img [src]="viewProofUrl" alt="Proof of delivery" class="view-proof-img" />
+      </div>
+    </ng-template>
+  </ion-modal>
 </ion-content>

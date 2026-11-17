@@ -36,8 +36,65 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      - name: Upload APK
+      - name: Upload Customer APK
         uses: actions/upload-artifact@v4
         with:
           name: food-ordering-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+  build-rider-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Configure Rider App Mode & Android ID
+        run: |
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync("src/app/app.mode.ts", "export const APP_MODE: \"customer\" | \"rider\" = \"rider\";\n");
+
+            let cap = fs.readFileSync("capacitor.config.ts", "utf8");
+            cap = cap.replace(/appId:\s*["'\''].*?["'\'']/, "appId: \"io.ionic.rider\"");
+            cap = cap.replace(/appName:\s*["'\''].*?["'\'']/, "appName: \"FoodOrdering Rider\"");
+            fs.writeFileSync("capacitor.config.ts", cap);
+
+            let gradle = fs.readFileSync("android/app/build.gradle", "utf8");
+            gradle = gradle.replace(/applicationId\s+"[^"]+"/, "applicationId \"io.ionic.rider\"");
+            fs.writeFileSync("android/app/build.gradle", gradle);
+
+            let strings = fs.readFileSync("android/app/src/main/res/values/strings.xml", "utf8");
+            strings = strings.replace(/<string name="app_name">.*?<\/string>/, "<string name=\"app_name\">FoodOrdering Rider</string>");
+            strings = strings.replace(/<string name="title_activity_main">.*?<\/string>/, "<string name=\"title_activity_main\">FoodOrdering Rider</string>");
+            fs.writeFileSync("android/app/src/main/res/values/strings.xml", strings);
+          '
+
+      - name: Install dependencies & build Rider web assets
+        run: |
+          npm install
+          npm run build
+          npx cap sync android
+
+      - name: Build Rider Debug APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Rider APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: food-ordering-rider-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk

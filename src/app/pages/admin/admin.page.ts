@@ -35,6 +35,7 @@ import { addIcons } from 'ionicons';
 import {
   receiptOutline,
   fastFoodOutline,
+  statsChartOutline,
   pencilOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
@@ -173,6 +174,11 @@ export class AdminPage implements OnInit {
     this.router.navigate(['/rider-auth']);
   }
 
+  goToReports() {
+    this.closeSidebar();
+    this.router.navigate(['/admin-reports']);
+  }
+
   // --- STORE LOCATION SETTINGS STATE ---
   storeLatitude: number = 15.36356;
   storeLongitude: number = 121.06583;
@@ -212,6 +218,7 @@ export class AdminPage implements OnInit {
     addIcons({
       receiptOutline,
       fastFoodOutline,
+      statsChartOutline,
       pencilOutline,
       checkmarkCircleOutline,
       closeCircleOutline,

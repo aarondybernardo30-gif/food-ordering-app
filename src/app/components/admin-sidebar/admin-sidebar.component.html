@@ -1,0 +1,57 @@
+<div class="sidebar-backdrop" [class.visible]="isOpen()" (click)="close()"></div>
+<aside class="admin-sidebar" [class.open]="isOpen()">
+  <div class="sidebar-head">
+    <ion-icon name="shield-checkmark-outline"></ion-icon>
+    <span>Admin Menu</span>
+  </div>
+
+  <div class="sidebar-label">Dashboard</div>
+  <button
+    type="button"
+    class="side-item"
+    [class.active]="active === 'orders'"
+    (click)="onTabClick('orders')">
+    <ion-icon name="receipt-outline"></ion-icon>
+    <span>Customer Orders</span>
+  </button>
+
+  <div class="sidebar-label">Manage</div>
+  <button
+    type="button"
+    *ngFor="let nav of manageNav"
+    class="side-item"
+    [class.active]="active === nav.key"
+    (click)="onTabClick(nav.key)">
+    <ion-icon [name]="nav.icon"></ion-icon>
+    <span>{{ nav.label }}</span>
+  </button>
+
+  <div class="sidebar-label">Reports</div>
+  <button
+    type="button"
+    class="side-item"
+    [class.active]="active === 'reports'"
+    (click)="onNavigate('reports')">
+    <ion-icon name="stats-chart-outline"></ion-icon>
+    <span>Reports</span>
+  </button>
+
+  <div class="sidebar-label">Rider</div>
+  <button
+    type="button"
+    class="side-item"
+    [class.active]="active === 'rider'"
+    (click)="onNavigate('rider')">
+    <ion-icon name="bicycle-outline"></ion-icon>
+    <span>Rider Registration</span>
+  </button>
+
+  <div class="sidebar-divider"></div>
+  <button
+    type="button"
+    class="side-item logout-item"
+    (click)="onLogout()">
+    <ion-icon name="log-out-outline"></ion-icon>
+    <span>Logout</span>
+  </button>
+</aside>

@@ -10,7 +10,8 @@ import {
   qrCodeOutline,
   arrowBackOutline,
   cashOutline,
-  hourglassOutline
+  hourglassOutline,
+  receiptOutline
 } from 'ionicons/icons';
 import QRCode from 'qrcode';
 import { TopUpService } from '../../services/topup';
@@ -47,6 +48,8 @@ export class TopUpModalComponent {
   customAmount: number | null = null;
 
   reference = '';
+  userReference = '';
+  referenceError = '';
   qrDataUrl = '';
   paidAmount: number = 0;
   newBalance: number = 0;
@@ -107,7 +110,8 @@ export class TopUpModalComponent {
       qrCodeOutline,
       arrowBackOutline,
       cashOutline,
-      hourglassOutline
+      hourglassOutline,
+      receiptOutline
     });
   }
 
@@ -138,6 +142,8 @@ export class TopUpModalComponent {
     if (!amt || amt <= 0) return;
 
     this.reference = 'TU-' + Date.now().toString().slice(-8);
+    this.userReference = '';
+    this.referenceError = '';
 
     const settings = this.walletQrService.getSettings();
     let payload = '';
@@ -174,9 +180,29 @@ export class TopUpModalComponent {
     this.step = 'qr';
   }
 
+  onReferenceChange() {
+    if (this.referenceError) {
+      this.referenceError = '';
+    }
+  }
+
   confirmPaid() {
     const amt = this.amount;
     if (!amt || amt <= 0) return;
+
+    if (this.qrMode !== 'demo') {
+      const trimmedRef = (this.userReference || '').trim();
+      if (!trimmedRef) {
+        this.referenceError = 'Please enter your payment reference number.';
+        return;
+      }
+      if (trimmedRef.length < 4) {
+        this.referenceError = 'Please enter a valid reference number (at least 4 characters).';
+        return;
+      }
+      this.referenceError = '';
+      this.reference = trimmedRef;
+    }
 
     this.paidAmount = amt;
 
@@ -196,6 +222,7 @@ export class TopUpModalComponent {
   }
 
   backToChoose() {
+    this.referenceError = '';
     this.step = 'choose';
   }
 

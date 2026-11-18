@@ -1,7 +1,10 @@
 <ion-header class="ion-no-border reports-header">
   <ion-toolbar class="reports-toolbar">
     <ion-buttons slot="start">
-      <ion-button (click)="goBackToDashboard()" class="back-btn">
+      <ion-button (click)="drawer.toggle()" class="back-btn" title="Open menu">
+        <ion-icon name="menu-outline" slot="icon-only"></ion-icon>
+      </ion-button>
+      <ion-button (click)="goBackToDashboard()" class="back-btn" title="Back to dashboard">
         <ion-icon name="arrow-back-outline" slot="icon-only"></ion-icon>
       </ion-button>
     </ion-buttons>
@@ -12,24 +15,73 @@
   </ion-toolbar>
 </ion-header>
 
+<app-admin-sidebar
+  #drawer
+  [active]="'reports'"
+  (tabSelect)="onDrawerTab($event)"
+  (navigate)="onDrawerNavigate($event)"
+  (logout)="onAdminLogout()">
+</app-admin-sidebar>
+
 <ion-content class="reports-content">
   <div class="reports-container">
 
-    <!-- Summary stat cards -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon orange"><ion-icon name="receipt-outline"></ion-icon></div>
-        <div class="stat-info">
-          <span class="stat-value">{{ totalOrders }}</span>
-          <span class="stat-label">Total Orders</span>
-        </div>
+    <!-- 1. Single Clear Filter + Excel/Print Toolbar -->
+    <div class="report-filter-bar">
+      <div class="filter-tabs-row">
+        <button
+          type="button"
+          class="filter-tab-btn"
+          [class.active]="selectedOrderType === 'all'"
+          (click)="setOrderTypeFilter('all')">
+          All Orders ({{ orders.length }})
+        </button>
+        <button
+          type="button"
+          class="filter-tab-btn"
+          [class.active]="selectedOrderType === 'dine-in'"
+          (click)="setOrderTypeFilter('dine-in')">
+          <ion-icon name="restaurant-outline"></ion-icon>
+          Dine-In ({{ dineInSummary.count }})
+        </button>
+        <button
+          type="button"
+          class="filter-tab-btn"
+          [class.active]="selectedOrderType === 'delivery'"
+          (click)="setOrderTypeFilter('delivery')">
+          <ion-icon name="bicycle-outline"></ion-icon>
+          Delivery ({{ deliverySummary.count }})
+        </button>
+        <button
+          type="button"
+          class="filter-tab-btn"
+          [class.active]="selectedOrderType === 'pickup'"
+          (click)="setOrderTypeFilter('pickup')">
+          <ion-icon name="bag-handle-outline"></ion-icon>
+          Pick-Up ({{ pickupSummary.count }})
+        </button>
       </div>
 
+      <div class="export-actions-row">
+        <button type="button" class="btn-export-excel" (click)="exportToExcel()">
+          <ion-icon name="download-outline"></ion-icon>
+          <span>Download Excel (.xlsx)</span>
+        </button>
+        <button type="button" class="btn-print-report" (click)="printReport()">
+          <ion-icon name="print-outline"></ion-icon>
+          <span>Print</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 2. Clear Summary KPIs (Excludes Cancelled from Sales) -->
+    <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-icon green"><ion-icon name="cash-outline"></ion-icon></div>
         <div class="stat-info">
           <span class="stat-value">₱{{ totalRevenue.toFixed(2) }}</span>
-          <span class="stat-label">Total Revenue</span>
+          <span class="stat-label">{{ selectedTypeLabel }} Net Sales</span>
+          <small class="stat-sub">Avg ₱{{ avgOrderValue.toFixed(2) }} / valid order</small>
         </div>
       </div>
 
@@ -38,28 +90,75 @@
         <div class="stat-info">
           <span class="stat-value">{{ completedCount }}</span>
           <span class="stat-label">Completed Orders</span>
+          <small class="stat-sub">Out of {{ totalOrders }} total</small>
         </div>
       </div>
 
       <div class="stat-card">
-        <div class="stat-icon red"><ion-icon name="pulse-outline"></ion-icon></div>
+        <div class="stat-icon orange"><ion-icon name="pulse-outline"></ion-icon></div>
         <div class="stat-info">
           <span class="stat-value">{{ activeCount }}</span>
-          <span class="stat-label">Active Orders</span>
+          <span class="stat-label">Active / Ongoing</span>
+          <small class="stat-sub">Pending, preparing, or in transit</small>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon red"><ion-icon name="close-outline"></ion-icon></div>
+        <div class="stat-info">
+          <span class="stat-value">{{ cancelledCount }}</span>
+          <span class="stat-label">Cancelled Orders</span>
+          <small class="stat-sub">Excluded from net sales</small>
         </div>
       </div>
     </div>
 
+    <!-- 3. Sales by Service Type (Dine-In vs Delivery vs Pick-Up) + Top Items -->
     <div class="reports-two-col">
+      <div class="report-card">
+        <div class="report-card-head">
+          <ion-icon name="stats-chart-outline"></ion-icon>
+          <h3>Sales by Service Type</h3>
+        </div>
+
+        <div class="service-type-row" (click)="setOrderTypeFilter('dine-in')" [class.active-row]="selectedOrderType === 'dine-in'">
+          <div class="st-left">
+            <span class="st-badge dine-in"><ion-icon name="restaurant-outline"></ion-icon> Dine-In</span>
+            <small>{{ dineInSummary.count }} orders ({{ dineInSummary.completed }} completed)</small>
+          </div>
+          <strong class="st-amount">₱{{ dineInSummary.revenue.toFixed(2) }}</strong>
+        </div>
+
+        <div class="service-type-row" (click)="setOrderTypeFilter('delivery')" [class.active-row]="selectedOrderType === 'delivery'">
+          <div class="st-left">
+            <span class="st-badge delivery"><ion-icon name="bicycle-outline"></ion-icon> Delivery</span>
+            <small>{{ deliverySummary.count }} orders ({{ deliverySummary.completed }} completed)</small>
+          </div>
+          <strong class="st-amount">₱{{ deliverySummary.revenue.toFixed(2) }}</strong>
+        </div>
+
+        <div class="service-type-row" (click)="setOrderTypeFilter('pickup')" [class.active-row]="selectedOrderType === 'pickup'">
+          <div class="st-left">
+            <span class="st-badge pickup"><ion-icon name="bag-handle-outline"></ion-icon> Pick-Up</span>
+            <small>{{ pickupSummary.count }} orders ({{ pickupSummary.completed }} completed)</small>
+          </div>
+          <strong class="st-amount">₱{{ pickupSummary.revenue.toFixed(2) }}</strong>
+        </div>
+
+        <div class="report-footnote">
+          Tap any row above to filter the report below.
+        </div>
+      </div>
+
       <!-- Orders by status -->
       <div class="report-card">
         <div class="report-card-head">
           <ion-icon name="time-outline"></ion-icon>
-          <h3>Orders by Status</h3>
+          <h3>Orders by Status ({{ selectedTypeLabel }})</h3>
         </div>
 
         <div *ngIf="statusRows.length === 0" class="report-empty">
-          No orders have been placed yet.
+          No {{ selectedOrderType === 'all' ? '' : selectedTypeLabel.toLowerCase() + ' ' }}orders have been placed yet.
         </div>
 
         <div class="status-row" *ngFor="let row of statusRows">
@@ -71,54 +170,199 @@
         </div>
 
         <div class="report-footnote">
-          Average order value: ₱{{ avgOrderValue.toFixed(2) }}
-        </div>
-      </div>
-
-      <!-- Top selling items -->
-      <div class="report-card">
-        <div class="report-card-head">
-          <ion-icon name="restaurant-outline"></ion-icon>
-          <h3>Top Selling Items</h3>
-        </div>
-
-        <div *ngIf="topItems.length === 0" class="report-empty">
-          No item sales recorded yet.
-        </div>
-
-        <div class="top-item-row" *ngFor="let item of topItems; let i = index">
-          <span class="top-rank">{{ i + 1 }}</span>
-          <span class="top-name">{{ item.name }}</span>
-          <span class="top-qty">{{ item.qty }} sold</span>
+          Showing {{ totalOrders }} {{ selectedOrderType === 'all' ? 'total' : selectedTypeLabel.toLowerCase() }} order{{ totalOrders === 1 ? '' : 's' }}.
         </div>
       </div>
     </div>
 
-    <!-- Recent orders -->
+    <!-- 4. Top Selling Items (Valid Orders Only) -->
     <div class="report-card">
       <div class="report-card-head">
-        <ion-icon name="document-text-outline"></ion-icon>
-        <h3>Recent Orders</h3>
+        <ion-icon name="restaurant-outline"></ion-icon>
+        <h3>Top Selling Items ({{ selectedTypeLabel }} &bull; Excludes Cancelled)</h3>
       </div>
 
-      <div *ngIf="recentOrders.length === 0" class="report-empty">
-        No orders have been placed yet.
+      <div *ngIf="topItems.length === 0" class="report-empty">
+        No valid item sales recorded yet for this filter.
       </div>
 
-      <div class="recent-order-row" *ngFor="let order of recentOrders">
-        <div class="recent-main">
-          <span class="recent-id">Order #{{ order.id }}</span>
-          <span class="recent-customer">{{ order.customerName || 'Guest' }}</span>
+      <div class="top-item-row" *ngFor="let item of topItems; let i = index">
+        <span class="top-rank">{{ i + 1 }}</span>
+        <span class="top-name">{{ item.name }}</span>
+        <span class="top-qty">{{ item.qty }} sold &bull; ₱{{ item.revenue.toFixed(2) }}</span>
+      </div>
+    </div>
+
+    <!-- 5. Clean Orders Report Table -->
+    <div class="report-card">
+      <div class="report-card-head report-card-head-between">
+        <div class="head-left">
+          <ion-icon name="document-text-outline"></ion-icon>
+          <h3>{{ selectedOrderType === 'all' ? 'All Orders Report' : selectedTypeLabel + ' Orders Report' }} ({{ filteredOrders.length }})</h3>
         </div>
-        <div class="recent-side">
-          <span class="recent-total">₱{{ (order.totalAmount || 0).toFixed(2) }}</span>
-          <span class="recent-status" [ngClass]="order.status.toLowerCase().replace(' ', '-')">
-            {{ order.status }}
-          </span>
-          <span class="recent-date">{{ order.createdAt | date:'shortDate' }}</span>
-        </div>
+        <span class="head-hint">Tap any order to view full details</span>
+      </div>
+
+      <div *ngIf="filteredOrders.length === 0" class="report-empty">
+        No {{ selectedOrderType === 'all' ? '' : selectedTypeLabel.toLowerCase() + ' ' }}orders found.
+      </div>
+
+      <div class="orders-table-wrap" *ngIf="filteredOrders.length > 0">
+        <table class="report-orders-table">
+          <thead>
+            <tr>
+              <th>Order #</th>
+              <th>Type</th>
+              <th>Customer &amp; Details</th>
+              <th>Items Ordered</th>
+              <th>Payment</th>
+              <th>Status</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let order of filteredOrders" (click)="openOrderDetails(order)" class="clickable-row">
+              <td>
+                <strong class="tbl-order-id">#{{ order.id }}</strong>
+                <div class="tbl-date">{{ order.createdAt | date:'short' }}</div>
+              </td>
+              <td>
+                <span class="order-type-pill" [ngClass]="order.orderType">
+                  {{ orderTypeLabel(order.orderType) }}
+                </span>
+              </td>
+              <td>
+                <div class="tbl-customer">{{ order.customerName || 'Guest' }}</div>
+                <div class="tbl-sub" *ngIf="orderLocationDetail(order)">{{ orderLocationDetail(order) }}</div>
+              </td>
+              <td class="tbl-items">
+                {{ formatOrderItems(order) }}
+              </td>
+              <td class="tbl-payment">
+                {{ orderPaymentLabel(order) }}
+              </td>
+              <td>
+                <span class="recent-status" [ngClass]="order.status.toLowerCase().replace(' ', '-')">
+                  {{ order.status }}
+                </span>
+              </td>
+              <td class="text-right">
+                <strong class="tbl-amount" [class.cancelled-amt]="order.status === 'Cancelled'">
+                  ₱{{ (order.totalAmount || 0).toFixed(2) }}
+                </strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
   </div>
+
+  <!-- ============================================
+       ORDER DETAILS MODAL (from Orders Report)
+       ============================================ -->
+  <ion-modal [isOpen]="isOrderDetailsOpen" (didDismiss)="closeOrderDetails()" class="order-details-modal">
+    <ng-template>
+      <div class="odt-wrapper" *ngIf="selectedReportOrder">
+
+        <div class="odt-top-bar">
+          <div class="odt-title-group">
+            <h3>Order #{{ selectedReportOrder.id }}</h3>
+            <span class="odt-sub">
+              {{ selectedReportOrder.createdAt | date:'mediumDate' }} &bull; {{ selectedReportOrder.createdAt | date:'shortTime' }}
+            </span>
+          </div>
+          <span class="odt-status" [ngClass]="selectedReportOrder.status.toLowerCase().replace(' ', '-')">
+            {{ selectedReportOrder.status }}
+          </span>
+          <button type="button" class="odt-close" (click)="closeOrderDetails()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="odt-body">
+
+          <div class="odt-section">
+            <div class="odt-section-title"><ion-icon name="document-text-outline"></ion-icon> Ordered Meals</div>
+
+            <div class="odt-item" *ngFor="let item of selectedReportOrder.items">
+              <img [src]="item.food.imageUrl || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600'" [alt]="item.food.name" class="odt-thumb" />
+              <div class="odt-item-info">
+                <h4>{{ item.food.name || 'Unknown item' }}</h4>
+                <p class="odt-variant" *ngIf="variantLabel(item.selectedOption)">Variant: {{ variantLabel(item.selectedOption) }}</p>
+                <p class="odt-price-line">₱{{ itemUnitPrice(item).toFixed(2) }} &times; {{ item.quantity || 1 }}</p>
+              </div>
+              <div class="odt-item-total">₱{{ itemLineTotal(item).toFixed(2) }}</div>
+            </div>
+
+            <div class="odt-grand-total">
+              <span>Order Total</span>
+              <strong>₱{{ (selectedReportOrder.totalAmount || 0).toFixed(2) }}</strong>
+            </div>
+          </div>
+
+          <div class="odt-section">
+            <div class="odt-section-title"><ion-icon name="person-outline"></ion-icon> Customer &amp; Delivery Information</div>
+            <div class="odt-info-grid">
+              <p><strong>Customer:</strong> {{ selectedReportOrder.customerName || '—' }}</p>
+              <p><strong>Phone:</strong> {{ selectedReportOrder.customerPhone || '—' }}</p>
+              <p><strong>Order Type:</strong> <span style="text-transform: capitalize;">{{ selectedReportOrder.orderType }}</span></p>
+              <p><strong>Payment:</strong> {{ orderPaymentLabel(selectedReportOrder) }}</p>
+              <p><strong>Order Date:</strong> {{ selectedReportOrder.createdAt | date:'medium' }}</p>
+              <p *ngIf="selectedReportOrder.deliveryAddress"><strong>Delivery Address:</strong> {{ selectedReportOrder.deliveryAddress }}</p>
+              <p *ngIf="selectedReportOrder.tableNumber"><strong>Table Number:</strong> {{ selectedReportOrder.tableNumber }}</p>
+              <p *ngIf="selectedReportOrder.pickupTime"><strong>Pick-Up Time:</strong> {{ selectedReportOrder.pickupTime }}</p>
+              <p *ngIf="selectedReportOrder.assignedRiderName"><strong>Rider:</strong> {{ selectedReportOrder.assignedRiderName }} ({{ selectedReportOrder.assignedRiderPhone }})</p>
+              <p *ngIf="selectedReportOrder.notes"><strong>Notes:</strong> {{ selectedReportOrder.notes }}</p>
+            </div>
+          </div>
+
+          <div class="odt-section">
+            <div class="odt-section-title"><ion-icon name="image-outline"></ion-icon> Proof of Delivery</div>
+
+            <div *ngIf="selectedReportOrder.deliveryProof; else noProof" class="odt-pod-block">
+              <img
+                [src]="selectedReportOrder.deliveryProof"
+                alt="Proof of delivery"
+                class="odt-pod-photo"
+                (click)="isProofFullViewOpen = true"
+                title="Tap to view full size" />
+              <p class="odt-pod-meta" *ngIf="selectedReportOrder.deliveredAt">
+                Delivered: {{ selectedReportOrder.deliveredAt | date:'medium' }}
+              </p>
+              <p class="odt-pod-hint">Photo attached by the rider as delivery confirmation — tap to enlarge.</p>
+            </div>
+            <ng-template #noProof>
+              <p class="odt-pod-none">No proof of delivery has been attached for this order yet.</p>
+            </ng-template>
+          </div>
+
+        </div>
+
+        <div class="odt-footer">
+          <button type="button" class="odt-done-btn" (click)="closeOrderDetails()">
+            Done
+          </button>
+        </div>
+
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- FULL-SIZE PROOF PHOTO -->
+  <ion-modal [isOpen]="isProofFullViewOpen" (didDismiss)="closeProofFullView()" class="proof-fullview-modal">
+    <ng-template>
+      <div class="pod-fullview" *ngIf="selectedReportOrder?.deliveryProof">
+        <div class="pod-fullview-head">
+          <h3>Proof of Delivery — Order #{{ selectedReportOrder.id }}</h3>
+          <button type="button" class="pod-fullview-close" (click)="closeProofFullView()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+        <img [src]="selectedReportOrder.deliveryProof" alt="Proof of delivery" class="pod-fullview-img" />
+      </div>
+    </ng-template>
+  </ion-modal>
+
 </ion-content>

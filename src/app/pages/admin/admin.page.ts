@@ -1,7 +1,8 @@
-import { Component, OnInit, inject, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, OnInit, inject, ViewChild, ChangeDetectorRef, NgZone, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
+import { AdminSidebarComponent, AdminTabKey, AdminNavDest } from '../../components/admin-sidebar/admin-sidebar.component';
 import { 
   IonHeader, 
   IonToolbar, 
@@ -45,10 +46,12 @@ import {
   bicycleOutline,
   restaurantOutline,
   logOutOutline,
+  addOutline,
   addCircleOutline,
   trashOutline,
   cameraOutline,
   imageOutline,
+  imagesOutline,
   bagHandleOutline,
   mapOutline,
   locateOutline,
@@ -59,18 +62,26 @@ import {
   closeOutline,
   menuOutline,
   notificationsOutline,
+  notificationsOffOutline,
   locationOutline,
-  walletOutline as walletIconOutline
+  walletOutline as walletIconOutline,
+  optionsOutline,
+  eyeOutline,
+  ticketOutline,
+  qrCodeOutline,
+  personOutline
 } from 'ionicons/icons';
 import { Geolocation } from '@capacitor/geolocation';
 import { FoodService } from '../../services/food';
 import { OrderService } from '../../services/order';
 import { AuthService } from '../../services/auth';
-import { FeaturedMealService, FeaturedMealItem, MealSchedule } from '../../services/featured-meal';
-import { WalletQrService, WalletQrSettings } from '../../services/wallet-qr';
+import { FeaturedMealService, FeaturedMealItem, FeaturedMealVariation, MealSchedule } from '../../services/featured-meal';
+import { VoucherService } from '../../services/voucher';
+import { WalletQrService } from '../../services/wallet-qr';
 import { TopUpService, TopUpRequest } from '../../services/topup';
 import { WalletService } from '../../services/wallet';
-import { FoodItem, Order, Rider, FoodVariation } from '../../models/food.model';
+import { CloudSyncService } from '../../services/cloud-sync';
+import { CategoryItem, FoodItem, Order, Rider, FoodVariation, Voucher } from '../../models/food.model';
 
 @Component({
   selector: 'app-admin',
@@ -102,7 +113,8 @@ import { FoodItem, Order, Rider, FoodVariation } from '../../models/food.model';
     IonSelect,
     IonSelectOption,
     IonInput,
-    IonTextarea
+    IonTextarea,
+    AdminSidebarComponent
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
@@ -111,19 +123,26 @@ export class AdminPage implements OnInit {
   private orderService = inject(OrderService);
   private authService = inject(AuthService);
   private featuredMealService = inject(FeaturedMealService);
+  private voucherService = inject(VoucherService);
   private walletQrService = inject(WalletQrService);
   private topupService = inject(TopUpService);
   private walletService = inject(WalletService);
+  private cloudSync = inject(CloudSyncService);
+  private cdr = inject(ChangeDetectorRef);
+  private ngZone = inject(NgZone);
   private alertCtrl: AlertController = inject(AlertController);
   private toastCtrl: ToastController = inject(ToastController);
   private loadingCtrl: LoadingController = inject(LoadingController);
   private actionSheetCtrl: ActionSheetController = inject(ActionSheetController);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
-  selectedTab: 'orders' | 'menu' | 'featured' | 'walletqr' | 'storelocation' = 'menu';
+  selectedTab: 'orders' | 'menu' | 'featured' | 'walletqr' | 'storelocation' | 'vouchers' = 'orders';
   orders: Order[] = [];
   foods: FoodItem[] = [];
+  categoryItems: CategoryItem[] = [];
   featuredMeals: FeaturedMealItem[] = [];
+  vouchers: Voucher[] = [];
   topupRequests: TopUpRequest[] = [];
 
   // --- NOTIFICATIONS (wallet top-up requests) ---
@@ -141,16 +160,8 @@ export class AdminPage implements OnInit {
     return this.topupRequests.filter(r => r.status === 'Pending').length;
   }
 
-  // --- SIDEBAR NAVIGATION (burger drawer) ---
-  sidebarOpen: boolean = false;
-
-  toggleSidebar() {
-    this.sidebarOpen = !this.sidebarOpen;
-  }
-
-  closeSidebar() {
-    this.sidebarOpen = false;
-  }
+  // --- SIDEBAR NAVIGATION (shared burger drawer) ---
+  @ViewChild(AdminSidebarComponent) adminDrawer!: AdminSidebarComponent;
 
   /** Management sections inside the burger drawer */
   readonly manageNav: ReadonlyArray<{
@@ -164,19 +175,39 @@ export class AdminPage implements OnInit {
     { key: 'storelocation', label: 'Store GPS Location', icon: 'location-outline' }
   ];
 
-  selectTab(key: 'orders' | 'menu' | 'featured' | 'walletqr' | 'storelocation') {
+  selectTab(key: 'orders' | 'menu' | 'featured' | 'walletqr' | 'storelocation' | 'vouchers') {
     this.selectedTab = key;
-    this.closeSidebar();
+    this.cdr.detectChanges();
+  }
+
+  onDrawerNavigate(dest: AdminNavDest) {
+    if (dest === 'reports') {
+      this.goToReports();
+    } else {
+      this.goToRiderRegistration();
+    }
   }
 
   goToRiderRegistration() {
-    this.closeSidebar();
     this.router.navigate(['/rider-auth']);
   }
 
   goToReports() {
-    this.closeSidebar();
     this.router.navigate(['/admin-reports']);
+  }
+
+  // --- CATEGORY MODAL STATE ---
+  isCategoryModalOpen: boolean = false;
+  editingCategoryOriginalName: string | null = null;
+  catModalName: string = '';
+  catModalImage: string = '';
+
+  get availableCategoryNames(): string[] {
+    const names = this.categoryItems.map(c => c.name);
+    if (this.editFoodCategory && !names.some(n => n.toLowerCase() === this.editFoodCategory.toLowerCase())) {
+      names.push(this.editFoodCategory);
+    }
+    return names;
   }
 
   // --- STORE LOCATION SETTINGS STATE ---
@@ -191,15 +222,28 @@ export class AdminPage implements OnInit {
   qrAccountNumber: string = '';
   qrCity: string = 'Manila';
 
-  // --- FEATURED MEAL EDITOR STATE ---
+  // --- FEATURED MEAL EDITOR STATE (Food Information + Edit Food style) ---
   isMealModalOpen: boolean = false;
   editingMealId: number | null = null;
   mealTitle: string = '';
   mealSubtitle: string = '';
   mealDescription: string = '';
   mealPrice: number | null = null;
+  mealStock: number | null = 20;
   mealSchedule: MealSchedule = 'today';
   mealImage: string = '';
+  mealImages: string[] = [];
+
+  // Featured Meal Food Size Options
+  mealSizesList: string[] = ['Regular'];
+  newMealSizeName: string = '';
+
+  // Featured Meal Variations & Custom Pricing
+  mealVariationList: FeaturedMealVariation[] = [{ name: 'Regular', size: 'Regular', price: 100 }];
+  editingMealVarIndex: number = -1;
+  newMealVarName: string = '';
+  newMealVarSize: string = '';
+  newMealVarPrice: number | null = null;
 
   // --- EDIT FOOD MODAL STATE ---
   isEditModalOpen: boolean = false;
@@ -207,10 +251,19 @@ export class AdminPage implements OnInit {
   editFoodName: string = '';
   editFoodCategory: string = 'Chicken';
   editFoodPrice: number | null = null;
+  editFoodStock: number | null = 20;
   editFoodDesc: string = '';
   editFoodImages: string[] = [];
 
+  // Food Size Options
+  readonly quickSizePresets: string[] = ['Solo', 'Regular', 'Medium', 'Large', 'Family'];
+  editSizesList: string[] = [];
+  newEditSizeName: string = '';
+
+  // Variations & Custom Pricing
   editVariationsList: FoodVariation[] = [];
+  editingVarIndex: number = -1;
+  newEditVarSize: string = '';
   newEditVarName: string = '';
   newEditVarPrice: number | null = null;
 
@@ -228,10 +281,12 @@ export class AdminPage implements OnInit {
       bicycleOutline,
       restaurantOutline,
       logOutOutline,
+      addOutline,
       addCircleOutline,
       trashOutline,
       cameraOutline,
       imageOutline,
+      imagesOutline,
       bagHandleOutline,
       mapOutline,
       locateOutline,
@@ -242,30 +297,205 @@ export class AdminPage implements OnInit {
       closeOutline,
       menuOutline,
       notificationsOutline,
+      notificationsOffOutline,
       locationOutline,
-      walletIconOutline
+      walletIconOutline,
+      optionsOutline,
+      eyeOutline,
+      ticketOutline,
+      qrCodeOutline,
+      personOutline
     });
   }
 
   ngOnInit() {
-    this.orderService.orders$.subscribe(data => (this.orders = data));
-    this.foodService.foods$.subscribe(data => (this.foods = data));
-    this.featuredMealService.meals$.subscribe(data => (this.featuredMeals = data));
-    this.topupService.requests$.subscribe(data => (this.topupRequests = data));
-    
-    const walletQr = this.walletQrService.getSettings();
-    this.qrImage = walletQr.image;
-    this.qrWalletLabel = walletQr.walletLabel || 'GCash';
-    this.qrAccountName = walletQr.accountName;
-    this.qrAccountNumber = walletQr.accountNumber;
-    this.qrCity = walletQr.city || 'Manila';
+    const tabParam = this.route.snapshot.queryParamMap.get('tab');
+    const validTabs: AdminTabKey[] = ['orders', 'menu', 'featured', 'walletqr', 'storelocation', 'vouchers'];
+    if (tabParam && (validTabs as string[]).includes(tabParam)) {
+      this.selectedTab = tabParam as AdminTabKey;
+    }
+
+    this.orderService.orders$.subscribe(data => {
+      this.orders = data;
+      if (this.selectedOrder) {
+        const refreshed = data.find(o => o.id === this.selectedOrder?.id);
+        if (refreshed) this.selectedOrder = refreshed;
+      }
+      this.cdr.detectChanges();
+    });
+
+    this.foodService.foods$.subscribe(data => {
+      this.foods = data;
+      this.cdr.detectChanges();
+    });
+
+    this.foodService.categoryItems$.subscribe(data => {
+      this.categoryItems = data;
+      this.cdr.detectChanges();
+    });
+
+    this.featuredMealService.meals$.subscribe(data => {
+      this.featuredMeals = data;
+      this.cdr.detectChanges();
+    });
+
+    this.topupService.requests$.subscribe(data => {
+      this.topupRequests = data;
+      this.cdr.detectChanges();
+    });
+
+    this.voucherService.vouchers$.subscribe(data => {
+      this.vouchers = data;
+      this.cdr.detectChanges();
+    });
+
+    this.walletQrService.settings$.subscribe(walletQr => {
+      this.qrImage = walletQr.image;
+      this.qrWalletLabel = walletQr.walletLabel || 'GCash';
+      this.qrAccountName = walletQr.accountName;
+      this.qrAccountNumber = walletQr.accountNumber;
+      this.qrCity = walletQr.city || 'Manila';
+      this.cdr.detectChanges();
+    });
+
+    this.cloudSync.changes$.subscribe(({ key }) => {
+      if (key === 'store_location') {
+        this.loadStoreLocation();
+        this.cdr.detectChanges();
+      }
+    });
 
     this.loadStoreLocation();
   }
 
   ionViewWillEnter() {
     this.foods = this.foodService.getStoredFoods();
+    this.categoryItems = this.foodService.getCategoryItems();
     this.loadStoreLocation();
+    this.cdr.detectChanges();
+  }
+
+  // ==========================================
+  // CATEGORY MANAGEMENT (WITH IMAGE UPLOAD)
+  // ==========================================
+
+  openCategoryModal(cat?: CategoryItem) {
+    if (cat) {
+      this.editingCategoryOriginalName = cat.name;
+      this.catModalName = cat.name;
+      this.catModalImage = cat.imageUrl || cat.image || '';
+    } else {
+      this.editingCategoryOriginalName = null;
+      this.catModalName = '';
+      this.catModalImage = '';
+    }
+    this.isCategoryModalOpen = true;
+  }
+
+  closeCategoryModal() {
+    this.isCategoryModalOpen = false;
+    this.editingCategoryOriginalName = null;
+    this.catModalName = '';
+    this.catModalImage = '';
+  }
+
+  onCategoryImageSelected(event: any) {
+    const file: File = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e: any) => {
+      const rawDataUrl = e?.target?.result;
+      if (!rawDataUrl) return;
+
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_SIZE = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height >= width && height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        const resultUrl = ctx ? canvas.toDataURL('image/jpeg', 0.8) : rawDataUrl;
+
+        this.ngZone.run(() => {
+          this.catModalImage = resultUrl;
+          this.cdr.detectChanges();
+        });
+      };
+      img.onerror = () => {
+        this.ngZone.run(() => {
+          this.catModalImage = rawDataUrl;
+          this.cdr.detectChanges();
+        });
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  }
+
+  saveCategoryModal() {
+    const name = (this.catModalName || '').trim();
+    if (!name) {
+      this.presentToast('Please enter a category name.', 'warning');
+      return;
+    }
+    if (!this.catModalImage.trim()) {
+      this.presentToast('Please upload a category image.', 'warning');
+      return;
+    }
+
+    if (this.editingCategoryOriginalName) {
+      this.foodService.updateCategory(this.editingCategoryOriginalName, name, this.catModalImage);
+      this.presentToast(`Category "${name}" updated!`, 'success');
+    } else {
+      const savedName = this.foodService.addCategory(name, this.catModalImage);
+      if (this.isEditModalOpen) {
+        this.editFoodCategory = savedName;
+      }
+      this.presentToast(`Category "${savedName}" added with image!`, 'success');
+    }
+
+    this.closeCategoryModal();
+  }
+
+  async deleteEditingCategory() {
+    if (!this.editingCategoryOriginalName) return;
+    const target = this.editingCategoryOriginalName;
+    if (this.categoryItems.length <= 1) {
+      this.presentToast('At least one category must remain.', 'warning');
+      return;
+    }
+
+    const alert = await this.alertCtrl.create({
+      header: 'Delete Category',
+      message: `Remove category "${target}"?`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: () => {
+            this.foodService.deleteCategory(target);
+            this.presentToast(`Category "${target}" deleted.`, 'dark');
+            this.closeCategoryModal();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   // ==========================================
@@ -299,6 +529,7 @@ export class AdminPage implements OnInit {
       this.storeLatitude = Number(pos.coords.latitude.toFixed(5));
       this.storeLongitude = Number(pos.coords.longitude.toFixed(5));
       this.storeAddress = `Lat: ${this.storeLatitude}, Lng: ${this.storeLongitude}`;
+      this.cdr.detectChanges();
       this.presentToast(`Store coordinates detected: ${this.storeLatitude}, ${this.storeLongitude}`, 'success');
     } catch (err) {
       const alert = await this.alertCtrl.create({
@@ -325,6 +556,7 @@ export class AdminPage implements OnInit {
     };
 
     localStorage.setItem('store_location', JSON.stringify(storeData));
+    this.cloudSync.pushKey('store_location', storeData);
     this.presentToast('Store GPS Location saved! Customer delivery distance is now calculated from this location.', 'success');
   }
 
@@ -341,6 +573,10 @@ export class AdminPage implements OnInit {
     this.editFoodName = food.name;
     this.editFoodCategory = food.category || 'Chicken';
     this.editFoodPrice = food.price;
+    this.editFoodStock =
+      typeof food.stock === 'number' && !isNaN(food.stock)
+        ? food.stock
+        : (food.available === false ? 0 : 20);
     this.editFoodDesc = food.description || '';
 
     const currentImages =
@@ -355,40 +591,115 @@ export class AdminPage implements OnInit {
       this.editVariationsList = food.variations.map(v => ({ ...v }));
     } else if (food.options && food.options.length > 0) {
       this.editVariationsList = food.options.map(optStr => {
-        const match = optStr.match(/(?:₱|PHP|Php)?\s*(\d+(?:\.\d+)?)/i);
-        const price = match && match[1] ? parseFloat(match[1]) : food.price;
-        const name = optStr.replace(/[()]/g, '').replace(/(?:₱|PHP|Php)?\s*\d+(?:\.\d+)?/gi, '').trim() || optStr;
-        return { name, price };
+        const priceMatch = optStr.match(/(?:₱|PHP|Php|P)\s*(\d+(?:\.\d+)?)/i);
+        const price = priceMatch && priceMatch[1] ? parseFloat(priceMatch[1]) : food.price;
+        const sizeMatch = optStr.match(/\(([^)]+)\)/);
+        const size = sizeMatch && sizeMatch[1] ? sizeMatch[1].trim() : undefined;
+        const name = optStr
+          .replace(/\([^)]*\)/g, '')
+          .replace(/(?:₱|PHP|Php|P)\s*\d+(?:\.\d+)?/gi, '')
+          .trim() || optStr;
+        return size ? { name, size, price } : { name, price };
       });
     } else {
-      this.editVariationsList = [{ name: 'Regular', price: food.price }];
+      this.editVariationsList = [{ name: 'Regular', size: 'Regular', price: food.price }];
     }
 
+    // Build Food Size Options from saved food.sizes + any variation sizes
+    const sizeSeen = new Set<string>();
+    const sizes: string[] = [];
+    const pushUniqueSize = (sz?: string) => {
+      const clean = (sz || '').trim();
+      if (clean && !sizeSeen.has(clean.toLowerCase())) {
+        sizeSeen.add(clean.toLowerCase());
+        sizes.push(clean);
+      }
+    };
+    if (Array.isArray(food.sizes)) {
+      food.sizes.forEach(pushUniqueSize);
+    }
+    this.editVariationsList.forEach(v => pushUniqueSize(v.size));
+    this.editSizesList = sizes.length > 0 ? sizes : ['Regular'];
+
+    this.editingVarIndex = -1;
     this.newEditVarName = '';
+    this.newEditVarSize = '';
     this.newEditVarPrice = null;
+    this.newEditSizeName = '';
     this.isEditModalOpen = true;
   }
 
   closeEditFoodModal() {
     this.isEditModalOpen = false;
     this.editingFood = null;
+    this.editingVarIndex = -1;
   }
 
   toggleStockInModal() {
     if (!this.editingFood) return;
+    const nextAvailable = this.editingFood.available === false;
+    this.editingFood.available = nextAvailable;
+    if (nextAvailable && (this.editFoodStock === null || this.editFoodStock <= 0)) {
+      this.editFoodStock = 20;
+    } else if (!nextAvailable) {
+      this.editFoodStock = 0;
+    }
     this.toggleStock(this.editingFood);
+  }
+
+  // --- FOOD SIZE OPTIONS HANDLERS ---
+  isSizeSelected(sizeName: string): boolean {
+    const target = sizeName.trim().toLowerCase();
+    return this.editSizesList.some(s => s.trim().toLowerCase() === target);
+  }
+
+  togglePresetSize(preset: string) {
+    const target = preset.trim().toLowerCase();
+    const idx = this.editSizesList.findIndex(s => s.trim().toLowerCase() === target);
+    if (idx > -1) {
+      if (this.editSizesList.length <= 1) {
+        this.presentToast('At least one food size should remain.', 'warning');
+        return;
+      }
+      this.editSizesList.splice(idx, 1);
+    } else {
+      this.editSizesList.push(preset);
+    }
+  }
+
+  addEditSize() {
+    const clean = (this.newEditSizeName || '').trim();
+    if (!clean) {
+      this.presentToast('Please enter a food size (e.g. Solo, Medium, Large).', 'warning');
+      return;
+    }
+    if (this.isSizeSelected(clean)) {
+      this.presentToast(`Size "${clean}" is already in the list.`, 'warning');
+      return;
+    }
+    this.editSizesList.push(clean);
+    this.newEditSizeName = '';
+  }
+
+  removeEditSize(index: number) {
+    if (this.editSizesList.length <= 1) {
+      this.presentToast('At least one food size should remain.', 'warning');
+      return;
+    }
+    this.editSizesList.splice(index, 1);
   }
 
   onEditImagesSelected(event: any) {
     const files: FileList = event.target.files;
     if (!files || files.length === 0) return;
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    Array.from(files).forEach((file: File) => {
       const reader = new FileReader();
       reader.onload = (e: any) => {
+        const rawDataUrl = e?.target?.result;
+        if (!rawDataUrl) return;
+
         const img = new Image();
-        img.src = e.target.result;
         img.onload = () => {
           const canvas = document.createElement('canvas');
           const MAX_SIZE = 800;
@@ -407,17 +718,28 @@ export class AdminPage implements OnInit {
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
-          const compressed = canvas.toDataURL('image/jpeg', 0.75);
-          this.editFoodImages.push(compressed);
+          const compressed = ctx ? canvas.toDataURL('image/jpeg', 0.75) : rawDataUrl;
+
+          this.ngZone.run(() => {
+            this.editFoodImages = [...this.editFoodImages, compressed];
+            this.cdr.detectChanges();
+          });
         };
+        img.onerror = () => {
+          this.ngZone.run(() => {
+            this.editFoodImages = [...this.editFoodImages, rawDataUrl];
+            this.cdr.detectChanges();
+          });
+        };
+        img.src = rawDataUrl;
       };
       reader.readAsDataURL(file);
-    }
+    });
     event.target.value = '';
   }
 
   removeEditImage(index: number) {
-    this.editFoodImages.splice(index, 1);
+    this.editFoodImages = this.editFoodImages.filter((_, i) => i !== index);
   }
 
   async deleteFromModal() {
@@ -448,10 +770,26 @@ export class AdminPage implements OnInit {
     await alert.present();
   }
 
+  editExistingVariation(index: number) {
+    const v = this.editVariationsList[index];
+    if (!v) return;
+    this.editingVarIndex = index;
+    this.newEditVarName = v.name;
+    this.newEditVarSize = v.size || '';
+    this.newEditVarPrice = v.price ?? this.editFoodPrice ?? 0;
+  }
+
+  cancelEditVariation() {
+    this.editingVarIndex = -1;
+    this.newEditVarName = '';
+    this.newEditVarSize = '';
+    this.newEditVarPrice = null;
+  }
+
   addEditVariation() {
     const name = this.newEditVarName.trim().replace(/[()]/g, '');
     if (!name) {
-      this.presentToast('Please enter a variation choice name (e.g. Large, Spicy).', 'warning');
+      this.presentToast('Please enter a variation choice name (e.g. Regular, Spicy).', 'warning');
       return;
     }
 
@@ -459,15 +797,35 @@ export class AdminPage implements OnInit {
       ? Number(this.newEditVarPrice)
       : (this.editFoodPrice ? Number(this.editFoodPrice) : 100);
 
-    const exists = this.editVariationsList.some(v => v.name.toLowerCase() === name.toLowerCase());
+    const size = (this.newEditVarSize || '').trim();
+    const exists = this.editVariationsList.some(
+      (v, idx) =>
+        idx !== this.editingVarIndex &&
+        v.name.toLowerCase() === name.toLowerCase() &&
+        (v.size || '').toLowerCase() === size.toLowerCase()
+    );
     if (exists) {
-      this.presentToast(`"${name}" variation already exists.`, 'warning');
+      this.presentToast(`"${name}${size ? ' (' + size + ')' : ''}" already exists.`, 'warning');
       return;
     }
 
-    this.editVariationsList.push({ name, price });
+    const nextVariation: FoodVariation = size ? { name, size, price } : { name, price };
+
+    if (this.editingVarIndex > -1) {
+      this.editVariationsList[this.editingVarIndex] = nextVariation;
+      this.editingVarIndex = -1;
+      this.presentToast('Variation updated!', 'success');
+    } else {
+      this.editVariationsList.push(nextVariation);
+    }
+
+    if (size && !this.isSizeSelected(size)) {
+      this.editSizesList.push(size);
+    }
+
     this.newEditVarName = '';
     this.newEditVarPrice = null;
+    this.newEditVarSize = '';
   }
 
   removeEditVariation(index: number) {
@@ -476,6 +834,11 @@ export class AdminPage implements OnInit {
       return;
     }
     this.editVariationsList.splice(index, 1);
+    if (this.editingVarIndex === index) {
+      this.cancelEditVariation();
+    } else if (this.editingVarIndex > index) {
+      this.editingVarIndex--;
+    }
   }
 
   async saveEditedFood() {
@@ -492,11 +855,17 @@ export class AdminPage implements OnInit {
     }
 
     const basePrice = Number(this.editFoodPrice);
+    const resolvedStock = Math.max(0, Math.floor(Number(this.editFoodStock ?? 20)));
     const resolvedVariations: FoodVariation[] = this.editVariationsList.length > 0
       ? this.editVariationsList
-      : [{ name: 'Regular', price: basePrice }];
+      : [{ name: 'Regular', size: 'Regular', price: basePrice }];
 
-    const formattedOptions = resolvedVariations.map((v: any) => `${v.name} P${(v.price ?? 0).toFixed(0)}`);
+    const formattedOptions = resolvedVariations.map((v: any) => {
+      const sizePart = v.size ? ` (${v.size})` : '';
+      return `${v.name}${sizePart} P${(v.price ?? 0).toFixed(0)}`;
+    });
+
+    const savedSizes = this.editSizesList.length > 0 ? [...this.editSizesList] : ['Regular'];
 
     const savedImages = this.editFoodImages.length > 0
       ? [...this.editFoodImages]
@@ -509,16 +878,19 @@ export class AdminPage implements OnInit {
       name: this.editFoodName.trim(),
       category: this.editFoodCategory || 'Chicken',
       price: basePrice,
+      stock: resolvedStock,
+      available: this.editingFood.available !== false && resolvedStock > 0,
       description: this.editFoodDesc.trim(),
       imageUrl: savedImages[0] || this.editingFood.imageUrl,
       images: savedImages,
       options: formattedOptions,
-      variations: resolvedVariations
+      variations: resolvedVariations,
+      sizes: savedSizes
     };
 
     const fs: any = this.foodService;
     if (typeof fs.updateFoodItem === 'function') {
-      fs.updateFoodItem(updatedItem);
+      await fs.updateFoodItem(updatedItem);
     } else if (typeof fs.updateFood === 'function') {
       fs.updateFood(updatedItem);
     }
@@ -545,22 +917,34 @@ export class AdminPage implements OnInit {
   // ==========================================
 
   getRegisteredRiders(): Rider[] {
-    try {
-      const stored = localStorage.getItem('registered_riders');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (Array.isArray(parsed)) {
-          return parsed.filter(r => r && (r.fullName || r.username));
-        }
-      }
-    } catch (e) {
-      console.error('Error fetching registered riders', e);
+    return this.authService.getRegisteredRiders().filter(r => r && (r.fullName || r.username));
+  }
+
+  private getActiveOrderForRider(rider: Rider): Order | undefined {
+    const riderName = (rider.fullName || rider.username || '').trim().toLowerCase();
+    const riderPhone = (rider.phone || '').replace(/\D/g, '');
+
+    return this.orders.find(o => {
+      if (!o || o.status === 'Completed' || o.status === 'Cancelled') return false;
+      const orderRiderPhone = (o.assignedRiderPhone || '').replace(/\D/g, '');
+      const orderRiderName = (o.assignedRiderName || '').trim().toLowerCase();
+
+      if (riderPhone && orderRiderPhone && riderPhone === orderRiderPhone) return true;
+      if (riderName && orderRiderName && riderName === orderRiderName) return true;
+      return false;
+    });
+  }
+
+  isRiderAvailable(rider: Rider): boolean {
+    const r: any = rider;
+    if (r?.available === false || r?.isAvailable === false || r?.status === 'unavailable') {
+      return false;
     }
-    return [];
+    return !this.getActiveOrderForRider(rider);
   }
 
   async acceptOrder(order: Order) {
-    this.orderService.updateOrderStatus(order.id, 'Preparing');
+    await this.orderService.updateOrderStatus(order.id, 'Preparing');
     this.presentToast(`Order #${order.id} accepted! Status set to Preparing.`, 'success');
   }
 
@@ -585,61 +969,64 @@ export class AdminPage implements OnInit {
       return;
     }
 
+    const riderStatuses = riders.map(r => {
+      const activeOrder = this.getActiveOrderForRider(r);
+      const available = this.isRiderAvailable(r);
+      const name = r.fullName || r.username || 'Rider';
+      const phone = r.phone ? ` (${r.phone})` : '';
+      const statusText = available
+        ? 'Available'
+        : activeOrder
+          ? `Not Available (Order #${activeOrder.id})`
+          : 'Not Available';
+      return {
+        rider: r,
+        available,
+        label: `${available ? '🟢' : '🔴'} ${name}${phone} — ${statusText}`
+      };
+    });
+
+    const firstAvailableIdx = riderStatuses.findIndex(item => item.available);
+    const hasAvailable = firstAvailableIdx !== -1;
+
     const alert = await this.alertCtrl.create({
       header: 'Assign Delivery Rider',
-      subHeader: `Select a registered rider for Order #${order.id}`,
-      inputs: riders.map((r, index) => ({
+      subHeader: hasAvailable
+        ? `Select an available rider for Order #${order.id}`
+        : `All riders are currently busy for Order #${order.id}`,
+      inputs: riderStatuses.map((item, index) => ({
         type: 'radio',
-        label: `🛵 ${r.fullName} (${r.phone})`,
-        value: r,
-        checked: index === 0
+        label: item.label,
+        value: item.rider,
+        disabled: !item.available,
+        checked: index === firstAvailableIdx
       })),
       buttons: [
         { text: 'Cancel', role: 'cancel' },
         {
           text: 'ASSIGN & DISPATCH',
           handler: async (selectedRider: Rider) => {
-            if (selectedRider) {
-              const riderName = selectedRider.fullName || selectedRider.username || 'Rider';
-              const riderPhone = selectedRider.phone || '';
-
-              order.assignedRiderName = riderName;
-              order.assignedRiderPhone = riderPhone;
-              order.status = 'Out for Delivery';
-
-              this.persistRiderAssignment(order.id, riderName, riderPhone);
-              this.orderService.updateOrderStatus(order.id, 'Out for Delivery');
-
-              this.presentToast(`Order #${order.id} assigned to ${riderName}!`, 'warning');
+            if (!selectedRider) {
+              this.presentToast('Please select an available rider.', 'warning');
+              return false;
             }
+            if (!this.isRiderAvailable(selectedRider)) {
+              const name = selectedRider.fullName || selectedRider.username || 'Rider';
+              this.presentToast(`${name} is currently not available.`, 'warning');
+              return false;
+            }
+            const riderName = selectedRider.fullName || selectedRider.username || 'Rider';
+            const riderPhone = selectedRider.phone || '';
+
+            await this.orderService.assignRider(order.id, riderName, riderPhone);
+            this.presentToast(`Order #${order.id} assigned to ${riderName}!`, 'warning');
+            return true;
           }
         }
       ]
     });
 
     await alert.present();
-  }
-
-  private persistRiderAssignment(orderId: string, riderName: string, riderPhone: string) {
-    const keys = ['app_orders', 'food_orders', 'orders'];
-    for (const key of keys) {
-      try {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const list: Order[] = Array.isArray(parsed) ? parsed : (parsed.orders || []);
-          const idx = list.findIndex(o => o.id === orderId);
-          if (idx !== -1) {
-            list[idx].assignedRiderName = riderName;
-            list[idx].assignedRiderPhone = riderPhone;
-            list[idx].status = 'Out for Delivery';
-            localStorage.setItem(key, Array.isArray(parsed) ? JSON.stringify(list) : JSON.stringify({ ...parsed, orders: list }));
-          }
-        }
-      } catch (e) {
-        console.error(`Could not persist rider assignment in ${key}`, e);
-      }
-    }
   }
 
   async trackDeliveryLocation(order: Order) {
@@ -708,7 +1095,7 @@ export class AdminPage implements OnInit {
   }
 
   async markDelivered(order: Order) {
-    this.orderService.updateOrderStatus(order.id, 'Completed');
+    await this.orderService.updateOrderStatus(order.id, 'Completed');
     this.presentToast(`Delivery Order #${order.id} marked as Delivered!`, 'success');
   }
 
@@ -835,15 +1222,14 @@ export class AdminPage implements OnInit {
   }
 
   // ==========================================
-  // DAILY FEATURED MEALS
+  // DAILY FEATURED MEALS (FOOD INFORMATION + EDIT FOOD STYLE)
   // ==========================================
 
   scheduleLabel(schedule: MealSchedule): string {
     switch (schedule) {
       case 'today': return "Today's Meals";
       case 'tomorrow': return "Tomorrow's Meals";
-      case 'friday': return 'Friday Specials';
-      case 'weekend': return 'Weekend Specials';
+      case 'weekend': return 'Weekend Meals';
       default: return schedule;
     }
   }
@@ -855,56 +1241,236 @@ export class AdminPage implements OnInit {
       this.mealSubtitle = meal.subtitle || '';
       this.mealDescription = meal.description || '';
       this.mealPrice = meal.price;
-      this.mealSchedule = meal.schedule;
-      this.mealImage = meal.image || '';
+      this.mealStock = typeof meal.stock === 'number' && !isNaN(meal.stock) ? meal.stock : 20;
+      this.mealSchedule =
+        meal.schedule === 'today' || meal.schedule === 'tomorrow' || meal.schedule === 'weekend'
+          ? meal.schedule
+          : 'today';
+      const imgs = meal.images && meal.images.length > 0
+        ? [...meal.images]
+        : (meal.image ? [meal.image] : []);
+      this.mealImages = imgs;
+      this.mealImage = imgs[0] || '';
+      this.mealVariationList = meal.variations && meal.variations.length > 0
+        ? meal.variations.map(v => ({ ...v }))
+        : [{ name: 'Regular', size: 'Regular', price: meal.price }];
+
+      const sizeSeen = new Set<string>();
+      const sizes: string[] = [];
+      const pushUniqueSize = (sz?: string) => {
+        const clean = (sz || '').trim();
+        if (clean && !sizeSeen.has(clean.toLowerCase())) {
+          sizeSeen.add(clean.toLowerCase());
+          sizes.push(clean);
+        }
+      };
+      if (Array.isArray(meal.sizes)) {
+        meal.sizes.forEach(pushUniqueSize);
+      }
+      this.mealVariationList.forEach(v => pushUniqueSize(v.size));
+      this.mealSizesList = sizes.length > 0 ? sizes : ['Regular'];
     } else {
       this.editingMealId = null;
       this.mealTitle = '';
       this.mealSubtitle = '';
       this.mealDescription = '';
       this.mealPrice = null;
+      this.mealStock = 20;
       this.mealSchedule = 'today';
       this.mealImage = '';
+      this.mealImages = [];
+      this.mealVariationList = [{ name: 'Regular', size: 'Regular', price: 100 }];
+      this.mealSizesList = ['Regular'];
     }
+    this.editingMealVarIndex = -1;
+    this.newMealVarName = '';
+    this.newMealVarSize = '';
+    this.newMealVarPrice = null;
+    this.newMealSizeName = '';
     this.isMealModalOpen = true;
   }
 
   closeMealModal() {
     this.isMealModalOpen = false;
     this.editingMealId = null;
+    this.editingMealVarIndex = -1;
+  }
+
+  onMealBasePriceChange() {
+    const p = Number(this.mealPrice);
+    if (!isNaN(p) && p > 0 && this.mealVariationList.length === 1 && this.mealVariationList[0].name === 'Regular') {
+      this.mealVariationList[0].price = p;
+    }
+  }
+
+  // --- FEATURED MEAL FOOD SIZE OPTIONS HANDLERS ---
+  isMealSizeSelected(sizeName: string): boolean {
+    const target = sizeName.trim().toLowerCase();
+    return this.mealSizesList.some(s => s.trim().toLowerCase() === target);
+  }
+
+  toggleMealPresetSize(preset: string) {
+    const target = preset.trim().toLowerCase();
+    const idx = this.mealSizesList.findIndex(s => s.trim().toLowerCase() === target);
+    if (idx > -1) {
+      if (this.mealSizesList.length <= 1) {
+        this.presentToast('At least one food size should remain.', 'warning');
+        return;
+      }
+      this.mealSizesList.splice(idx, 1);
+    } else {
+      this.mealSizesList.push(preset);
+    }
+  }
+
+  addMealSize() {
+    const clean = (this.newMealSizeName || '').trim();
+    if (!clean) {
+      this.presentToast('Please enter a food size (e.g. Solo, Medium, Large).', 'warning');
+      return;
+    }
+    if (this.isMealSizeSelected(clean)) {
+      this.presentToast(`Size "${clean}" is already in the list.`, 'warning');
+      return;
+    }
+    this.mealSizesList.push(clean);
+    this.newMealSizeName = '';
+  }
+
+  removeMealSize(index: number) {
+    if (this.mealSizesList.length <= 1) {
+      this.presentToast('At least one food size should remain.', 'warning');
+      return;
+    }
+    this.mealSizesList.splice(index, 1);
+  }
+
+  // --- FEATURED MEAL VARIATIONS & CUSTOM PRICING HANDLERS ---
+  editExistingMealVariation(index: number) {
+    const v = this.mealVariationList[index];
+    if (!v) return;
+    this.editingMealVarIndex = index;
+    this.newMealVarName = v.name;
+    this.newMealVarSize = v.size || '';
+    this.newMealVarPrice = v.price ?? this.mealPrice ?? 0;
+  }
+
+  cancelEditMealVariation() {
+    this.editingMealVarIndex = -1;
+    this.newMealVarName = '';
+    this.newMealVarSize = '';
+    this.newMealVarPrice = null;
+  }
+
+  addOrUpdateMealVariation() {
+    const name = this.newMealVarName.trim().replace(/[()]/g, '');
+    if (!name) {
+      this.presentToast('Please enter a variation choice name (e.g. Regular, Spicy).', 'warning');
+      return;
+    }
+
+    const price = (this.newMealVarPrice !== null && this.newMealVarPrice >= 0)
+      ? Number(this.newMealVarPrice)
+      : (this.mealPrice ? Number(this.mealPrice) : 100);
+
+    const size = (this.newMealVarSize || '').trim();
+    const exists = this.mealVariationList.some(
+      (v, idx) =>
+        idx !== this.editingMealVarIndex &&
+        v.name.toLowerCase() === name.toLowerCase() &&
+        (v.size || '').toLowerCase() === size.toLowerCase()
+    );
+    if (exists) {
+      this.presentToast(`"${name}${size ? ' (' + size + ')' : ''}" already exists.`, 'warning');
+      return;
+    }
+
+    const entry: FeaturedMealVariation = size ? { name, size, price } : { name, price };
+
+    if (this.editingMealVarIndex > -1) {
+      this.mealVariationList[this.editingMealVarIndex] = entry;
+      this.editingMealVarIndex = -1;
+      this.presentToast('Variation updated!', 'success');
+    } else {
+      this.mealVariationList.push(entry);
+    }
+
+    if (size && !this.isMealSizeSelected(size)) {
+      this.mealSizesList.push(size);
+    }
+
+    this.newMealVarName = '';
+    this.newMealVarSize = '';
+    this.newMealVarPrice = null;
+  }
+
+  removeMealVariation(index: number) {
+    if (this.mealVariationList.length <= 1) {
+      this.presentToast('At least one variation choice should remain.', 'warning');
+      return;
+    }
+    this.mealVariationList.splice(index, 1);
+    if (this.editingMealVarIndex === index) {
+      this.cancelEditMealVariation();
+    } else if (this.editingMealVarIndex > index) {
+      this.editingMealVarIndex--;
+    }
   }
 
   onMealImageSelected(event: any) {
-    const file: File = event.target.files[0];
-    if (!file) return;
+    const files: FileList = event.target.files;
+    if (!files || files.length === 0) return;
 
-    const reader = new FileReader();
-    reader.onload = (e: any) => {
-      const img = new Image();
-      img.src = e.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_SIZE = 800;
-        let width = img.width;
-        let height = img.height;
+    Array.from(files).forEach((file: File) => {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const rawDataUrl = e?.target?.result;
+        if (!rawDataUrl) return;
 
-        if (width > height && width > MAX_SIZE) {
-          height *= MAX_SIZE / width;
-          width = MAX_SIZE;
-        } else if (height >= width && height > MAX_SIZE) {
-          width *= MAX_SIZE / height;
-          height = MAX_SIZE;
-        }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let width = img.width;
+          let height = img.height;
 
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        this.mealImage = canvas.toDataURL('image/jpeg', 0.75);
+          if (width > height && width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          } else if (height >= width && height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          const compressed = ctx ? canvas.toDataURL('image/jpeg', 0.75) : rawDataUrl;
+
+          this.ngZone.run(() => {
+            this.mealImages = [...this.mealImages, compressed];
+            this.mealImage = this.mealImages[0] || '';
+            this.cdr.detectChanges();
+          });
+        };
+        img.onerror = () => {
+          this.ngZone.run(() => {
+            this.mealImages = [...this.mealImages, rawDataUrl];
+            this.mealImage = this.mealImages[0] || '';
+            this.cdr.detectChanges();
+          });
+        };
+        img.src = rawDataUrl;
       };
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    });
     event.target.value = '';
+  }
+
+  removeMealPhoto(idx: number) {
+    this.mealImages = this.mealImages.filter((_, i) => i !== idx);
+    this.mealImage = this.mealImages[0] || '';
   }
 
   async saveMeal() {
@@ -913,13 +1479,21 @@ export class AdminPage implements OnInit {
       return;
     }
     if (this.mealPrice === null || this.mealPrice <= 0) {
-      this.presentToast('Please enter a valid price.', 'warning');
+      this.presentToast('Please enter a valid base price.', 'warning');
       return;
     }
-    if (!this.mealImage) {
-      this.presentToast('Please upload a meal picture.', 'warning');
+    if (this.mealImages.length === 0 && !this.mealImage) {
+      this.presentToast('Please upload at least one meal picture.', 'warning');
       return;
     }
+
+    const cover = this.mealImages[0] || this.mealImage;
+    const savedImages = this.mealImages.length > 0 ? [...this.mealImages] : [cover];
+    const resolvedStock = Math.max(0, Math.floor(Number(this.mealStock ?? 20)));
+    const resolvedVariations = this.mealVariationList.length > 0
+      ? this.mealVariationList.map(v => ({ ...v }))
+      : [{ name: 'Regular', size: 'Regular', price: Number(this.mealPrice) }];
+    const savedMealSizes = this.mealSizesList.length > 0 ? [...this.mealSizesList] : ['Regular'];
 
     const meal: FeaturedMealItem = {
       id: this.editingMealId || Date.now(),
@@ -927,8 +1501,12 @@ export class AdminPage implements OnInit {
       subtitle: this.mealSubtitle.trim(),
       description: this.mealDescription.trim(),
       price: Number(this.mealPrice),
+      stock: resolvedStock,
       schedule: this.mealSchedule,
-      image: this.mealImage
+      image: cover,
+      images: savedImages,
+      variations: resolvedVariations,
+      sizes: savedMealSizes
     };
 
     if (this.editingMealId) {
@@ -958,6 +1536,160 @@ export class AdminPage implements OnInit {
       ]
     });
     await alert.present();
+  }
+
+  // ==========================================
+  // VOUCHERS (Vouchers tab) — auto-distributed to all customers
+  // ==========================================
+
+  isVoucherModalOpen: boolean = false;
+  editingVoucherId: string | null = null;
+  vCode: string = '';
+  vHeadline: string = '';
+  vTitle: string = '';
+  vDescription: string = '';
+  vCategory: 'shipping' | 'discount' | 'cashback' = 'discount';
+  vDiscountType: 'freeship' | 'fixed' | 'percent' = 'fixed';
+  vDiscountValue: number | null = 50;
+  vMinSpend: number | null = 0;
+  vExpiry: string = 'Valid until Dec 31, 2026';
+  vTag: string = 'HOT DEAL';
+
+  openVoucherModal(voucher?: Voucher) {
+    if (voucher) {
+      this.editingVoucherId = voucher.id;
+      this.vCode = voucher.code;
+      this.vHeadline = voucher.headline;
+      this.vTitle = voucher.title;
+      this.vDescription = voucher.description;
+      this.vCategory = voucher.category;
+      this.vDiscountType = voucher.discountType;
+      this.vDiscountValue = voucher.discountValue;
+      this.vMinSpend = voucher.minSpend;
+      this.vExpiry = voucher.expiry;
+      this.vTag = voucher.tag;
+    } else {
+      this.editingVoucherId = null;
+      this.vCode = this.suggestVoucherCode();
+      this.vHeadline = '';
+      this.vTitle = '';
+      this.vDescription = '';
+      this.vCategory = 'discount';
+      this.vDiscountType = 'fixed';
+      this.vDiscountValue = 50;
+      this.vMinSpend = 0;
+      this.vExpiry = 'Valid until Dec 31, 2026';
+      this.vTag = 'HOT DEAL';
+    }
+    this.isVoucherModalOpen = true;
+  }
+
+  private suggestVoucherCode(): string {
+    let code = '';
+    do {
+      code = 'VC' + Math.floor(1000 + Math.random() * 9000);
+    } while (this.vouchers.some((v) => v.code.toUpperCase() === code));
+    return code;
+  }
+
+  closeVoucherModal() {
+    this.isVoucherModalOpen = false;
+    this.editingVoucherId = null;
+  }
+
+  onVoucherCodeInput() {
+    if (this.vCode) {
+      this.vCode = this.vCode.toUpperCase().replace(/\s+/g, '');
+    }
+  }
+
+  async saveVoucher() {
+    const code = (this.vCode || '').trim().toUpperCase();
+    if (!this.vTitle.trim()) {
+      this.presentToast('Please enter a voucher title.', 'warning');
+      return;
+    }
+    if (!code) {
+      this.presentToast('Please enter a voucher code.', 'warning');
+      return;
+    }
+    if (
+      this.vDiscountType !== 'freeship' &&
+      (!this.vDiscountValue || this.vDiscountValue <= 0)
+    ) {
+      this.presentToast('Please enter a discount value greater than zero.', 'warning');
+      return;
+    }
+    if (this.vMinSpend === null || this.vMinSpend < 0) {
+      this.presentToast('Minimum spend cannot be negative.', 'warning');
+      return;
+    }
+
+    const duplicate = this.vouchers.some(
+      (v) => v.code.toUpperCase() === code && v.id !== this.editingVoucherId
+    );
+    if (duplicate) {
+      this.presentToast(`Code "${code}" is already used by another voucher.`, 'danger');
+      return;
+    }
+
+    const headline =
+      this.vHeadline.trim() ||
+      (this.vDiscountType === 'freeship'
+        ? 'FREE SHIPPING'
+        : this.vDiscountType === 'percent'
+        ? `${this.vDiscountValue}% OFF`
+        : `₱${this.vDiscountValue} OFF`);
+
+    const voucher: Voucher = {
+      id: this.editingVoucherId || 'vc_' + Date.now(),
+      code,
+      headline,
+      title: this.vTitle.trim(),
+      description: this.vDescription.trim() || 'Applied automatically at checkout when eligible.',
+      category: this.vCategory,
+      discountType: this.vDiscountType,
+      discountValue: this.vDiscountType === 'freeship' ? 0 : Number(this.vDiscountValue) || 0,
+      minSpend: Number(this.vMinSpend) || 0,
+      expiry: this.vExpiry.trim() || 'No expiry',
+      tag: this.vTag.trim() || 'PROMO',
+      usedBy: this.editingVoucherId
+        ? this.vouchers.find((v) => v.id === this.editingVoucherId)?.usedBy || []
+        : []
+    };
+
+    if (this.editingVoucherId) {
+      this.voucherService.updateVoucher(voucher);
+      this.presentToast(`Voucher "${voucher.code}" updated! Customers see it instantly.`, 'success');
+    } else {
+      this.voucherService.addVoucher(voucher);
+      this.presentToast(`Voucher "${voucher.code}" created — now available to all customers!`, 'success');
+    }
+    this.closeVoucherModal();
+  }
+
+  async deleteVoucherConfirm(voucher: Voucher) {
+    const alert = await this.alertCtrl.create({
+      header: 'Delete Voucher',
+      message: `Remove voucher "${voucher.code}"? Customers will no longer see it.`,
+      buttons: [
+        { text: 'Cancel', role: 'cancel' },
+        {
+          text: 'Delete',
+          role: 'destructive',
+          handler: () => {
+            this.voucherService.deleteVoucher(voucher.id);
+            this.presentToast(`Voucher "${voucher.code}" removed.`, 'dark');
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  voucherUsesLabel(voucher: Voucher): string {
+    const uses = voucher.usedBy.length;
+    return uses === 0 ? 'Not used yet' : `Used ${uses} time${uses === 1 ? '' : 's'}`;
   }
 
   // ==========================================
@@ -1011,13 +1743,15 @@ export class AdminPage implements OnInit {
   // ==========================================
 
   onQrImageSelected(event: any) {
-    const file: File = event.target.files[0];
+    const file: File = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e: any) => {
+      const rawDataUrl = e?.target?.result;
+      if (!rawDataUrl) return;
+
       const img = new Image();
-      img.src = e.target.result;
       img.onload = () => {
         const MAX = 900;
         let width = img.width;
@@ -1032,9 +1766,22 @@ export class AdminPage implements OnInit {
         const canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
-        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
-        this.qrImage = canvas.toDataURL('image/jpeg', 0.9);
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, width, height);
+        const resultUrl = ctx ? canvas.toDataURL('image/jpeg', 0.9) : rawDataUrl;
+
+        this.ngZone.run(() => {
+          this.qrImage = resultUrl;
+          this.cdr.detectChanges();
+        });
       };
+      img.onerror = () => {
+        this.ngZone.run(() => {
+          this.qrImage = rawDataUrl;
+          this.cdr.detectChanges();
+        });
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
     event.target.value = '';

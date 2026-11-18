@@ -63,7 +63,7 @@
   <div class="topup-body" *ngIf="step === 'qr'">
     <div class="qr-amount-line">
       <span class="qr-amount">₱{{ (amount || 0).toFixed(2) }}</span>
-      <span class="qr-ref" *ngIf="qrMode !== 'real'">Ref: {{ reference }}</span>
+      <span class="qr-ref" *ngIf="qrMode === 'demo'">Ref: {{ reference }}</span>
     </div>
 
     <!-- Mode 1: the store's uploaded wallet QR (scannable in GCash/Maya) -->
@@ -88,7 +88,7 @@
       <p class="qr-instructions">
         Scan the store's QR code in your <strong>{{ walletQrService.getSettings().walletLabel || 'wallet' }}</strong> app,
         enter the <strong>exact amount of ₱{{ (amount || 0).toFixed(2) }}</strong>, and send.
-        Then tap the button below to credit your wallet.
+        Then enter your reference number and tap the button below to credit your wallet.
       </p>
     </ng-container>
 
@@ -116,7 +116,7 @@
         Scan this QR with your <strong>GCash</strong> or <strong>Maya</strong> app.
         Once your app shows <strong>{{ walletQrService.getSettings().accountName }}</strong>,
         enter <strong>₱{{ (amount || 0).toFixed(2) }}</strong> as the amount and send.
-        Tap the button below once paid to credit your wallet.
+        Enter your reference number and tap the button below once paid.
       </p>
     </ng-container>
 
@@ -137,6 +137,28 @@
         store's real GCash/Maya QR in <strong>Admin → WALLET QR</strong>.
       </div>
     </ng-container>
+
+    <!-- Reference Number Input (required for real / QR Ph payments) -->
+    <div class="ref-field-group" *ngIf="qrMode !== 'demo'">
+      <label for="topupRefInput" class="ref-label">
+        Reference Number <span class="ref-required">*</span>
+      </label>
+      <div class="ref-input-box" [class.has-error]="!!referenceError">
+        <ion-icon name="receipt-outline"></ion-icon>
+        <input
+          id="topupRefInput"
+          type="text"
+          [(ngModel)]="userReference"
+          (ngModelChange)="onReferenceChange()"
+          placeholder="Enter GCash / Maya Ref. No."
+          autocomplete="off"
+          class="ref-native-input" />
+      </div>
+      <p class="ref-error-text" *ngIf="referenceError">{{ referenceError }}</p>
+      <p class="ref-helper-text" *ngIf="!referenceError">
+        Enter the reference number shown on your {{ walletQrService.getSettings().walletLabel || 'wallet' }} receipt.
+      </p>
+    </div>
 
     <button type="button" class="topup-primary-btn" (click)="confirmPaid()">
       <ion-icon name="checkmark-circle"></ion-icon>

@@ -187,6 +187,17 @@ $shopee-orange-dark: #d73211;
         font-size: 0.85rem;
         border-radius: 8px;
       }
+
+      ion-button.order-actions-btn {
+        --background: #{$shopee-orange};
+        --background-activated: #{$shopee-orange-dark};
+        --background-hover: #{$shopee-orange-dark};
+        --background-focused: #{$shopee-orange-dark};
+        --color: #ffffff;
+        --border-radius: 8px;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+      }
     }
   }
 }
@@ -224,15 +235,125 @@ $shopee-orange-dark: #d73211;
 
   .add-food-btn {
     --background: #{$shopee-orange};
+    background: #{$shopee-orange};
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
     --border-radius: 8px;
     font-weight: 800;
     min-height: 44px;
     letter-spacing: 0.3px;
     box-shadow: 0 3px 10px rgba(238, 77, 45, 0.25);
+    cursor: pointer;
 
     @media (max-width: 520px) {
       width: 100%;
       margin: 4px 0 0 0;
+    }
+  }
+}
+
+// ------------------------------------------
+// CATEGORIES STRIP (WITH + ADD CATEGORY TILE)
+// ------------------------------------------
+.categories-strip-card {
+  padding: 12px 14px;
+  margin-bottom: 14px;
+
+  .categories-strip-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    strong {
+      font-size: 0.85rem;
+      color: #334155;
+    }
+  }
+
+  .categories-strip-row {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    align-items: stretch;
+  }
+
+  .category-item-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 68px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    flex-shrink: 0;
+
+    .category-item-img {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #cbd5e1;
+    }
+
+    .category-item-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #1e293b;
+      text-align: center;
+    }
+  }
+
+  .category-add-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 72px;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1.5px dashed #ee4d2d;
+    background: #fff7ed;
+    flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.12s ease;
+
+    &:hover {
+      background: #ffedd5;
+    }
+
+    &:active {
+      transform: scale(0.97);
+    }
+
+    .category-add-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1.5px dashed #ee4d2d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ee4d2d;
+
+      ion-icon {
+        font-size: 1.5rem;
+      }
+    }
+
+    .category-add-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #ee4d2d;
+      text-align: center;
+      white-space: nowrap;
     }
   }
 }
@@ -349,9 +470,9 @@ $shopee-orange-dark: #d73211;
       gap: 8px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
-      background: #eff6ff;
-      border: 1.5px solid #3b82f6;
-      color: #1d4ed8;
+      background: #fff1f0;
+      border: 1.5px solid #fcd3c7;
+      color: #ee4d2d;
       transition: all 0.15s ease;
 
       &:active {
@@ -491,6 +612,8 @@ ion-modal.edit-food-dialog-modal {
         ion-input, ion-select, ion-textarea {
           --color: #0f172a !important;
           color: #0f172a !important;
+          --placeholder-color: #94a3b8 !important;
+          --highlight-color-focused: #{$shopee-orange};
           font-weight: 600;
         }
       }
@@ -571,6 +694,11 @@ ion-modal.edit-food-dialog-modal {
           &.name-field {
             flex: 2;
             min-width: 130px;
+          }
+
+          &.size-field {
+            flex: 1.5;
+            min-width: 115px;
           }
 
           &.price-field {
@@ -981,6 +1109,27 @@ ion-modal.edit-food-dialog-modal {
         background: #fee2e2;
       }
     }
+
+    .btn-edit-details {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 8px;
+      border: 1px solid #fcd3c7;
+      background: #fff1f0;
+      color: #ee4d2d;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+
+      &:hover {
+        background: #ffe4e0;
+        border-color: #ee4d2d;
+      }
+    }
   }
 }
 
@@ -1108,70 +1257,6 @@ ion-modal.edit-food-dialog-modal {
     strong {
       color: #0f172a;
     }
-  }
-}
-
-// ========================================================
-// WALLET QR TAB (store's real payment QR)
-// ========================================================
-.wallet-qr-card {
-  .qr-thumb {
-    width: 150px;
-    height: 150px;
-    border-radius: 12px;
-    border: 1px solid #e2e8f0;
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-    }
-  }
-
-  .qr-upload-actions {
-    margin-top: 10px;
-
-    .btn-change-photo-inline {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: #eff6ff;
-      color: #1d4ed8;
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-
-      input[type='file'] {
-        display: none;
-      }
-
-      &:hover {
-        background: #dbeafe;
-      }
-    }
-  }
-
-  .modal-form-item {
-    margin-bottom: 12px;
-  }
-
-  .btn-action.save {
-    margin-top: 6px;
-    height: 44px;
-    padding: 0 22px;
-    border-radius: 8px;
-    background: #ee4d2d;
-    color: #ffffff;
-    border: none;
-    font-weight: 800;
-    font-size: 0.9rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
   }
 }
 
@@ -1514,5 +1599,269 @@ ion-modal.edit-food-dialog-modal {
     .btn-action.save {
       margin: 0;
     }
+  }
+}
+
+// ========================================================
+// WALLET QR TAB — centered, balanced layout
+// ========================================================
+.section-top-header.centered-header {
+  justify-content: center;
+  text-align: center;
+
+  @media (max-width: 520px) {
+    align-items: center;
+  }
+}
+
+.wallet-qr-main-card {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+
+  .wallet-qr-card {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    // Center the QR preview block
+    .edit-images-block {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      .edit-images-grid {
+        display: flex;
+        justify-content: center;
+      }
+
+      .qr-upload-actions {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      .qr-url-item {
+        width: 100%;
+      }
+
+      .edit-image-hint {
+        text-align: center;
+        width: 100%;
+      }
+    }
+
+    // Center the save action
+    .btn-action.save {
+      align-self: center;
+      min-width: 220px;
+      justify-content: center;
+    }
+  }
+}
+
+// ========================================================
+// SHARED SAVE BUTTON — orange everywhere (store location,
+// wallet QR, and any future tab using .btn-action.save)
+// ========================================================
+.btn-action.save {
+  background: #{$shopee-orange};
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 22px;
+  height: 44px;
+}
+
+// ========================================================
+// FEATURED MEAL MODAL (FOOD INFORMATION STYLE)
+// ========================================================
+.edit-modal-scrollable.meal-info-body {
+  background: #f8fafc;
+  padding: 16px;
+  max-height: 75vh;
+}
+
+.meal-form-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+
+  .meal-input-item {
+    --background: #ffffff;
+    --border-color: #cbd5e1;
+    --color: #0f172a !important;
+    color: #0f172a !important;
+    margin-bottom: 14px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+
+    ion-input,
+    ion-textarea,
+    ion-select {
+      --color: #0f172a !important;
+      color: #0f172a !important;
+      --placeholder-color: #94a3b8 !important;
+      --highlight-color-focused: #{$shopee-orange};
+      font-weight: 600;
+    }
+  }
+
+  .meal-two-col-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .photo-upload-section {
+    border: 2px dashed #fed7aa;
+    background: #fffaf5;
+    border-radius: 10px;
+    padding: 16px;
+    margin: 16px 0 24px 0;
+
+    .upload-header {
+      margin-bottom: 12px;
+
+      label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.95rem;
+        color: #1e293b;
+
+        .required-flag {
+          color: $shopee-orange;
+          font-weight: 800;
+          font-size: 0.82rem;
+        }
+      }
+
+      small {
+        color: #64748b;
+        font-size: 0.8rem;
+        display: block;
+        margin-top: 2px;
+      }
+    }
+
+    .upload-dropzone {
+      text-align: center;
+      padding: 24px 16px;
+      background: #ffffff;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+
+      &:hover {
+        border-color: $shopee-orange;
+      }
+
+      .camera-big-icon {
+        font-size: 2.8rem;
+        color: #94a3b8;
+        margin-bottom: 6px;
+      }
+
+      h4 {
+        margin: 0 0 4px 0;
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1e293b;
+      }
+
+      p {
+        margin: 0 0 12px 0;
+        font-size: 0.82rem;
+        color: #64748b;
+      }
+
+      .browse-btn {
+        background: #16a34a;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+    }
+
+    .photos-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+
+      .preview-box {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid #cbd5e1;
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .main-badge {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          background: $shopee-orange;
+          color: #ffffff;
+          font-size: 0.62rem;
+          font-weight: 800;
+          padding: 1px 5px;
+          border-radius: 3px;
+        }
+
+        .remove-btn {
+          position: absolute;
+          top: 3px;
+          right: 3px;
+          background: rgba(0, 0, 0, 0.65);
+          color: #ffffff;
+          border: none;
+          width: 24px;
+          height: 24px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.85rem;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+
+  .save-meal-btn {
+    --background: #{$shopee-orange};
+    --background-hover: #{$shopee-orange-dark};
+    --color: #ffffff;
+    font-weight: 800;
+    --border-radius: 8px;
+    margin-top: 8px;
   }
 }

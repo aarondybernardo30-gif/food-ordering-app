@@ -28,21 +28,25 @@
 
       <!-- Category & Base Price Row -->
       <div class="category-price-grid">
-        <ion-item class="input-item">
-          <ion-select 
-            label="Category *" 
-            labelPlacement="floating" 
-            [(ngModel)]="newFoodCategory" 
-            interface="popover">
-            <ion-select-option value="Burgers">Burgers</ion-select-option>
-            <ion-select-option value="Pizza">Pizza</ion-select-option>
-            <ion-select-option value="Pasta">Pasta</ion-select-option>
-            <ion-select-option value="Chicken">Chicken</ion-select-option>
-            <ion-select-option value="Drinks">Drinks</ion-select-option>
-            <ion-select-option value="Desserts">Desserts</ion-select-option>
-            <ion-select-option value="Snacks">Snacks</ion-select-option>
-          </ion-select>
-        </ion-item>
+        <div class="category-with-add">
+          <ion-item class="input-item">
+            <ion-select
+              label="Category *"
+              labelPlacement="floating"
+              [(ngModel)]="newFoodCategory"
+              interface="popover">
+              <ion-select-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</ion-select-option>
+            </ion-select>
+          </ion-item>
+          <button
+            type="button"
+            class="add-category-btn"
+            (click)="addNewCategory()"
+            title="Add a new category with image">
+            <ion-icon name="add-circle-outline"></ion-icon>
+            <span>New</span>
+          </button>
+        </div>
 
         <ion-item class="input-item">
           <ion-input 
@@ -56,6 +60,18 @@
         </ion-item>
       </div>
 
+      <!-- Available Orders (Stock) -->
+      <ion-item class="input-item">
+        <ion-input 
+          label="Available Orders (Stock) *" 
+          labelPlacement="floating" 
+          [(ngModel)]="newFoodStock" 
+          type="number" 
+          min="0"
+          placeholder="e.g. 20">
+        </ion-input>
+      </ion-item>
+
       <!-- Description -->
       <ion-item class="input-item">
         <ion-textarea 
@@ -67,62 +83,110 @@
         </ion-textarea>
       </ion-item>
 
-      <!-- Discount Tag (Optional) -->
-      <ion-item class="input-item">
-        <ion-input 
-          label="Discount / Promo Tag (Optional)" 
-          labelPlacement="floating" 
-          [(ngModel)]="newFoodDiscount" 
-          placeholder="e.g. 10% OFF or Buy 1 Take 1">
-        </ion-input>
-      </ion-item>
-
       <!-- ======================================================== -->
-      <!-- VARIATIONS TABLE & PRICE MANAGEMENT SECTION             -->
+      <!-- FOOD SIZE OPTIONS BLOCK (MATCHES EDIT FOOD ITEM STYLE)   -->
       <!-- ======================================================== -->
-      <div class="variation-builder-section">
-        <div class="section-label-row">
-          <div>
-            <label class="var-title">Options / Variations (Optional)</label>
-            <small class="var-hint">Click on any variation in the table to edit its price, or click "+ Add Variation" to create a new one.</small>
-          </div>
+      <div class="section-card-block">
+        <div class="section-title-tag variations-tag">
+          <ion-icon name="options-outline"></ion-icon>
+          Food Size Options
+        </div>
+        <p class="section-explanation">Select or add portion sizes customers can choose when ordering this food.</p>
 
-          <button type="button" class="btn-open-add-var" (click)="openAddVariation()">
-            <ion-icon name="add-circle-outline"></ion-icon>
-            <span>+ Add Variation</span>
+        <!-- Quick Size Presets -->
+        <div class="variations-chips-wrap" style="margin-bottom: 10px;">
+          <button
+            type="button"
+            *ngFor="let preset of quickSizePresets"
+            class="var-badge-chip preset-chip-btn"
+            [class.preset-active]="isSizeSelected(preset)"
+            (click)="togglePresetSize(preset)">
+            <span class="v-name">{{ isSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
           </button>
         </div>
 
-        <!-- Variations Table -->
-        <div class="variations-table-wrapper" *ngIf="variationList.length > 0">
-          <table class="shopee-var-table">
-            <thead>
-              <tr>
-                <th>Variation Choice</th>
-                <th>Price (₱)</th>
-                <th class="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let v of variationList; let i = index" class="var-row" (click)="openEditVariation(i)">
-                <td>
-                  <span class="var-name-badge">{{ v.name }}</span>
-                </td>
-                <td>
-                <strong class="var-price-text">P{{ (v.price || 0).toFixed(2) }}</strong>
-                </td>
-                <td class="text-right" (click)="$event.stopPropagation()">
-                  <button type="button" class="action-btn edit-btn" (click)="openEditVariation(i)" title="Edit this price">
-                    <ion-icon name="pencil-outline"></ion-icon>
-                    <span>Edit Price</span>
-                  </button>
-                  <button type="button" class="action-btn delete-btn" (click)="removeVariation(i)" title="Delete variation">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- Active Sizes List -->
+        <div class="variations-chips-wrap" *ngIf="sizesList.length > 0">
+          <div class="var-badge-chip" *ngFor="let sz of sizesList; let i = index">
+            <span class="v-name">{{ sz }}</span>
+            <button type="button" class="btn-remove-v" (click)="removeSize(i)" title="Remove size">
+              <ion-icon name="close-circle-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+
+        <!-- Add Custom Size Bar -->
+        <div class="add-var-row-bar">
+          <div class="input-wrap name-field">
+            <input
+              type="text"
+              [(ngModel)]="newSizeName"
+              (keyup.enter)="addSize()"
+              placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
+          </div>
+          <button type="button" class="btn-add-var-row" (click)="addSize()">
+            <ion-icon name="add-circle-outline"></ion-icon> Add Size
+          </button>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VARIATIONS & CUSTOM PRICING BLOCK (MATCHES EDIT MODAL)   -->
+      <!-- ======================================================== -->
+      <div class="section-card-block">
+        <div class="section-title-tag variations-tag">
+          <ion-icon name="fast-food-outline"></ion-icon>
+          Variations &amp; Custom Pricing
+        </div>
+        <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
+
+        <div class="variations-chips-wrap" *ngIf="variationList.length > 0">
+          <div
+            class="var-badge-chip"
+            *ngFor="let v of variationList; let i = index"
+            (click)="editExistingVariation(i)"
+            [class.editing-chip]="editingVarIndex === i"
+            style="cursor: pointer;"
+            title="Tap to edit variation & size">
+            <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
+            <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
+            <button type="button" class="btn-remove-v" (click)="removeVariation(i); $event.stopPropagation()">
+              <ion-icon name="close-circle-outline"></ion-icon>
+            </button>
+          </div>
+        </div>
+
+        <div class="add-var-row-bar">
+          <div class="input-wrap name-field">
+            <input
+              type="text"
+              [(ngModel)]="newVarName"
+              placeholder="Option name (e.g. Spicy, Regular)" />
+          </div>
+          <div class="input-wrap size-field">
+            <input
+              type="text"
+              [(ngModel)]="newVarSize"
+              placeholder="Size (e.g. Regular, Large)" />
+          </div>
+          <div class="input-wrap price-field">
+            <span class="p-sign">₱</span>
+            <input
+              type="number"
+              [(ngModel)]="newVarPrice"
+              placeholder="Price" />
+          </div>
+          <button type="button" class="btn-add-var-row" (click)="addOrUpdateVariation()">
+            <ion-icon [name]="editingVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
+            {{ editingVarIndex > -1 ? 'Update' : 'Add' }}
+          </button>
+          <button
+            type="button"
+            *ngIf="editingVarIndex > -1"
+            class="btn-add-var-row btn-cancel-var"
+            (click)="cancelEditVariation()">
+            Cancel
+          </button>
         </div>
       </div>
 
@@ -133,7 +197,22 @@
             <ion-icon name="image-outline"></ion-icon>
             <strong>Food Pictures <span class="required-flag">*Required</span></strong>
           </label>
-          <small>You can select multiple photos. The first photo will be used as the Main Cover Photo.</small>
+          <small>You can select multiple photos. Tap a photo to set it as the Main Cover Photo.</small>
+        </div>
+
+        <!-- Uploaded Photos Grid (immediately visible right above the dropzone) -->
+        <div class="photos-preview-grid" *ngIf="uploadedImages.length > 0">
+          <div
+            *ngFor="let photo of uploadedImages; let idx = index"
+            class="preview-box"
+            [class.is-primary]="idx === primaryImageIndex"
+            (click)="setPrimaryImage(idx)">
+            <img [src]="photo" [alt]="'Photo ' + (idx + 1)" />
+            <span class="main-badge" *ngIf="idx === primaryImageIndex">Cover</span>
+            <button type="button" class="remove-btn" (click)="removePhoto(idx, $event)" title="Remove photo">
+              <ion-icon name="trash-outline"></ion-icon>
+            </button>
+          </div>
         </div>
 
         <input 
@@ -146,23 +225,12 @@
 
         <div class="upload-dropzone" (click)="fileInput.click()">
           <ion-icon name="camera-outline" class="camera-big-icon"></ion-icon>
-          <h4>Upload Food Pictures</h4>
+          <h4>{{ uploadedImages.length > 0 ? 'Add More Food Pictures' : 'Upload Food Pictures' }}</h4>
           <p>Click here to choose multiple photos from your gallery</p>
           <button type="button" class="browse-btn">
             <ion-icon name="images-outline"></ion-icon>
             <span>Browse Pictures</span>
           </button>
-        </div>
-
-        <!-- Uploaded Photos Grid -->
-        <div class="photos-preview-grid" *ngIf="uploadedImages.length > 0">
-          <div *ngFor="let photo of uploadedImages; let idx = index" class="preview-box">
-            <img [src]="photo" [alt]="'Photo ' + (idx + 1)" />
-            <span class="main-badge" *ngIf="idx === 0">Cover</span>
-            <button class="remove-btn" (click)="removePhoto(idx)" title="Remove photo">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
-          </div>
         </div>
       </div>
 
@@ -173,56 +241,86 @@
         (click)="saveNewFood()" 
         class="save-food-btn">
         <ion-icon name="add-circle-outline" slot="start"></ion-icon>
-        Save & Add to Menu
+        Save &amp; Add to Menu
       </ion-button>
     </div>
 
   </div>
 
   <!-- ======================================================== -->
-  <!-- MODAL FORM TO ENTER / EDIT VARIATION PRICE & NAME        -->
+  <!-- MODAL FORM TO ADD NEW CATEGORY WITH IMAGE                -->
   <!-- ======================================================== -->
-  <ion-modal [isOpen]="isVariationFormOpen" (didDismiss)="closeVariationForm()" class="variation-form-modal">
+  <ion-modal [isOpen]="isCategoryModalOpen" (didDismiss)="closeCategoryModal()" class="variation-form-modal">
     <ng-template>
       <div class="var-modal-content">
         <div class="var-modal-header">
-          <h3>{{ isEditingVariation ? 'Edit Variation Price' : 'Add New Variation' }}</h3>
-          <button type="button" class="close-modal-icon" (click)="closeVariationForm()">
+          <h3>Add New Category</h3>
+          <button type="button" class="close-modal-icon" (click)="closeCategoryModal()">
             <ion-icon name="close-outline"></ion-icon>
           </button>
         </div>
 
         <div class="var-modal-body">
-          <p class="modal-sub-hint">
-            {{ isEditingVariation ? 'Update the name or set a different price for this specific choice.' : 'Enter the variation choice and the price customers will pay for it.' }}
-          </p>
+          <p class="modal-sub-hint">Enter a category name and upload its icon/image for the customer menu.</p>
 
           <ion-item class="modal-input-item">
-            <ion-input 
-              label="Variation Name *" 
-              labelPlacement="floating" 
-              [(ngModel)]="modalVarName" 
-              placeholder="e.g. Regular, Spicy, Large, Double Patty">
+            <ion-input
+              label="Category Name *"
+              labelPlacement="floating"
+              [(ngModel)]="newCatName"
+              placeholder="e.g. Chicken, Seafood, Noodles">
             </ion-input>
           </ion-item>
 
+          <div style="margin: 12px 0;">
+            <input
+              type="file"
+              #catFileInput
+              (change)="onCategoryImageSelected($event)"
+              accept="image/*"
+              style="display: none;" />
+
+            <div
+              *ngIf="newCatImage"
+              style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+              <img
+                [src]="newCatImage"
+                alt="Category preview"
+                style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #ee4d2d;" />
+              <button
+                type="button"
+                class="btn-modal-cancel"
+                style="padding: 6px 12px;"
+                (click)="newCatImage = ''">
+                Remove Image
+              </button>
+            </div>
+
+            <button
+              type="button"
+              class="btn-open-add-var"
+              style="width: 100%; justify-content: center;"
+              (click)="catFileInput.click()">
+              <ion-icon name="camera-outline"></ion-icon>
+              <span>{{ newCatImage ? 'Change Category Image' : 'Upload Category Image *' }}</span>
+            </button>
+          </div>
+
           <ion-item class="modal-input-item">
-            <ion-input 
-              label="Price (₱ PHP) *" 
-              labelPlacement="floating" 
-              [(ngModel)]="modalVarPrice" 
-              type="number" 
-              placeholder="e.g. 150">
+            <ion-input
+              label="Or paste Image URL (optional)"
+              labelPlacement="floating"
+              [(ngModel)]="newCatImage"
+              placeholder="https://...">
             </ion-input>
           </ion-item>
 
           <div class="modal-button-group">
-            <button type="button" class="btn-modal-cancel" (click)="closeVariationForm()">
+            <button type="button" class="btn-modal-cancel" (click)="closeCategoryModal()">
               Cancel
             </button>
-
-            <button type="button" class="btn-modal-save" (click)="saveVariationFromForm()">
-              {{ isEditingVariation ? 'Save Changes' : 'Add to List' }}
+            <button type="button" class="btn-modal-save" (click)="saveNewCategory()">
+              Add Category
             </button>
           </div>
         </div>

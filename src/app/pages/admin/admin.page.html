@@ -1,7 +1,7 @@
 <ion-header class="shopee-admin-header ion-no-border">
   <ion-toolbar class="shopee-toolbar">
     <div class="header-row">
-      <button type="button" class="burger-btn" (click)="toggleSidebar()" title="Open menu">
+      <button type="button" class="burger-btn" (click)="adminDrawer.toggle()" title="Open menu">
         <ion-icon name="menu-outline"></ion-icon>
       </button>
       <div class="header-brand-title">
@@ -17,61 +17,13 @@
 </ion-header>
 
 <!-- Slide-in navigation drawer + backdrop -->
-<div class="sidebar-backdrop" [class.visible]="sidebarOpen" (click)="closeSidebar()"></div>
-<aside class="admin-sidebar" [class.open]="sidebarOpen">
-  <div class="sidebar-head">
-    <ion-icon name="shield-checkmark-outline"></ion-icon>
-    <span>Admin Menu</span>
-  </div>
-
-  <div class="sidebar-label">Dashboard</div>
-  <button
-    type="button"
-    class="side-item"
-    [class.active]="selectedTab === 'orders'"
-    (click)="selectTab('orders')">
-    <ion-icon name="receipt-outline"></ion-icon>
-    <span>Customer Orders</span>
-  </button>
-
-  <div class="sidebar-label">Manage</div>
-  <button
-    type="button"
-    *ngFor="let nav of manageNav"
-    class="side-item"
-    [class.active]="selectedTab === nav.key"
-    (click)="selectTab(nav.key)">
-    <ion-icon [name]="nav.icon"></ion-icon>
-    <span>{{ nav.label }}</span>
-  </button>
-
-  <div class="sidebar-label">Reports</div>
-  <button
-    type="button"
-    class="side-item"
-    (click)="goToReports()">
-    <ion-icon name="stats-chart-outline"></ion-icon>
-    <span>Reports</span>
-  </button>
-
-  <div class="sidebar-label">Rider</div>
-  <button
-    type="button"
-    class="side-item"
-    (click)="goToRiderRegistration()">
-    <ion-icon name="bicycle-outline"></ion-icon>
-    <span>Rider Registration</span>
-  </button>
-
-  <div class="sidebar-divider"></div>
-  <button
-    type="button"
-    class="side-item logout-item"
-    (click)="onAdminLogout()">
-    <ion-icon name="log-out-outline"></ion-icon>
-    <span>Logout</span>
-  </button>
-</aside>
+<app-admin-sidebar
+  #adminDrawer
+  [active]="selectedTab"
+  (tabSelect)="selectTab($event)"
+  (navigate)="onDrawerNavigate($event)"
+  (logout)="onAdminLogout()">
+</app-admin-sidebar>
 
 <ion-content class="admin-content">
   <div class="admin-main-area">
@@ -117,7 +69,7 @@
         <div class="total-row">
           <h4>Total: <span class="total-price">₱{{ order.totalAmount.toFixed(2) }}</span></h4>
           <div class="order-action-buttons">
-            <ion-button size="small" color="dark" fill="solid" (click)="openOrderActions(order)">
+            <ion-button size="small" class="order-actions-btn" fill="solid" (click)="openOrderActions(order)">
               <ion-icon name="options-outline" slot="start"></ion-icon>
               Actions
             </ion-button>
@@ -133,13 +85,44 @@
       <div class="section-top-header">
         <div class="section-title">
           <h3>Manage Food Items & Real-Time Prices</h3>
-          <p>Updates, choices, and multiple photos reflect immediately on the customer menu</p>
+          <p>Updates, choices, sizes, categories, and photos reflect immediately on the customer menu</p>
         </div>
         <ion-button class="add-food-btn" (click)="goToAddFood()">
           <ion-icon slot="start" name="add-circle-outline"></ion-icon>
           ADD NEW FOOD
         </ion-button>
       </div>
+
+      <!-- CATEGORIES WITH IMAGES STRIP -->
+      <ion-card class="feature-admin-card categories-strip-card">
+        <div class="categories-strip-header">
+          <strong>Categories ({{ categoryItems.length }})</strong>
+        </div>
+        <div class="categories-strip-row">
+          <div
+            *ngFor="let cat of categoryItems"
+            class="category-item-tile"
+            (click)="openCategoryModal(cat)"
+            title="Tap to edit category image or name">
+            <img
+              [src]="cat.imageUrl || cat.image"
+              [alt]="cat.name"
+              class="category-item-img" />
+            <span class="category-item-label">{{ cat.name }}</span>
+          </div>
+
+          <button
+            type="button"
+            class="category-add-tile"
+            (click)="openCategoryModal()"
+            title="Add new category">
+            <span class="category-add-circle">
+              <ion-icon name="add-outline"></ion-icon>
+            </span>
+            <span class="category-add-label">Add Category</span>
+          </button>
+        </div>
+      </ion-card>
 
       <div *ngIf="foods.length === 0" class="empty-state">
         <ion-icon name="restaurant-outline"></ion-icon>
@@ -158,12 +141,17 @@
               <span class="opt-pill" *ngFor="let opt of food.options">{{ opt }}</span>
             </div>
 
+            <div class="card-options-strip" *ngIf="food.sizes && food.sizes.length > 0">
+              <span class="strip-label">Sizes:</span>
+              <span class="opt-pill" *ngFor="let sz of food.sizes">{{ sz }}</span>
+            </div>
+
             <p class="desc">{{ food.description || 'Freshly prepared item.' }}</p>
 
             <div class="price-stock-row">
               <span class="price-tag">₱{{ food.price.toFixed(2) }}</span>
-              <ion-badge [color]="food.available !== false ? 'success' : 'danger'">
-                {{ food.available !== false ? 'In Stock' : 'Out of Stock' }}
+              <ion-badge [color]="food.available !== false && (food.stock ?? 20) > 0 ? 'success' : 'danger'">
+                {{ food.available !== false && (food.stock ?? 20) > 0 ? (food.stock ?? 20) + ' orders left' : 'Out of Stock' }}
               </ion-badge>
             </div>
           </div>
@@ -172,7 +160,7 @@
         <div class="admin-actions">
           <button type="button" class="btn-action btn-edit-details" (click)="openEditFoodModal(food)">
             <ion-icon name="create-outline"></ion-icon>
-            EDIT DETAILS & CHOICES
+            EDIT DETAILS, SIZES & CHOICES
           </button>
         </div>
       </ion-card>
@@ -228,14 +216,14 @@
     <!-- TAB 4: WALLET QR                           -->
     <!-- ========================================== -->
     <div *ngIf="selectedTab === 'walletqr'">
-      <div class="section-top-header">
+      <div class="section-top-header centered-header">
         <div class="section-title">
           <h3>Store Wallet Payment QR</h3>
           <p>Upload your real GCash / Maya QR so customers can scan and send top-up payments</p>
         </div>
       </div>
 
-      <ion-card class="feature-admin-card">
+      <ion-card class="feature-admin-card wallet-qr-main-card">
         <div class="wallet-qr-card">
           <div class="edit-images-block">
             <div class="edit-images-grid">
@@ -356,8 +344,154 @@
       </ion-card>
     </div>
 
+    <!-- ========================================== -->
+    <!-- TAB 6: VOUCHERS (auto-distributed)         -->
+    <!-- ========================================== -->
+    <div *ngIf="selectedTab === 'vouchers'">
+      <div class="section-top-header">
+        <div class="section-title">
+          <h3>Manage Vouchers</h3>
+          <p>Vouchers created here automatically appear for every customer and apply at checkout. Each customer can use a voucher once.</p>
+        </div>
+        <button type="button" class="add-food-btn" (click)="openVoucherModal()">
+          <ion-icon name="add-circle-outline"></ion-icon>
+          ADD NEW VOUCHER
+        </button>
+      </div>
+
+      <div *ngIf="vouchers.length === 0" class="empty-state">
+        <ion-icon name="ticket-outline"></ion-icon>
+        <p>No vouchers yet. Create one and it becomes available to all customers instantly.</p>
+      </div>
+
+      <ion-card class="feature-admin-card" *ngFor="let voucher of vouchers">
+        <div class="feature-row">
+          <div class="voucher-admin-stub">
+            <span class="voucher-admin-headline">{{ voucher.headline }}</span>
+            <span class="voucher-admin-code">{{ voucher.code }}</span>
+          </div>
+          <div class="feature-details">
+            <div class="feature-badges-row">
+              <span class="feature-badge-pill">{{ voucher.tag }}</span>
+              <span class="feature-placement-tag">
+                {{ voucher.discountType === 'freeship' ? 'Free Shipping' : voucher.discountType === 'percent' ? voucher.discountValue + '% off' : '₱' + voucher.discountValue + ' off' }}
+                &bull; Min spend ₱{{ voucher.minSpend }}
+              </span>
+            </div>
+            <h4>{{ voucher.title }}</h4>
+            <p class="feature-desc">{{ voucher.description }}</p>
+            <p class="feature-meta">{{ voucher.expiry }} &bull; {{ voucherUsesLabel(voucher) }}</p>
+          </div>
+          <div class="feature-actions">
+            <button type="button" class="btn-action btn-edit-details" (click)="openVoucherModal(voucher)">
+              <ion-icon name="create-outline"></ion-icon>
+              EDIT
+            </button>
+            <button type="button" class="btn-feature-delete" (click)="deleteVoucherConfirm(voucher)">
+              <ion-icon name="trash-outline"></ion-icon>
+              DELETE
+            </button>
+          </div>
+        </div>
+      </ion-card>
+    </div>
+
   </div>
   </div>
+
+  <!-- ADD / EDIT CATEGORY MODAL -->
+  <ion-modal [isOpen]="isCategoryModalOpen" (didDismiss)="closeCategoryModal()" class="edit-food-dialog-modal">
+    <ng-template>
+      <div class="edit-modal-wrapper">
+
+        <div class="edit-modal-top-bar">
+          <div class="top-title-group">
+            <h3>{{ editingCategoryOriginalName ? 'Edit Category' : 'Add New Category' }}</h3>
+            <div class="editing-item-tag">Shown in the customer menu Categories bar</div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeCategoryModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="edit-modal-scrollable">
+          <div class="section-card-block">
+            <div class="section-title-tag main-prod">
+              <ion-icon name="pricetag-outline"></ion-icon>
+              Category Name
+            </div>
+
+            <div class="modal-form-item">
+              <ion-input
+                label="Category Name *"
+                label-placement="floating"
+                [(ngModel)]="catModalName"
+                placeholder="e.g. Chicken, Seafood, Noodles">
+              </ion-input>
+            </div>
+          </div>
+
+          <div class="section-card-block">
+            <div class="section-title-tag variations-tag">
+              <ion-icon name="image-outline"></ion-icon>
+              Category Image
+            </div>
+
+            <div class="edit-images-block">
+              <div class="edit-images-grid">
+                <div class="edit-image-thumb" *ngIf="catModalImage">
+                  <img [src]="catModalImage" alt="Category picture" />
+                  <button type="button" class="img-remove-btn" (click)="catModalImage = ''" title="Remove picture">
+                    <ion-icon name="trash-outline"></ion-icon>
+                  </button>
+                </div>
+
+                <label class="edit-image-add">
+                  <ion-icon name="camera-outline"></ion-icon>
+                  <span>{{ catModalImage ? 'Change Image' : 'Upload Image' }}</span>
+                  <input type="file" accept="image/*" (change)="onCategoryImageSelected($event)" />
+                </label>
+              </div>
+
+              <div class="modal-form-item" style="margin-top: 10px;">
+                <ion-input
+                  label="Or paste image URL (optional)"
+                  label-placement="floating"
+                  [(ngModel)]="catModalImage"
+                  placeholder="https://...">
+                </ion-input>
+              </div>
+              <p class="edit-image-hint">Upload a picture representing this category (e.g., Chicken image for the Chicken category).</p>
+            </div>
+          </div>
+
+          <div class="section-card-block status-actions-block" *ngIf="editingCategoryOriginalName">
+            <div class="item-control-row">
+              <div class="control-label-group">
+                <span class="lbl-main">Delete Category</span>
+                <span class="lbl-sub">Remove "{{ editingCategoryOriginalName }}" from the category bar.</span>
+              </div>
+              <button type="button" class="btn-modal-action btn-delete-item" (click)="deleteEditingCategory()">
+                <ion-icon name="trash-outline"></ion-icon>
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="edit-modal-footer">
+          <button type="button" class="btn-action cancel" (click)="closeCategoryModal()">
+            Cancel
+          </button>
+          <button type="button" class="btn-action save" (click)="saveCategoryModal()">
+            <ion-icon name="checkmark-circle-outline"></ion-icon>
+            {{ editingCategoryOriginalName ? 'Save Changes' : 'Add Category' }}
+          </button>
+        </div>
+
+      </div>
+    </ng-template>
+  </ion-modal>
 
   <!-- EDIT FOOD MODAL -->
   <ion-modal [isOpen]="isEditModalOpen" (didDismiss)="closeEditFoodModal()" class="edit-food-dialog-modal">
@@ -406,16 +540,18 @@
             </div>
 
             <div class="grid-two-cols">
-              <div class="modal-form-item">
-                <ion-select label="Category" label-placement="floating" [(ngModel)]="editFoodCategory">
-                  <ion-select-option value="Chicken">Chicken</ion-select-option>
-                  <ion-select-option value="Snacks">Snacks</ion-select-option>
-                  <ion-select-option value="Desserts">Desserts</ion-select-option>
-                  <ion-select-option value="Drinks">Drinks</ion-select-option>
-                  <ion-select-option value="Pasta">Pasta</ion-select-option>
-                  <ion-select-option value="Pizza">Pizza</ion-select-option>
-                  <ion-select-option value="Burgers">Burgers</ion-select-option>
+              <div class="modal-form-item" style="display: flex; align-items: center; gap: 6px;">
+                <ion-select label="Category" label-placement="floating" [(ngModel)]="editFoodCategory" style="flex: 1;">
+                  <ion-select-option *ngFor="let cat of availableCategoryNames" [value]="cat">{{ cat }}</ion-select-option>
                 </ion-select>
+                <button
+                  type="button"
+                  class="btn-add-var-row"
+                  (click)="openCategoryModal()"
+                  title="Add new category with image"
+                  style="padding: 6px 8px; font-size: 0.72rem; white-space: nowrap;">
+                  + New
+                </button>
               </div>
 
               <div class="modal-form-item">
@@ -424,22 +560,81 @@
             </div>
 
             <div class="modal-form-item">
+              <ion-input type="number" label="Available Orders (Stock)" label-placement="floating" [(ngModel)]="editFoodStock" min="0" placeholder="20"></ion-input>
+            </div>
+
+            <div class="modal-form-item">
               <ion-textarea label="Description" label-placement="floating" rows="3" [(ngModel)]="editFoodDesc" placeholder="Enter food details..."></ion-textarea>
             </div>
           </div>
 
+          <!-- FOOD SIZE OPTIONS BLOCK -->
+          <div class="section-card-block">
+            <div class="section-title-tag variations-tag">
+              <ion-icon name="options-outline"></ion-icon>
+              Food Size Options
+            </div>
+            <p class="section-explanation">Select or add portion sizes customers can choose when ordering this food.</p>
+
+            <!-- Quick Size Presets -->
+            <div class="variations-chips-wrap" style="margin-bottom: 10px;">
+              <button
+                type="button"
+                *ngFor="let preset of quickSizePresets"
+                class="var-badge-chip"
+                (click)="togglePresetSize(preset)"
+                [style.cursor]="'pointer'"
+                [style.background]="isSizeSelected(preset) ? '#fff1f0' : '#f1f5f9'"
+                [style.borderColor]="isSizeSelected(preset) ? '#ee4d2d' : '#cbd5e1'"
+                [style.color]="isSizeSelected(preset) ? '#ee4d2d' : '#475569'">
+                <span class="v-name">{{ isSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
+              </button>
+            </div>
+
+            <!-- Active Sizes List -->
+            <div class="variations-chips-wrap" *ngIf="editSizesList.length > 0">
+              <div class="var-badge-chip" *ngFor="let sz of editSizesList; let i = index">
+                <span class="v-name">{{ sz }}</span>
+                <button type="button" class="btn-remove-v" (click)="removeEditSize(i)" title="Remove size">
+                  <ion-icon name="close-circle-outline"></ion-icon>
+                </button>
+              </div>
+            </div>
+
+            <!-- Add Custom Size Bar -->
+            <div class="add-var-row-bar">
+              <div class="input-wrap name-field">
+                <input
+                  type="text"
+                  [(ngModel)]="newEditSizeName"
+                  (keyup.enter)="addEditSize()"
+                  placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
+              </div>
+              <button type="button" class="btn-add-var-row" (click)="addEditSize()">
+                <ion-icon name="add-circle-outline"></ion-icon> Add Size
+              </button>
+            </div>
+          </div>
+
+          <!-- VARIATIONS & CUSTOM PRICING BLOCK -->
           <div class="section-card-block">
             <div class="section-title-tag variations-tag">
               <ion-icon name="fast-food-outline"></ion-icon>
               Variations & Custom Pricing
             </div>
-            <p class="section-explanation">Set distinct prices for different sizes, flavors, or combos.</p>
+            <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
 
             <div class="variations-chips-wrap">
-              <div class="var-badge-chip" *ngFor="let v of editVariationsList; let i = index">
-                <span class="v-name">{{ v.name }}</span>
+              <div
+                class="var-badge-chip"
+                *ngFor="let v of editVariationsList; let i = index"
+                (click)="editExistingVariation(i)"
+                [style.cursor]="'pointer'"
+                [style.borderColor]="editingVarIndex === i ? '#ee4d2d' : ''"
+                title="Tap to edit variation & size">
+                <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
                 <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
-                <button type="button" class="btn-remove-v" (click)="removeEditVariation(i)">
+                <button type="button" class="btn-remove-v" (click)="removeEditVariation(i); $event.stopPropagation()">
                   <ion-icon name="close-circle-outline"></ion-icon>
                 </button>
               </div>
@@ -447,14 +642,26 @@
 
             <div class="add-var-row-bar">
               <div class="input-wrap name-field">
-                <input type="text" [(ngModel)]="newEditVarName" placeholder="Option name (e.g. Spicy, Large)" />
+                <input type="text" [(ngModel)]="newEditVarName" placeholder="Option name (e.g. Spicy, Regular)" />
+              </div>
+              <div class="input-wrap size-field">
+                <input type="text" [(ngModel)]="newEditVarSize" placeholder="Size (e.g. Regular, Large)" />
               </div>
               <div class="input-wrap price-field">
                 <span class="p-sign">₱</span>
                 <input type="number" [(ngModel)]="newEditVarPrice" placeholder="Price" />
               </div>
               <button type="button" class="btn-add-var-row" (click)="addEditVariation()">
-                <ion-icon name="add-circle-outline"></ion-icon> Add
+                <ion-icon [name]="editingVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
+                {{ editingVarIndex > -1 ? 'Update' : 'Add' }}
+              </button>
+              <button
+                type="button"
+                *ngIf="editingVarIndex > -1"
+                class="btn-add-var-row"
+                style="background: #64748b;"
+                (click)="cancelEditVariation()">
+                Cancel
               </button>
             </div>
           </div>
@@ -508,6 +715,114 @@
           <button type="button" class="btn-action save" (click)="saveEditedFood()">
             <ion-icon name="checkmark-circle-outline"></ion-icon>
             Save All Changes
+          </button>
+        </div>
+
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- VOUCHER MODAL (add/edit) -->
+  <ion-modal [isOpen]="isVoucherModalOpen" (didDismiss)="closeVoucherModal()" class="edit-food-dialog-modal">
+    <ng-template>
+      <div class="edit-modal-wrapper">
+
+        <div class="edit-modal-top-bar">
+          <div class="top-title-group">
+            <h3>{{ editingVoucherId ? 'Edit Voucher' : 'Add New Voucher' }}</h3>
+            <div class="editing-item-tag">Auto-distributed to all customers at save</div>
+          </div>
+          <button type="button" class="btn-close-modal" (click)="closeVoucherModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <div class="edit-modal-scrollable">
+
+          <div class="section-card-block">
+            <div class="section-title-tag main-prod">
+              <ion-icon name="ticket-outline"></ion-icon>
+              Voucher Details
+            </div>
+
+            <div class="grid-two-cols">
+              <div class="modal-form-item">
+                <ion-input label="Code *" label-placement="floating" [(ngModel)]="vCode" (ionInput)="onVoucherCodeInput()" placeholder="e.g. SAVE50"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="Tag" label-placement="floating" [(ngModel)]="vTag" placeholder="e.g. HOT DEAL"></ion-input>
+              </div>
+            </div>
+
+            <div class="modal-form-item">
+              <ion-input label="Title *" label-placement="floating" [(ngModel)]="vTitle" placeholder="e.g. ₱50 Order Discount"></ion-input>
+            </div>
+
+            <div class="modal-form-item">
+              <ion-input label="Headline (shown on the ticket)" label-placement="floating" [(ngModel)]="vHeadline" placeholder="e.g. ₱50 OFF — auto if blank"></ion-input>
+            </div>
+
+            <div class="modal-form-item">
+              <ion-textarea label="Description" label-placement="floating" rows="2" [(ngModel)]="vDescription" placeholder="e.g. ₱50 off on orders above ₱250"></ion-textarea>
+            </div>
+
+            <div class="modal-form-item">
+              <ion-select label="Category" label-placement="floating" [(ngModel)]="vCategory">
+                <ion-select-option value="discount">Order Discount</ion-select-option>
+                <ion-select-option value="shipping">Shipping</ion-select-option>
+                <ion-select-option value="cashback">Cashback</ion-select-option>
+              </ion-select>
+            </div>
+          </div>
+
+          <div class="section-card-block">
+            <div class="section-title-tag variations-tag">
+              <ion-icon name="cash-outline"></ion-icon>
+              Discount &amp; Rules
+            </div>
+
+            <div class="modal-form-item">
+              <ion-select label="Discount Type" label-placement="floating" [(ngModel)]="vDiscountType">
+                <ion-select-option value="fixed">Fixed ₱ Off</ion-select-option>
+                <ion-select-option value="percent">Percent % Off</ion-select-option>
+                <ion-select-option value="freeship">Free Shipping</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="grid-two-cols">
+              <div class="modal-form-item">
+                <ion-input
+                  *ngIf="vDiscountType !== 'freeship'"
+                  type="number"
+                  label="{{ vDiscountType === 'percent' ? 'Percent Off (%) *' : 'Discount Amount (₱) *' }}"
+                  label-placement="floating"
+                  [(ngModel)]="vDiscountValue"
+                  placeholder="e.g. 50"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-input type="number" label="Min. Spend (₱)" label-placement="floating" [(ngModel)]="vMinSpend" placeholder="0 = none"></ion-input>
+              </div>
+            </div>
+
+            <div class="modal-form-item">
+              <ion-input label="Expiry (display text)" label-placement="floating" [(ngModel)]="vExpiry" placeholder="e.g. Valid until Dec 31, 2026"></ion-input>
+            </div>
+
+            <p class="voucher-modal-note" *ngIf="editingVoucherId">
+              This voucher has been used {{ vouchers.find(v => v.id === editingVoucherId)?.usedBy.length || 0 }} time(s).
+              Editing keeps existing usage records.
+            </p>
+          </div>
+
+        </div>
+
+        <div class="edit-modal-footer">
+          <button type="button" class="btn-action cancel" (click)="closeVoucherModal()">
+            Cancel
+          </button>
+          <button type="button" class="btn-action save" (click)="saveVoucher()">
+            <ion-icon name="checkmark-circle-outline"></ion-icon>
+            {{ editingVoucherId ? 'Save Changes' : 'Create Voucher' }}
           </button>
         </div>
 
@@ -596,91 +911,239 @@
     </ng-template>
   </ion-modal>
 
-  <!-- FEATURED MEAL MODAL -->
-  <ion-modal [isOpen]="isMealModalOpen" (didDismiss)="closeMealModal()" class="edit-food-dialog-modal">
+  <!-- FEATURED MEAL MODAL (MATCHES FOOD INFORMATION + EDIT FOOD ITEM STYLE) -->
+  <ion-modal [isOpen]="isMealModalOpen" (didDismiss)="closeMealModal()" class="edit-food-dialog-modal meal-info-modal">
     <ng-template>
       <div class="edit-modal-wrapper">
 
         <div class="edit-modal-top-bar">
           <div class="top-title-group">
-            <h3>{{ editingMealId ? 'Edit Featured Meal' : 'Add Featured Meal' }}</h3>
-            <div class="editing-item-tag">Shown in the Daily Featured Meals slider</div>
+            <h3>{{ editingMealId ? 'Edit Featured Meal' : 'Meal Information' }}</h3>
+            <div class="editing-item-tag">Fill in all details below to publish this meal to Daily Featured Meals.</div>
           </div>
           <button type="button" class="btn-close-modal" (click)="closeMealModal()">
             <ion-icon name="close-outline"></ion-icon>
           </button>
         </div>
 
-        <div class="edit-modal-scrollable">
+        <div class="edit-modal-scrollable meal-info-body">
+          <div class="meal-form-card">
+            <!-- Meal Name -->
+            <ion-item class="meal-input-item">
+              <ion-input
+                label="Meal Name *"
+                labelPlacement="floating"
+                [(ngModel)]="mealTitle"
+                placeholder="e.g. Special Chicken Adobo">
+              </ion-input>
+            </ion-item>
 
-          <div class="section-card-block">
-            <div class="section-title-tag main-prod">
-              <ion-icon name="restaurant-outline"></ion-icon>
-              Meal Details
+            <!-- Schedule & Base Price Row -->
+            <div class="meal-two-col-grid">
+              <ion-item class="meal-input-item">
+                <ion-select
+                  label="Schedule *"
+                  labelPlacement="floating"
+                  [(ngModel)]="mealSchedule"
+                  interface="popover">
+                  <ion-select-option value="today">Today's Meals</ion-select-option>
+                  <ion-select-option value="tomorrow">Tomorrow's Meals</ion-select-option>
+                  <ion-select-option value="weekend">Weekend Meals</ion-select-option>
+                </ion-select>
+              </ion-item>
+
+              <ion-item class="meal-input-item">
+                <ion-input
+                  label="Base Price (₱) *"
+                  labelPlacement="floating"
+                  [(ngModel)]="mealPrice"
+                  (ionChange)="onMealBasePriceChange()"
+                  type="number"
+                  placeholder="e.g. 150">
+                </ion-input>
+              </ion-item>
             </div>
 
-            <div class="modal-form-item">
-              <ion-input label="Meal Name" label-placement="floating" [(ngModel)]="mealTitle" placeholder="e.g. Adobo Today"></ion-input>
-            </div>
+            <!-- Available Orders (Stock) -->
+            <ion-item class="meal-input-item">
+              <ion-input
+                label="Available Orders (Stock) *"
+                labelPlacement="floating"
+                [(ngModel)]="mealStock"
+                type="number"
+                min="0"
+                placeholder="e.g. 20">
+              </ion-input>
+            </ion-item>
 
-            <div class="grid-two-cols">
-              <div class="modal-form-item">
-                <ion-input label="Subtitle (optional)" label-placement="floating" [(ngModel)]="mealSubtitle" placeholder="e.g. Classic Chicken Adobo"></ion-input>
+            <!-- Subtitle (Optional) -->
+            <ion-item class="meal-input-item">
+              <ion-input
+                label="Subtitle (Optional)"
+                labelPlacement="floating"
+                [(ngModel)]="mealSubtitle"
+                placeholder="e.g. Classic Filipino Chicken Adobo">
+              </ion-input>
+            </ion-item>
+
+            <!-- Description -->
+            <ion-item class="meal-input-item">
+              <ion-textarea
+                label="Description"
+                labelPlacement="floating"
+                [(ngModel)]="mealDescription"
+                rows="3"
+                placeholder="Describe ingredients, taste, or serving portion...">
+              </ion-textarea>
+            </ion-item>
+
+            <!-- FOOD SIZE OPTIONS BLOCK (MATCHES EDIT FOOD ITEM STYLE) -->
+            <div class="section-card-block">
+              <div class="section-title-tag variations-tag">
+                <ion-icon name="options-outline"></ion-icon>
+                Food Size Options
               </div>
-              <div class="modal-form-item">
-                <ion-input type="number" label="Price (₱)" label-placement="floating" [(ngModel)]="mealPrice" placeholder="100"></ion-input>
+              <p class="section-explanation">Select or add portion sizes customers can choose when ordering this meal.</p>
+
+              <!-- Quick Size Presets -->
+              <div class="variations-chips-wrap" style="margin-bottom: 10px;">
+                <button
+                  type="button"
+                  *ngFor="let preset of quickSizePresets"
+                  class="var-badge-chip"
+                  (click)="toggleMealPresetSize(preset)"
+                  [style.cursor]="'pointer'"
+                  [style.background]="isMealSizeSelected(preset) ? '#fff1f0' : '#f1f5f9'"
+                  [style.borderColor]="isMealSizeSelected(preset) ? '#ee4d2d' : '#cbd5e1'"
+                  [style.color]="isMealSizeSelected(preset) ? '#ee4d2d' : '#475569'">
+                  <span class="v-name">{{ isMealSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
+                </button>
+              </div>
+
+              <!-- Active Sizes List -->
+              <div class="variations-chips-wrap" *ngIf="mealSizesList.length > 0">
+                <div class="var-badge-chip" *ngFor="let sz of mealSizesList; let i = index">
+                  <span class="v-name">{{ sz }}</span>
+                  <button type="button" class="btn-remove-v" (click)="removeMealSize(i)" title="Remove size">
+                    <ion-icon name="close-circle-outline"></ion-icon>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add Custom Size Bar -->
+              <div class="add-var-row-bar">
+                <div class="input-wrap name-field">
+                  <input
+                    type="text"
+                    [(ngModel)]="newMealSizeName"
+                    (keyup.enter)="addMealSize()"
+                    placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
+                </div>
+                <button type="button" class="btn-add-var-row" (click)="addMealSize()">
+                  <ion-icon name="add-circle-outline"></ion-icon> Add Size
+                </button>
               </div>
             </div>
 
-            <div class="modal-form-item">
-              <ion-textarea label="Description" label-placement="floating" rows="2" [(ngModel)]="mealDescription" placeholder="e.g. Slow-simmered tender chicken braised in garlic..."></ion-textarea>
+            <!-- VARIATIONS & CUSTOM PRICING BLOCK (MATCHES EDIT FOOD ITEM STYLE) -->
+            <div class="section-card-block">
+              <div class="section-title-tag variations-tag">
+                <ion-icon name="fast-food-outline"></ion-icon>
+                Variations &amp; Custom Pricing
+              </div>
+              <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
+
+              <div class="variations-chips-wrap" *ngIf="mealVariationList.length > 0">
+                <div
+                  class="var-badge-chip"
+                  *ngFor="let v of mealVariationList; let i = index"
+                  (click)="editExistingMealVariation(i)"
+                  [style.cursor]="'pointer'"
+                  [style.borderColor]="editingMealVarIndex === i ? '#ee4d2d' : ''"
+                  title="Tap to edit variation & size">
+                  <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
+                  <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
+                  <button type="button" class="btn-remove-v" (click)="removeMealVariation(i); $event.stopPropagation()">
+                    <ion-icon name="close-circle-outline"></ion-icon>
+                  </button>
+                </div>
+              </div>
+
+              <div class="add-var-row-bar">
+                <div class="input-wrap name-field">
+                  <input type="text" [(ngModel)]="newMealVarName" placeholder="Option name (e.g. Spicy, Regular)" />
+                </div>
+                <div class="input-wrap size-field">
+                  <input type="text" [(ngModel)]="newMealVarSize" placeholder="Size (e.g. Regular, Large)" />
+                </div>
+                <div class="input-wrap price-field">
+                  <span class="p-sign">₱</span>
+                  <input type="number" [(ngModel)]="newMealVarPrice" placeholder="Price" />
+                </div>
+                <button type="button" class="btn-add-var-row" (click)="addOrUpdateMealVariation()">
+                  <ion-icon [name]="editingMealVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
+                  {{ editingMealVarIndex > -1 ? 'Update' : 'Add' }}
+                </button>
+                <button
+                  type="button"
+                  *ngIf="editingMealVarIndex > -1"
+                  class="btn-add-var-row"
+                  style="background: #64748b;"
+                  (click)="cancelEditMealVariation()">
+                  Cancel
+                </button>
+              </div>
             </div>
 
-            <div class="modal-form-item">
-              <ion-select label="Schedule" label-placement="floating" [(ngModel)]="mealSchedule">
-                <ion-select-option value="today">Today's Meals</ion-select-option>
-                <ion-select-option value="tomorrow">Tomorrow's Meals</ion-select-option>
-                <ion-select-option value="friday">Friday Specials</ion-select-option>
-                <ion-select-option value="weekend">Weekend Specials</ion-select-option>
-              </ion-select>
-            </div>
-          </div>
+            <!-- Meal Pictures Section -->
+            <div class="photo-upload-section">
+              <div class="upload-header">
+                <label>
+                  <ion-icon name="image-outline"></ion-icon>
+                  <strong>Meal Pictures <span class="required-flag">*Required</span></strong>
+                </label>
+                <small>You can select multiple photos. The first photo will be used as the Main Cover Photo.</small>
+              </div>
 
-          <div class="section-card-block">
-            <div class="section-title-tag variations-tag">
-              <ion-icon name="image-outline"></ion-icon>
-              Meal Picture
-            </div>
-
-            <div class="edit-images-block">
-              <div class="edit-images-grid">
-                <div class="edit-image-thumb" *ngIf="mealImage">
-                  <img [src]="mealImage" alt="Meal picture" />
-                  <button type="button" class="img-remove-btn" (click)="mealImage = ''" title="Remove picture">
+              <div class="photos-preview-grid" *ngIf="mealImages.length > 0" style="margin-top: 0; margin-bottom: 14px;">
+                <div *ngFor="let photo of mealImages; let idx = index" class="preview-box">
+                  <img [src]="photo" [alt]="'Meal photo ' + (idx + 1)" />
+                  <span class="main-badge" *ngIf="idx === 0">Cover</span>
+                  <button type="button" class="remove-btn" (click)="removeMealPhoto(idx)" title="Remove photo">
                     <ion-icon name="trash-outline"></ion-icon>
                   </button>
                 </div>
-
-                <label class="edit-image-add">
-                  <ion-icon name="camera-outline"></ion-icon>
-                  <span>{{ mealImage ? 'Change Picture' : 'Upload Picture' }}</span>
-                  <input type="file" accept="image/*" (change)="onMealImageSelected($event)" />
-                </label>
               </div>
-              <p class="edit-image-hint">Changes appear instantly in the customer's Daily Featured Meals.</p>
+
+              <input
+                type="file"
+                #mealFileInput
+                (change)="onMealImageSelected($event)"
+                accept="image/*"
+                multiple
+                style="display: none;" />
+
+              <div class="upload-dropzone" (click)="mealFileInput.click()">
+                <ion-icon name="camera-outline" class="camera-big-icon"></ion-icon>
+                <h4>{{ mealImages.length > 0 ? 'Add More Meal Pictures' : 'Upload Meal Pictures' }}</h4>
+                <p>Click here to choose multiple photos from your gallery</p>
+                <button type="button" class="browse-btn">
+                  <ion-icon name="images-outline"></ion-icon>
+                  <span>Browse Pictures</span>
+                </button>
+              </div>
             </div>
+
+            <!-- Save & Submit Button -->
+            <ion-button
+              expand="block"
+              size="large"
+              (click)="saveMeal()"
+              class="save-meal-btn">
+              <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+              {{ editingMealId ? 'Save Featured Meal Changes' : 'Save & Add to Featured Meals' }}
+            </ion-button>
           </div>
-
-        </div>
-
-        <div class="edit-modal-footer">
-          <button type="button" class="btn-action cancel" (click)="closeMealModal()">
-            Cancel
-          </button>
-          <button type="button" class="btn-action save" (click)="saveMeal()">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            {{ editingMealId ? 'Save Changes' : 'Add Meal' }}
-          </button>
         </div>
 
       </div>

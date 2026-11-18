@@ -25,8 +25,6 @@ import {
   logInOutline,
   personOutline,
   carSportOutline,
-  briefcaseOutline,
-  callOutline,
   lockClosedOutline
 } from 'ionicons/icons';
 import { Rider } from '../../models/food.model';
@@ -81,8 +79,6 @@ export class RiderAuthPage implements OnInit {
       logInOutline,
       personOutline,
       carSportOutline,
-      briefcaseOutline,
-      callOutline,
       lockClosedOutline
     });
   }
@@ -103,10 +99,6 @@ export class RiderAuthPage implements OnInit {
       vehicleType: ['', [Validators.required]],
       plateNumber: [''],
       licenseNumber: [''],
-      // Application details
-      yearsExperience: [''],
-      emergencyContactName: [''],
-      emergencyContactNumber: [''],
       // Account credentials
       username: ['', [Validators.required, Validators.minLength(2)]],
       password: ['', [Validators.required, Validators.minLength(4)]]
@@ -204,9 +196,6 @@ export class RiderAuthPage implements OnInit {
       const vehicleType = (formVal.vehicleType || '').trim();
       const plateNumber = (formVal.plateNumber || '').trim();
       const licenseNumber = (formVal.licenseNumber || '').trim();
-      const yearsExperience = (formVal.yearsExperience || '').trim();
-      const emergencyContactName = (formVal.emergencyContactName || '').trim();
-      const emergencyContactNumber = (formVal.emergencyContactNumber || '').trim();
 
       const riders = this.getStoredRiders();
 
@@ -234,10 +223,7 @@ export class RiderAuthPage implements OnInit {
         address: address || undefined,
         vehicleType,
         plateNumber: plateNumber || undefined,
-        licenseNumber: licenseNumber || undefined,
-        yearsExperience: yearsExperience || undefined,
-        emergencyContactName: emergencyContactName || undefined,
-        emergencyContactNumber: emergencyContactNumber || undefined
+        licenseNumber: licenseNumber || undefined
       };
 
       riders.push(newRider);

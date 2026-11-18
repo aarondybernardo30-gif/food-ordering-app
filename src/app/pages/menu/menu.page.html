@@ -6,7 +6,6 @@
   <div class="shopee-top-bar">
     <div class="top-bar-inner">
       <div class="top-bar-left">
-        <!-- TINANGGAL ANG BURGER BUTTON DITO -->
         <div class="delivery-address-row">
           <ion-icon name="location-outline" class="pin-icon"></ion-icon>
           <span class="deliver-label">Deliver to: <strong>Current Location</strong></span>
@@ -68,25 +67,25 @@
       </div>
 
       <div class="stepper-container">
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder.status) >= 1">
+        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 1">
           <div class="step-circle">1</div>
           <span class="step-label">Placed</span>
         </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder.status) >= 2"></div>
+        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 2"></div>
 
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder.status) >= 2">
+        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 2">
           <div class="step-circle">2</div>
           <span class="step-label">Preparing</span>
         </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder.status) >= 3"></div>
+        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 3"></div>
 
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder.status) >= 3">
+        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 3">
           <div class="step-circle">3</div>
           <span class="step-label">{{ activeOrder.orderType === 'delivery' ? 'Delivering' : 'Ready' }}</span>
         </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder.status) >= 4"></div>
+        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 4"></div>
 
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder.status) >= 4">
+        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 4">
           <div class="step-circle">4</div>
           <span class="step-label">Done</span>
         </div>
@@ -156,9 +155,11 @@
                 <button 
                   type="button" 
                   class="btn-order-action" 
-                  [ngClass]="meal.dayLabel" 
+                  [ngClass]="meal.dayLabel"
+                  [class.unavailable-today]="!isMealOrderableToday(meal)"
+                  [disabled]="!isMealOrderableToday(meal)"
                   (click)="openMealOrderModal(meal)">
-                  <ion-icon [name]="meal.dayLabel === 'today' ? 'checkmark-circle' : 'time-outline'"></ion-icon>
+                  <ion-icon [name]="isMealOrderableToday(meal) ? 'checkmark-circle' : 'lock-closed-outline'"></ion-icon>
                   <span>{{ meal.buttonText }}</span>
                 </button>
               </div>
@@ -209,7 +210,7 @@
 
       <div class="product-grid">
         <div *ngFor="let item of filteredFoods" class="product-col">
-          <ion-card class="shopee-card" [style.opacity]="item.available === false ? '0.6' : '1'">
+          <ion-card class="shopee-card" [style.opacity]="isSoldOut(item) ? '0.6' : '1'">
             
             <div class="card-gallery-wrapper">
               <div 
@@ -217,7 +218,7 @@
                 [id]="'card-slider-' + item.id"
                 (scroll)="onCardImageScroll($event, item)"
                 (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)">
-                <div class="card-slide" *ngFor="let img of getFoodImages(item)">
+                <div class="card-slide" *ngFor="let img of getCardImages(item)">
                   <img [src]="img" [alt]="item.name" draggable="false" loading="lazy" />
                 </div>
               </div>
@@ -232,16 +233,17 @@
               <button 
                 type="button" 
                 class="card-nav-arrow right" 
-                *ngIf="(activeCardImageIndex[item.id] || 0) < getFoodImages(item).length - 1" 
+                *ngIf="(activeCardImageIndex[item.id] || 0) < getCardImages(item).length - 1" 
                 (click)="nextCardImage(item, $event)">
                 <ion-icon name="chevron-forward-outline"></ion-icon>
               </button>
 
-              <div class="card-gallery-dots" *ngIf="getFoodImages(item).length > 1">
+              <div class="card-gallery-dots" *ngIf="getCardImages(item).length > 1">
                 <span 
-                  *ngFor="let dot of getFoodImages(item); let dIdx = index" 
+                  *ngFor="let dot of getCardImages(item); let dIdx = index" 
                   class="dot" 
-                  [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)">
+                  [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)"
+                  (click)="setCardImage(item, dIdx, $event)">
                 </span>
               </div>
 
@@ -253,28 +255,25 @@
                 <ion-icon name="expand-outline"></ion-icon>
               </button>
 
-              <span class="badge-mall" *ngIf="item.available === false" style="background: #555555;">Sold Out</span>
-              <div class="discount-flag" *ngIf="item.discount && item.available !== false">
+              <span class="badge-mall" *ngIf="isSoldOut(item)" style="background: #555555;">Sold Out</span>
+              <div class="discount-flag" *ngIf="item.discount && !isSoldOut(item)">
                 <span class="discount-text">{{ item.discount }}</span>
               </div>
             </div>
 
             <div class="product-info">
-              <h3 class="product-title" (click)="openFullScreenViewer(item, 0, $event)">{{ item.name }}</h3>
+              <h3 class="product-title" (click)="openFoodModal(item)">{{ item.name }}</h3>
               <p class="product-description">{{ item.description }}</p>
 
-              <div 
-                *ngIf="item.reviews && item.reviews.length > 0" 
-                class="customer-review-chip" 
-                (click)="openReviewsModal(item, $event)" 
-                title="Click to see all customer reviews">
-                <ion-icon name="chatbubbles-outline"></ion-icon>
-                <span class="chip-text">"{{ item.reviews[0]?.comment }}"</span>
-              </div>
-
               <div class="tags-row">
-                <span class="cashback-tag" *ngIf="item.available !== false">Wallet Accepted</span>
-                <span class="cashback-tag" *ngIf="item.available === false" style="color: red; border-color: red;">Out of Stock</span>
+                <span class="cashback-tag" *ngIf="!isSoldOut(item)">Wallet Accepted</span>
+                <span
+                  class="stock-tag"
+                  [class.low-stock]="getAvailableStock(item) <= 5"
+                  *ngIf="!isSoldOut(item)">
+                  {{ getAvailableStock(item) }} order{{ getAvailableStock(item) === 1 ? '' : 's' }} available
+                </span>
+                <span class="cashback-tag" *ngIf="isSoldOut(item)" style="color: red; border-color: red;">Out of Stock</span>
               </div>
 
               <div class="price-rating-row">
@@ -289,23 +288,28 @@
                   type="button"
                   class="order-now-btn"
                   (click)="openVariationModal(item, 'buy', $event)"
-                  [disabled]="item.available === false">
-                  {{ item.available === false ? 'Out of Stock' : 'Order Now' }}
+                  [disabled]="isSoldOut(item)">
+                  {{ isSoldOut(item) ? 'Out of Stock' : 'Order Now' }}
                 </button>
                 <button
                   type="button"
                   class="add-to-cart-text-btn"
                   (click)="openVariationModal(item, 'cart', $event)"
-                  [disabled]="item.available === false">
+                  [disabled]="isSoldOut(item)">
                   Add to Cart
                 </button>
               </div>
 
               <div class="social-row">
-                <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View customer reviews">
-                  <ion-icon name="star"></ion-icon>
-                  {{ item.rating || 5.0 }} 
-                  <small style="color: #64748b; font-size: 0.65rem;">({{ item.reviews?.length || 0 }})</small>
+                <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View all customer feedback">
+                  <span class="stars-group">
+                    <ion-icon
+                      *ngFor="let s of [1, 2, 3, 4, 5]"
+                      [name]="getStarIcon(item.rating, s)">
+                    </ion-icon>
+                  </span>
+                  <span class="rating-val">{{ item.rating || 5.0 }}</span>
+                  <small class="review-count">({{ getReviewsWithFeedback(item).length }})</small>
                 </span>
                 <span class="sold-count">
                   {{ formatEverydaySold(item.soldCount) }}
@@ -334,11 +338,12 @@
           </div>
 
           <div class="var-meta-box">
+            <h4 class="var-meal-name">{{ selectedVariationFood.name }}</h4>
             <div class="var-price-row">
               <span class="var-sale-price">₱{{ getCalculatedVariationPrice().toFixed(2) }}</span>
               <span class="var-orig-price">₱{{ (getCalculatedVariationPrice() * 1.35).toFixed(0) }}</span>
             </div>
-            <p class="var-stock-text">Stock: 9829 available</p>
+            <p class="var-stock-text">Stock: {{ getAvailableStock(selectedVariationFood) }} available</p>
           </div>
 
           <button class="var-close-btn" (click)="closeVariationModal()" title="Close">
@@ -347,17 +352,34 @@
         </div>
 
         <div class="var-scrollable-body">
+          <!-- Variation Choice -->
           <div class="var-options-section">
-            <h4 class="var-section-label">Options / Size</h4>
-            
+            <h4 class="var-section-label">Variation Choice</h4>
+
             <div class="var-chips-grid">
-              <button 
+              <button
                 type="button"
-                *ngFor="let opt of getFoodOptions(selectedVariationFood)"
+                *ngFor="let choice of getVariationChoices(selectedVariationFood)"
                 class="var-chip"
-                [class.active]="selectedOptionName === opt"
-                (click)="selectOption(opt)">
-                {{ cleanOptionLabel(opt) }}
+                [class.active]="selectedOptionName === choice"
+                (click)="selectOption(choice)">
+                {{ choice }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Size -->
+          <div class="var-options-section">
+            <h4 class="var-section-label">Size</h4>
+
+            <div class="var-chips-grid">
+              <button
+                type="button"
+                *ngFor="let sz of getVariationSizes(selectedVariationFood)"
+                class="var-chip"
+                [class.active]="selectedSizeName === sz"
+                (click)="selectSize(sz)">
+                {{ sz }}
               </button>
             </div>
           </div>
@@ -378,7 +400,7 @@
             type="button" 
             class="var-submit-btn" 
             (click)="confirmVariationSelection()" 
-            [disabled]="selectedVariationFood.available === false">
+            [disabled]="isSoldOut(selectedVariationFood)">
             {{ variationMode === 'buy' ? 'Buy Now' : 'Add to Cart' }}
           </button>
         </div>
@@ -530,15 +552,15 @@
           <div class="fs-action-bar">
             <div class="fs-meta">
               <span class="fs-price">₱{{ fullScreenFood.price.toFixed(2) }}</span>
-              <span class="fs-status" [style.color]="fullScreenFood.available !== false ? '#22c55e' : '#ef4444'">
-                {{ fullScreenFood.available !== false ? '• In Stock' : '• Sold Out' }}
+              <span class="fs-status" [style.color]="!isSoldOut(fullScreenFood) ? '#22c55e' : '#ef4444'">
+                {{ !isSoldOut(fullScreenFood) ? '• ' + getAvailableStock(fullScreenFood) + ' available' : '• Sold Out' }}
               </span>
             </div>
 
             <button 
               class="fs-add-cart-btn" 
               (click)="openVariationModal(fullScreenFood, 'cart', $event)"
-              [disabled]="fullScreenFood.available === false">
+              [disabled]="isSoldOut(fullScreenFood)">
               <ion-icon name="cart-outline"></ion-icon>
               <span>Choose Options & Add</span>
             </button>
@@ -568,42 +590,42 @@
             <p>You haven't placed any orders yet.</p>
           </div>
 
-          <ion-card *ngFor="let order of orders" class="history-card" [class.active-border]="order.status !== 'Completed'">
+          <ion-card *ngFor="let order of orders" class="history-card" [class.active-border]="order.status !== 'Completed' && order.status !== 'Cancelled'">
             <ion-card-header>
               <div class="history-card-header">
                 <div>
                   <h4 class="order-id">Order #{{ order.id }}</h4>
                   <span class="order-date">{{ order.createdAt | date:'medium' }}</span>
                 </div>
-                <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : (order.status === 'Out for Delivery' ? 'tertiary' : 'primary'))">
+                <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Cancelled' ? 'danger' : (order.status === 'Preparing' ? 'warning' : (order.status === 'Out for Delivery' ? 'tertiary' : 'primary')))">
                   {{ order.status }}
                 </ion-badge>
               </div>
             </ion-card-header>
 
             <ion-card-content>
-              <div *ngIf="order.status !== 'Completed'" class="modal-stepper">
+              <div *ngIf="order.status !== 'Completed' && order.status !== 'Cancelled'" class="modal-stepper">
                 <p class="stepper-title">Live Order Status:</p>
                 <div class="stepper-container">
-                  <div class="stepper-step" [class.completed]="getProgressStep(order.status) >= 1">
+                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 1">
                     <div class="step-circle">1</div>
                     <span class="step-label">Order Placed</span>
                   </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order.status) >= 2"></div>
+                  <div class="step-line" [class.filled]="getProgressStep(order) >= 2"></div>
 
-                  <div class="stepper-step" [class.completed]="getProgressStep(order.status) >= 2">
+                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 2">
                     <div class="step-circle">2</div>
                     <span class="step-label">Preparing</span>
                   </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order.status) >= 3"></div>
+                  <div class="step-line" [class.filled]="getProgressStep(order) >= 3"></div>
 
-                  <div class="stepper-step" [class.completed]="getProgressStep(order.status) >= 3">
+                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 3">
                     <div class="step-circle">3</div>
                     <span class="step-label">{{ order.orderType === 'delivery' ? 'On the Way' : 'Ready' }}</span>
                   </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order.status) >= 4"></div>
+                  <div class="step-line" [class.filled]="getProgressStep(order) >= 4"></div>
 
-                  <div class="stepper-step" [class.completed]="getProgressStep(order.status) >= 4">
+                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 4">
                     <div class="step-circle">4</div>
                     <span class="step-label">Delivered</span>
                   </div>
@@ -648,6 +670,18 @@
                 <span class="total-val">₱{{ (order.totalAmount || order.total || 0).toFixed(2) }}</span>
               </div>
 
+              <!-- CANCEL ORDER BUTTON (only while Pending / not yet accepted by admin) -->
+              <div *ngIf="order.status === 'Pending'" style="margin-top: 12px;">
+                <ion-button
+                  expand="block"
+                  fill="outline"
+                  color="danger"
+                  (click)="cancelOrder(order)">
+                  <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+                  Cancel Order
+                </ion-button>
+              </div>
+
               <div *ngIf="order.status === 'Completed'" class="completed-feedback-area">
                 <div *ngIf="order.rating" class="submitted-review-box">
                   <div class="stars-header">
@@ -661,7 +695,7 @@
                       <span class="rating-number">({{ order.rating }} / 5)</span>
                     </div>
                   </div>
-                  <p class="submitted-comment" *ngIf="order.feedback">"{{ order.feedback }}"</p>
+                  <p class="submitted-comment" *ngIf="order.feedback && order.feedback.trim() && order.feedback !== 'Delicious food and fast service!' && order.feedback !== 'Delicious food and fast delivery!'">"{{ order.feedback }}"</p>
                 </div>
                 <button
                   type="button"
@@ -685,7 +719,7 @@
     (didDismiss)="closeRatingModal()"
     class="rating-modal">
     <ng-template>
-      <div class="rating-sheet">
+      <div class="rating-sheet" [class.dark-theme]="isDarkMode">
         <div class="rating-sheet-head">
           <h3>Rate & Feedback</h3>
           <button type="button" class="rate-close" (click)="closeRatingModal()">
@@ -716,6 +750,7 @@
             label="Feedback (optional)"
             labelPlacement="stacked"
             [(ngModel)]="reviewComment"
+            (ionInput)="reviewComment = $any($event).detail?.value ?? ''"
             placeholder="Tell us about the food and service...">
           </ion-input>
 
@@ -732,46 +767,147 @@
     </ng-template>
   </ion-modal>
 
-  <!-- 9. MODAL: LEGACY SELECT CHOICES / VARIATIONS -->
-  <ion-modal [isOpen]="isOptionModalOpen" (didDismiss)="closeOptionModal()">
+  <!-- 8c. MODAL: ALL CUSTOMER REVIEWS & FEEDBACK -->
+  <ion-modal
+    [isOpen]="isReviewsModalOpen"
+    (didDismiss)="closeReviewsModal()"
+    class="rating-modal">
     <ng-template>
-      <ion-header class="ion-no-border">
-        <ion-toolbar color="primary">
-          <ion-title>Select Choice</ion-title>
-          <ion-buttons slot="end">
-            <ion-button (click)="closeOptionModal()">
-              <ion-icon name="close-outline"></ion-icon>
-            </ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
+      <div class="rating-sheet reviews-sheet" *ngIf="reviewsModalFood" [class.dark-theme]="isDarkMode">
+        <div class="rating-sheet-head">
+          <h3>{{ reviewsModalFood.name }} Reviews</h3>
+          <button type="button" class="rate-close" (click)="closeReviewsModal()">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
 
-      <ion-content class="ion-padding modal-choice-content">
-        <div *ngIf="selectedFoodForModal" class="modal-choice-box">
-          <div class="choice-food-header">
+        <div class="reviews-summary-bar">
+          <div class="summary-stars">
+            <ion-icon
+              *ngFor="let s of [1, 2, 3, 4, 5]"
+              [name]="getStarIcon(reviewsModalFood.rating, s)">
+            </ion-icon>
+          </div>
+          <span class="summary-score">{{ (reviewsModalFood.rating || 5).toFixed(1) }} / 5.0</span>
+          <span class="summary-count">({{ getReviewsWithFeedback(reviewsModalFood).length }} feedback)</span>
+        </div>
+
+        <div class="reviews-list-body">
+          <div *ngIf="getReviewsWithFeedback(reviewsModalFood).length === 0" class="no-reviews-msg">
+            No customer feedback yet. Order and rate this food to be the first!
+          </div>
+
+          <div *ngFor="let rev of getReviewsWithFeedback(reviewsModalFood)" class="review-entry-card">
+            <div class="review-entry-top">
+              <strong class="rev-author">{{ rev.customerName || 'Verified Customer' }}</strong>
+              <span class="rev-date" *ngIf="rev.createdAt">{{ rev.createdAt | date:'mediumDate' }}</span>
+            </div>
+            <div class="rev-stars-row">
+              <ion-icon
+                *ngFor="let s of [1, 2, 3, 4, 5]"
+                [name]="getStarIcon(rev.rating, s)">
+              </ion-icon>
+              <span class="rev-num">{{ rev.rating }} / 5</span>
+            </div>
+            <p class="rev-comment-text">"{{ rev.comment }}"</p>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </ion-modal>
+
+  <!-- 9. CUSTOMER MODAL: VARIATION CHOICE & SIZE POPUP -->
+  <ion-modal
+    [isOpen]="isOptionModalOpen"
+    (didDismiss)="closeOptionModal()"
+    class="shopee-variation-bottom-sheet">
+    <ng-template>
+      <div class="var-sheet-wrapper shopee-modal-wrapper" *ngIf="selectedFoodForModal" [class.dark-theme]="isDarkMode">
+
+        <!-- Header Info -->
+        <div class="var-top-header modal-top-row">
+          <div class="var-thumb-box food-thumb-box">
             <img [src]="selectedFoodForModal.imageUrl" [alt]="selectedFoodForModal.name" />
-            <div>
-              <h3>{{ selectedFoodForModal.name }}</h3>
-              <p class="price-text">₱{{ getChosenOptionPrice().toFixed(2) }}</p>
+          </div>
+
+          <div class="var-meta-box food-pricing-meta">
+            <h4 class="var-meal-name">{{ selectedFoodForModal.name }}</h4>
+            <div class="var-price-row prices">
+              <span class="var-sale-price curr-price">₱{{ (computedPrice * chosenQuantity).toFixed(2) }}</span>
+              <span class="var-orig-price orig-price">₱{{ (computedPrice * chosenQuantity * 1.35).toFixed(0) }}</span>
+            </div>
+            <p class="var-stock-text stock-text">Stock: {{ getAvailableStock(selectedFoodForModal) }} available</p>
+          </div>
+
+          <button type="button" class="var-close-btn btn-close-modal" (click)="closeOptionModal()" title="Close">
+            <ion-icon name="close-outline"></ion-icon>
+          </button>
+        </div>
+
+        <!-- Variation Choice & Size Separated -->
+        <div class="var-scrollable-body modal-section-body">
+          <!-- Variation Choice -->
+          <div class="var-options-section">
+            <h4 class="var-section-label section-sub-title">Variation Choice</h4>
+
+            <div class="var-chips-grid variation-pills-row">
+              <button
+                type="button"
+                *ngFor="let choice of getVariationChoices(selectedFoodForModal)"
+                class="var-chip choice-pill-btn"
+                [class.active]="chosenOptionName === choice"
+                (click)="selectChoiceName(choice)">
+                {{ choice }}
+              </button>
             </div>
           </div>
 
-          <h4>Select Option / Flavor:</h4>
-          <div class="options-choice-list">
-            <label 
-              *ngFor="let opt of selectedFoodForModal.options" 
-              class="radio-label"
-              [class.checked]="chosenOption === opt">
-              <input type="radio" name="foodOption" [value]="opt" [(ngModel)]="chosenOption" />
-              <span>{{ cleanOptionLabel(opt) }}</span>
-            </label>
+          <!-- Size -->
+          <div class="var-options-section">
+            <h4 class="var-section-label section-sub-title">Size</h4>
+
+            <div class="var-chips-grid variation-pills-row">
+              <button
+                type="button"
+                *ngFor="let sz of getVariationSizes(selectedFoodForModal)"
+                class="var-chip choice-pill-btn"
+                [class.active]="chosenSizeName === sz"
+                (click)="selectChoiceSize(sz)">
+                {{ sz }}
+              </button>
+            </div>
           </div>
 
-          <button type="button" class="btn-confirm-add" (click)="confirmModalAddToCart()">
-            Add to Cart &bull; ₱{{ getChosenOptionPrice().toFixed(2) }}
+          <!-- Quantity Stepper -->
+          <div class="var-quantity-section quantity-row">
+            <span class="var-qty-label qty-label">Quantity</span>
+            <div class="var-stepper-box stepper-box">
+              <button type="button" class="step-btn" (click)="decrementQuantity()">-</button>
+              <span class="step-num step-val">{{ chosenQuantity }}</span>
+              <button type="button" class="step-btn" (click)="incrementQuantity()">+</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="var-bottom-footer meal-footer modal-action-footer">
+          <button
+            type="button"
+            class="var-submit-btn order-now-submit btn-buy-now-red"
+            (click)="confirmBuyNow()"
+            [disabled]="isSoldOut(selectedFoodForModal)">
+            Buy Now
+          </button>
+          <button
+            type="button"
+            class="var-submit-btn add-cart-submit"
+            (click)="confirmModalAddToCart()"
+            [disabled]="isSoldOut(selectedFoodForModal)">
+            Add to Cart
           </button>
         </div>
-      </ion-content>
+
+      </div>
     </ng-template>
   </ion-modal>
 

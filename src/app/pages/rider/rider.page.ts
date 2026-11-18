@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -69,6 +69,7 @@ export class RiderPage implements OnInit {
   private router = inject(Router);
   private toastCtrl = inject(ToastController);
   private alertCtrl = inject(AlertController);
+  private cdr = inject(ChangeDetectorRef);
 
   selectedSegment: 'active' | 'delivered' = 'active';
   currentRider: Rider | null = null;
@@ -91,16 +92,18 @@ export class RiderPage implements OnInit {
 
   ngOnInit() {
     this.loadCurrentRider();
-    this.loadAndFilterOrders();
+    this.filterMyOrders(this.orderService.getStoredOrders());
 
     this.orderService.orders$.subscribe(allOrders => {
       this.filterMyOrders(allOrders);
+      this.cdr.detectChanges();
     });
   }
 
   ionViewWillEnter() {
     this.loadCurrentRider();
-    this.loadAndFilterOrders();
+    this.filterMyOrders(this.orderService.getStoredOrders());
+    this.cdr.detectChanges();
   }
 
   get activeOrders(): Order[] {
@@ -124,25 +127,6 @@ export class RiderPage implements OnInit {
     }
   }
 
-  private loadAndFilterOrders() {
-    const keys = ['app_orders', 'food_orders', 'orders'];
-    for (const key of keys) {
-      const stored = localStorage.getItem(key);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const list: Order[] = Array.isArray(parsed) ? parsed : (parsed.orders || []);
-          if (list.length > 0) {
-            this.filterMyOrders(list);
-            break;
-          }
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-  }
-
   // Filters orders to show ONLY those assigned to this rider's phone or name
   private filterMyOrders(orders: Order[]) {
     if (!this.currentRider) return;
@@ -151,7 +135,7 @@ export class RiderPage implements OnInit {
     const myName = (this.currentRider.fullName || '').trim().toLowerCase();
     const myUsername = (this.currentRider.username || '').trim().toLowerCase();
 
-    this.assignedOrders = orders.filter(order => {
+    this.assignedOrders = (orders || []).filter(order => {
       const orderRiderPhone = (order.assignedRiderPhone || '').trim();
       const orderRiderName = (order.assignedRiderName || '').trim().toLowerCase();
 
@@ -196,11 +180,6 @@ export class RiderPage implements OnInit {
   cameraError: string = '';
   private cameraStream: MediaStream | null = null;
 
-  /**
-   * Opens a live in-app camera viewfinder (rear camera on phones).
-   * Falls back to the native capture input when getUserMedia is
-   * unavailable (e.g. insecure context) or permission is denied.
-   */
   async openCamera() {
     this.cameraError = '';
 
@@ -211,7 +190,7 @@ export class RiderPage implements OnInit {
           audio: false
         });
         this.isCameraOpen = true;
-        // Attach the stream once the video element renders
+        this.cdr.detectChanges();
         setTimeout(() => {
           const video = document.querySelector('.camera-viewfinder video') as HTMLVideoElement | null;
           if (video && this.cameraStream) {
@@ -222,16 +201,16 @@ export class RiderPage implements OnInit {
         return;
       } catch (e) {
         this.cameraError = 'Camera is unavailable or permission was denied.';
+        this.cdr.detectChanges();
       }
     } else {
       this.cameraError = 'Live camera is not supported on this connection.';
+      this.cdr.detectChanges();
     }
 
-    // Fallback: native capture input — opens the camera directly on mobile browsers
     this.triggerFileInput();
   }
 
-  /** Captures the current video frame as the proof photo (resized to keep storage small). */
   captureCameraPhoto() {
     const video = document.querySelector('.camera-viewfinder video') as HTMLVideoElement | null;
     if (!video || !video.videoWidth) return;
@@ -255,14 +234,15 @@ export class RiderPage implements OnInit {
 
     this.stopCamera();
     this.isCameraOpen = false;
+    this.cdr.detectChanges();
   }
 
   cancelCamera() {
     this.stopCamera();
     this.isCameraOpen = false;
+    this.cdr.detectChanges();
   }
 
-  /** Opens the hidden capture input (native camera on mobile / file picker on desktop). */
   triggerFileInput() {
     const input = document.querySelector('.proof-hidden-file-input') as HTMLInputElement | null;
     if (input) input.click();
@@ -275,7 +255,6 @@ export class RiderPage implements OnInit {
     }
   }
 
-  /** Opens the Proof of Delivery sheet for the given order. */
   async setDelivered(order?: Order) {
     const targetOrder = order || this.activeOrders[0];
     if (!targetOrder) return;
@@ -283,6 +262,7 @@ export class RiderPage implements OnInit {
     this.proofModalOrder = targetOrder;
     this.proofImage = '';
     this.isProofModalOpen = true;
+    this.cdr.detectChanges();
   }
 
   completeDelivery(order?: Order) {
@@ -301,9 +281,9 @@ export class RiderPage implements OnInit {
     this.isCameraOpen = false;
     this.cameraError = '';
     this.stopCamera();
+    this.cdr.detectChanges();
   }
 
-  /** Photo chosen via camera capture or file upload — resized to keep storage small. */
   onProofSelected(event: any) {
     const file: File = event.target.files[0];
     if (!file) return;
@@ -331,18 +311,18 @@ export class RiderPage implements OnInit {
         const ctx = canvas.getContext('2d');
         ctx?.drawImage(img, 0, 0, width, height);
         this.proofImage = canvas.toDataURL('image/jpeg', 0.7);
+        this.cdr.detectChanges();
       };
     };
     reader.readAsDataURL(file);
-    // Allow choosing the same file again later
     event.target.value = '';
   }
 
   removeProofImage() {
     this.proofImage = '';
+    this.cdr.detectChanges();
   }
 
-  /** Attaches the proof photo, marks the order Completed, and syncs the legacy storage keys. */
   async confirmDeliveryWithProof() {
     if (!this.proofModalOrder || !this.proofImage || this.isConfirmingDelivery) return;
 
@@ -351,25 +331,6 @@ export class RiderPage implements OnInit {
 
     try {
       await this.orderService.submitDeliveryProof(targetOrder.id, this.proofImage);
-
-      // Mirror into the legacy storage keys so older views pick it up too
-      const keys = ['app_orders', 'food_orders', 'orders'];
-      for (const key of keys) {
-        const stored = localStorage.getItem(key);
-        if (stored) {
-          try {
-            const parsed = JSON.parse(stored);
-            const list: Order[] = Array.isArray(parsed) ? parsed : (parsed.orders || []);
-            const idx = list.findIndex(o => o.id === targetOrder.id);
-            if (idx !== -1) {
-              list[idx].status = 'Completed';
-              list[idx].deliveryProof = this.proofImage;
-              list[idx].deliveredAt = new Date();
-              localStorage.setItem(key, JSON.stringify(list));
-            }
-          } catch (e) {}
-        }
-      }
 
       targetOrder.status = 'Completed';
       targetOrder.deliveryProof = this.proofImage;
@@ -385,6 +346,7 @@ export class RiderPage implements OnInit {
       this.closeProofModal();
     } catch (e: any) {
       this.isConfirmingDelivery = false;
+      this.cdr.detectChanges();
       const toast = await this.toastCtrl.create({
         message: `Could not save the proof of delivery: ${e?.message || e}`,
         duration: 2500,

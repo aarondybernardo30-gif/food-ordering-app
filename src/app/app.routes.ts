@@ -4,7 +4,9 @@ import { adminGuard } from './guards/admin-guard';
 import { riderGuard } from './guards/rider-guard';
 import { APP_MODE } from './app.mode';
 
-const DEFAULT_ROUTE = APP_MODE === 'rider' ? 'rider' : 'menu';
+const mode = APP_MODE as string;
+const DEFAULT_ROUTE =
+  mode === 'rider' ? 'rider' : mode === 'admin' ? 'admin' : 'menu';
 
 export const routes: Routes = [
   {

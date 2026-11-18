@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -55,6 +55,7 @@ export class CartPage implements OnInit {
   private toastCtrl = inject(ToastController);
   private alertCtrl = inject(AlertController);
   private router = inject(Router);
+  private cdr = inject(ChangeDetectorRef);
 
   cartItems: CartItem[] = [];
   walletBalance: number = 0;
@@ -73,33 +74,45 @@ export class CartPage implements OnInit {
   }
 
   ngOnInit() {
-    // 1. Subscribe to Cart Items
+    // 1. Subscribe to Cart Items (live updates)
     if (this.cartService?.cart$) {
       this.cartService.cart$.subscribe((items) => {
         this.cartItems = items || [];
+        this.cdr.detectChanges();
       });
     } else {
       this.loadCartFromStorage();
     }
 
-    // 2. Subscribe to Wallet Balance
+    // 2. Subscribe to Wallet Balance (live updates)
     const ws: any = this.walletService;
     if (ws) {
       if (ws.balance$?.subscribe) {
-        ws.balance$.subscribe((bal: number) => (this.walletBalance = bal));
+        ws.balance$.subscribe((bal: number) => {
+          this.walletBalance = bal;
+          this.cdr.detectChanges();
+        });
       } else if (typeof ws.getBalance === 'function') {
         this.walletBalance = ws.getBalance();
       }
     }
 
-    // 3. Theme mode
+    // 3. Theme mode (live updates)
     if (this.themeService?.isDarkMode$) {
-      this.themeService.isDarkMode$.subscribe((dark) => (this.isDarkMode = dark));
+      this.themeService.isDarkMode$.subscribe((dark) => {
+        this.isDarkMode = dark;
+        this.cdr.detectChanges();
+      });
     }
   }
 
   ionViewWillEnter() {
-    this.loadCartFromStorage();
+    if (typeof this.cartService?.getCart === 'function') {
+      this.cartItems = this.cartService.getCart();
+    } else {
+      this.loadCartFromStorage();
+    }
+    this.cdr.detectChanges();
   }
 
   loadCartFromStorage() {
@@ -189,8 +202,10 @@ export class CartPage implements OnInit {
   }
 
   toggleItem(item: CartItem, event: any) {
-    const checked = event?.target?.checked;
-    if (typeof (this.cartService as any)?.toggleCheck === 'function') {
+    const checked = Boolean(event?.target?.checked);
+    if (typeof (this.cartService as any)?.setItemSelected === 'function') {
+      (this.cartService as any).setItemSelected(item.food.id, item.selectedOption, checked);
+    } else if (typeof (this.cartService as any)?.toggleCheck === 'function') {
       (this.cartService as any).toggleCheck(item, checked);
     } else {
       item.selected = checked;
@@ -199,8 +214,10 @@ export class CartPage implements OnInit {
   }
 
   toggleSelectAll(event: any) {
-    const checked = event?.target?.checked;
-    if (typeof (this.cartService as any)?.toggleSelectAll === 'function') {
+    const checked = Boolean(event?.target?.checked);
+    if (typeof (this.cartService as any)?.setAllSelected === 'function') {
+      (this.cartService as any).setAllSelected(checked);
+    } else if (typeof (this.cartService as any)?.toggleSelectAll === 'function') {
       (this.cartService as any).toggleSelectAll(checked);
     } else {
       this.cartItems.forEach((item) => (item.selected = checked));
@@ -209,7 +226,7 @@ export class CartPage implements OnInit {
   }
 
   // ============================================
-  // QUANTITY & REMOVAL (FIXED: accepts any ID)
+  // QUANTITY & REMOVAL
   // ============================================
 
   increaseQty(foodId: any, selectedOption?: string) {

@@ -30,10 +30,10 @@
       cursor: pointer;
     }
 
-    .cart-icon-wrapper,
-    .chat-icon-wrapper {
+    .cart-icon-wrapper {
       position: relative;
       display: inline-flex;
+      cursor: pointer;
 
       .bubble-badge {
         position: absolute;
@@ -140,74 +140,6 @@
       align-items: center;
       gap: 2px;
       cursor: pointer;
-    }
-  }
-}
-
-/* ============================================
-   VERIFY EMAIL CARD
-   ============================================ */
-.verify-email-card {
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-
-  .email-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-
-    .email-title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .mail-icon {
-        color: #ee4d2d;
-        font-size: 20px;
-      }
-
-      h4 {
-        margin: 0;
-        font-size: 0.95rem;
-        font-weight: 700;
-      }
-    }
-
-    .close-card-btn {
-      color: #999999;
-      font-size: 20px;
-      cursor: pointer;
-    }
-  }
-
-  .email-card-sub {
-    margin: 6px 0 12px;
-    font-size: 0.8rem;
-    color: #666666;
-  }
-
-  .email-buttons-row {
-    display: flex;
-    gap: 10px;
-
-    .btn-email-outline {
-      flex: 1;
-      background: #ffffff;
-      border: 1px solid #dcdcdc;
-      padding: 8px 0;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: #333333;
-      cursor: pointer;
-
-      &:hover {
-        border-color: #ee4d2d;
-        color: #ee4d2d;
-      }
     }
   }
 }
@@ -896,7 +828,6 @@
   color: #f8fafc;
 
   .menu-white-card,
-  .verify-email-card,
   .voucher-ticket-card {
     background: #1e293b;
     border: 1px solid #334155;
@@ -934,4 +865,174 @@
   .ticket-divider .notch {
     background: #0f172a;
   }
+}
+// ========================================================
+// COMPLETED PURCHASES (modal section)
+// ========================================================
+.completed-date-text {
+  font-size: 0.72rem;
+  color: #888888;
+  font-weight: 600;
+}
+
+.completed-proof-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e0e0e0;
+
+  .completed-proof-thumb {
+    width: 64px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e5e5e5;
+  }
+
+  .completed-proof-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #16a34a;
+  }
+}
+
+// ========================================================
+// MEMBERSHIP BADGE CARD
+// ========================================================
+.membership-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  border: 1px solid;
+  transition: transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.99);
+  }
+
+  &.bronze {
+    background: #fff7ed;
+    border-color: #fdba74;
+  }
+
+  &.silver {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+
+  &.gold {
+    background: #fffbeb;
+    border-color: #fcd34d;
+  }
+
+  .membership-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+
+    .membership-badge-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .membership-tier-block {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+
+      .membership-tier-name {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #1e293b;
+      }
+
+      .membership-tier-discount {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #b45309;
+      }
+    }
+  }
+
+  .membership-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+
+    .membership-qualifying {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #1e293b;
+    }
+
+    .membership-next {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #64748b;
+
+      &.top {
+        color: #b45309;
+      }
+    }
+  }
+
+  // Per-tier icon accents
+  &.bronze .membership-badge-icon {
+    background: #ffedd5;
+    color: #c2410c;
+  }
+
+  &.silver .membership-badge-icon {
+    background: #e2e8f0;
+    color: #475569;
+  }
+
+  &.gold .membership-badge-icon {
+    background: #fef3c7;
+    color: #b45309;
+  }
+
+  &.bronze .membership-tier-name { color: #9a3412; }
+  &.silver .membership-tier-name { color: #334155; }
+  &.gold .membership-tier-name { color: #92400e; }
+}
+
+// Dark mode
+.me-content.dark-theme .membership-card {
+  &.bronze { background: rgba(194, 65, 12, 0.14); border-color: #7c2d12; }
+  &.silver { background: rgba(148, 163, 184, 0.14); border-color: #475569; }
+  &.gold { background: rgba(180, 83, 9, 0.14); border-color: #78350f; }
+
+  .membership-left {
+    .membership-tier-block {
+      .membership-tier-name { color: #f8fafc; }
+      .membership-tier-discount { color: #fbbf24; }
+    }
+  }
+
+  .membership-right {
+    .membership-qualifying { color: #f8fafc; }
+    .membership-next { color: #94a3b8; }
+  }
+}
+
+// Membership line in checkout summary
+.bill-row.membership-line span:first-child {
+  color: #b45309;
+  font-weight: 700;
 }

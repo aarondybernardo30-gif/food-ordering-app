@@ -106,6 +106,11 @@ export class OrderService {
     const orders = this.getStoredOrders();
     orders.unshift(order);
     await this.saveToStorage(orders);
+
+    // Decrease available orders (stock) & increase sold today (soldCount)
+    if (order.items && order.items.length > 0) {
+      await this.foodService.recordOrderItems(order.items);
+    }
   }
 
   async addOrder(order: Order): Promise<void> {
@@ -143,10 +148,17 @@ export class OrderService {
       await this.saveToStorage(orders);
 
       if (targetOrder.items && targetOrder.items.length > 0) {
+        const reviewedFoodIds = new Set<string>();
         for (const item of targetOrder.items) {
-          await this.foodService.addReviewToFood(item.food.id, {
+          const fid = item.food?.id;
+          if (fid === undefined || fid === null) continue;
+          const key = String(fid);
+          if (reviewedFoodIds.has(key)) continue;
+          reviewedFoodIds.add(key);
+
+          await this.foodService.addReviewToFood(fid, {
             id: Math.random().toString(36).substring(2, 9),
-            foodId: item.food.id,
+            foodId: fid,
             customerName: targetOrder.customerName || 'Verified Customer',
             rating: rating,
             comment: feedback || 'Great food!',

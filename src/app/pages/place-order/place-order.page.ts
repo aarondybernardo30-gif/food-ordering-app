@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -56,13 +56,17 @@ import { Capacitor } from '@capacitor/core';
 import { AppLauncher } from '@capacitor/app-launcher';
 import { Geolocation } from '@capacitor/geolocation';
 import { CartService } from '../../services/cart';
+import { FoodService } from '../../services/food';
 import { OrderService } from '../../services/order';
 import { AuthService } from '../../services/auth';
 import { WalletService } from '../../services/wallet';
+import { WalletQrService } from '../../services/wallet-qr';
 import { BuyNowService } from '../../services/buynow';
 import { TopUpService } from '../../services/topup';
-import { CartItem, Order } from '../../models/food.model';
-import { VoucherItem } from '../me/me.page';
+import { CloudSyncService } from '../../services/cloud-sync';
+import { CartItem, Order, Voucher } from '../../models/food.model';
+import { VoucherService } from '../../services/voucher';
+import { MembershipService, MembershipInfo } from '../../services/membership';
 
 @Component({
   selector: 'app-place-order',
@@ -99,18 +103,21 @@ import { VoucherItem } from '../me/me.page';
 })
 export class PlaceOrderPage implements OnInit, OnDestroy {
   private cartService = inject(CartService);
+  private foodService = inject(FoodService);
   private orderService = inject(OrderService);
+  private voucherService = inject(VoucherService);
+  private membershipService = inject(MembershipService);
+  private cloudSync = inject(CloudSyncService);
+  private cdr = inject(ChangeDetectorRef);
   private authService = inject(AuthService);
   private walletService = inject(WalletService);
+  private walletQrService = inject(WalletQrService);
   private buyNow = inject(BuyNowService);
   public topupService = inject(TopUpService);
   private loadingCtrl = inject(LoadingController);
   private alertCtrl = inject(AlertController);
   private toastCtrl = inject(ToastController);
   private router = inject(Router);
-
-  // Replace with your deployed Xendit Node backend URL
-private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
   cart: CartItem[] = [];
   isBuyNow: boolean = false;
@@ -142,7 +149,10 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   distanceInKm: number = 0;
 
   // Applied Voucher
-  appliedVoucher: VoucherItem | null = null;
+  appliedVoucher: Voucher | null = null;
+
+  // Membership Info (Bronze 10%, Silver 20%, Gold 30%)
+  membershipInfo: MembershipInfo | null = this.membershipService.getCurrentMembership();
 
   constructor() {
     addIcons({ 
@@ -175,6 +185,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       if (!this.isBuyNow) {
         this.checkoutItems = items.filter(item => this.cartService.isChecked(item));
       }
+      this.cdr.detectChanges();
     });
 
     this.buyNow.item$.subscribe(item => {
@@ -185,10 +196,40 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
         this.isBuyNow = false;
         this.checkoutItems = this.cart.filter(item => this.cartService.isChecked(item));
       }
+      this.cdr.detectChanges();
     });
 
-    this.walletService.balance$.subscribe(bal => (this.walletBalance = bal));
+    this.walletService.balance$.subscribe(bal => {
+      this.walletBalance = bal;
+      this.cdr.detectChanges();
+    });
+
+    this.walletQrService.settings$.subscribe(() => {
+      this.cdr.detectChanges();
+    });
+
+    this.membershipService.membership$.subscribe(info => {
+      this.membershipInfo = info;
+      this.cdr.detectChanges();
+    });
+
+    this.foodService.foods$.subscribe(() => this.cdr.detectChanges());
+    this.voucherService.vouchers$.subscribe(vouchers => {
+      if (this.appliedVoucher) {
+        const latest = vouchers.find(v => v.id === this.appliedVoucher?.id);
+        this.appliedVoucher = latest || null;
+      }
+      this.cdr.detectChanges();
+    });
+    this.cloudSync.changes$.subscribe(({ key }) => {
+      if (key === 'store_location' || key === 'admin_gcash_info' || key === 'app_wallet_qr') {
+        this.recalculateDistanceFromStore();
+        this.cdr.detectChanges();
+      }
+    });
+
     this.loadVoucher();
+    this.membershipInfo = this.membershipService.refresh();
   }
 
   ngOnDestroy() {
@@ -197,6 +238,8 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
   ionViewWillEnter() {
     this.loadVoucher();
+    this.membershipInfo = this.membershipService.refresh();
+    this.cdr.detectChanges();
   }
 
   loadVoucher() {
@@ -206,13 +249,27 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     } catch {
       this.appliedVoucher = null;
     }
+    this.cdr.detectChanges();
+  }
+
+  get activeAppliedVoucher(): Voucher | null {
+    if (!this.appliedVoucher) return null;
+    return this.voucherService.isVoucherApplicable(
+      this.appliedVoucher,
+      this.subtotal,
+      this.orderType
+    )
+      ? this.appliedVoucher
+      : null;
   }
 
   selectVoucherFromMe() {
     this.router.navigate(['/me'], {
       queryParams: {
         openVouchers: 'true',
-        returnUrl: this.router.url
+        returnUrl: '/place-order',
+        subtotal: this.subtotal,
+        orderType: this.orderType
       }
     });
   }
@@ -223,7 +280,18 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     this.showToast('Voucher removed', 'dark');
   }
 
-  /** Gets the active store GPS location saved by the Admin */
+  private recalculateDistanceFromStore() {
+    if (!this.userCoords) return;
+    const store = this.getStoreLocation();
+    const calculatedKm = this.calculateDistance(
+      store.latitude,
+      store.longitude,
+      this.userCoords.latitude,
+      this.userCoords.longitude
+    );
+    this.distanceInKm = Math.max(1.0, Math.round(calculatedKm * 10) / 10);
+  }
+
   getStoreLocation(): { latitude: number; longitude: number; address: string } {
     try {
       const saved = localStorage.getItem('store_location');
@@ -237,24 +305,34 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     return { latitude: 15.36356, longitude: 121.06583, address: 'Store Main Kitchen' };
   }
 
-  /** Gets the Admin GCash details saved in localStorage (or uses store default) */
+  /** Dynamically reads GCash QR & details saved in Admin (no hardcoded personal info) */
   get adminGcash(): { accountName: string; number: string; qrImage?: string } {
+    const walletQr = this.walletQrService.getSettings();
+    if (walletQr.image || walletQr.accountNumber || walletQr.accountName) {
+      return {
+        accountName: walletQr.accountName || walletQr.walletLabel || 'GCash',
+        number: walletQr.accountNumber || '',
+        qrImage: walletQr.image || ''
+      };
+    }
+
     try {
       const saved = localStorage.getItem('admin_gcash_info');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.number || parsed.qrImage) {
+        if (parsed.number || parsed.qrImage || parsed.accountName) {
           return {
-            accountName: parsed.accountName || 'Food Ordering Store',
-            number: parsed.number || '0912-345-6789',
+            accountName: parsed.accountName || 'GCash',
+            number: parsed.number || '',
             qrImage: parsed.qrImage || ''
           };
         }
       }
     } catch {}
+
     return {
-      accountName: 'Food Ordering Store',
-      number: '0912-345-6789',
+      accountName: 'GCash',
+      number: '',
       qrImage: ''
     };
   }
@@ -264,22 +342,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   // ============================================
 
   get isFreeShippingVoucher(): boolean {
-    if (!this.appliedVoucher) return false;
-    const category = (this.appliedVoucher.category || '').toLowerCase();
-    const code = (this.appliedVoucher.code || '').toUpperCase();
-    const headline = (this.appliedVoucher.headline || '').toUpperCase();
-    const title = (this.appliedVoucher.title || '').toUpperCase();
-
-    return (
-      category === 'shipping' ||
-      category === 'freeship' ||
-      category === 'free-shipping' ||
-      category === 'delivery' ||
-      code.includes('FREESHIP') ||
-      code.includes('SHIP') ||
-      headline.includes('FREE SHIPPING') ||
-      title.includes('FREE DELIVERY')
-    );
+    return this.voucherService.isShippingVoucher(this.activeAppliedVoucher);
   }
 
   get subtotal(): number {
@@ -297,20 +360,27 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   }
 
   get discountAmount(): number {
-    if (!this.appliedVoucher) return 0;
+    const voucher = this.activeAppliedVoucher;
+    if (!voucher) return 0;
 
     if (this.isFreeShippingVoucher) {
       return this.orderType === 'delivery' ? this.rawShippingFee : 0;
     }
 
-    const minSpend = Number(this.appliedVoucher.minSpend) || 0;
-    if (this.subtotal >= minSpend) {
-      const match = (this.appliedVoucher.headline || '').match(/\d+/);
-      const flatOff = match ? parseInt(match[0], 10) : 0;
-      return Math.min(this.subtotal, flatOff);
+    const minSpend = Number(voucher.minSpend) || 0;
+    if (this.subtotal < minSpend) return 0;
+
+    if (voucher.discountType === 'percent') {
+      const pct = Number(voucher.discountValue) || 0;
+      return Math.min(this.subtotal, (this.subtotal * pct) / 100);
+    }
+    if (voucher.discountType === 'fixed') {
+      return Math.min(this.subtotal, Number(voucher.discountValue) || 0);
     }
 
-    return 0;
+    const match = (voucher.headline || '').match(/\d+/);
+    const flatOff = match ? parseInt(match[0], 10) : 0;
+    return Math.min(this.subtotal, flatOff);
   }
 
   get finalShippingFee(): number {
@@ -321,9 +391,15 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     return this.rawShippingFee;
   }
 
+  get membershipDiscount(): number {
+    const pct = Number(this.membershipInfo?.discountPercent) || 0;
+    if (pct <= 0) return 0;
+    return Math.round(((this.subtotal * pct) / 100) * 100) / 100;
+  }
+
   get totalAmount(): number {
     const nonShippingDiscount = !this.isFreeShippingVoucher ? this.discountAmount : 0;
-    const total = this.subtotal + this.finalShippingFee - nonShippingDiscount;
+    const total = this.subtotal + this.finalShippingFee - nonShippingDiscount - this.membershipDiscount;
     return Math.max(0, total);
   }
 
@@ -348,7 +424,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   }
 
   // ============================================
-  // QR CASHIER MODAL ACTIONS (XENDIT QR PH)
+  // QR CASHIER MODAL ACTIONS (ADMIN GCASH QR)
   // ============================================
 
   get formattedCashierTimer(): string {
@@ -358,55 +434,25 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   }
 
   private async openQrCashierModal(orderId: string) {
+    const gcash = this.adminGcash;
+
+    if (!gcash.qrImage) {
+      const alert = await this.alertCtrl.create({
+        header: 'GCash QR Unavailable',
+        message: 'No GCash QR code has been uploaded yet. Please upload one in Admin → Wallet QR settings.',
+        buttons: ['OK']
+      });
+      await alert.present();
+      return;
+    }
+
     this.cashierOrderId = orderId;
     this.cashierTransactionId = `TXN${Date.now().toString().slice(-10)}`;
     this.cashierQrId = '';
     this.cashierOrderTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     this.cashierDescription = this.checkoutItems.map(i => `${i.quantity}x ${i.food.name}`).join(', ');
     this.gcashReferenceNumber = '';
-    this.cashierQrImageUrl = '';
-
-    const loading = await this.loadingCtrl.create({
-      message: `Generating Xendit QR Ph for ₱${this.totalAmount.toFixed(2)}...`,
-    });
-    await loading.present();
-
-    try {
-      const response = await fetch(`${this.XENDIT_BACKEND_URL}/api/create-qrph`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amountPhp: this.totalAmount,
-          orderId: this.cashierOrderId,
-          description: `Order #${this.cashierOrderId}: ${this.cashierDescription}`.slice(0, 250),
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.qrImageUrl) {
-        throw new Error(data.error || 'Could not generate Xendit QR Ph code');
-      }
-
-      this.cashierQrId = data.qrId;
-      this.cashierQrImageUrl = data.qrImageUrl; // Base64 QR Ph image with exact amount embedded
-    } catch (err) {
-      console.error('Xendit QR Ph generation failed:', err);
-      if (this.adminGcash.qrImage) {
-        this.cashierQrImageUrl = this.adminGcash.qrImage;
-        this.showToast('Using uploaded store QR (Xendit server unavailable).', 'warning');
-      } else {
-        await loading.dismiss();
-        const alert = await this.alertCtrl.create({
-          header: 'Xendit QR Ph Setup Required',
-          message: 'Could not reach the Xendit backend to generate a pre-filled QR code. Check XENDIT_BACKEND_URL or upload a real GCash QR image in Admin settings.',
-          buttons: ['OK']
-        });
-        await alert.present();
-        return;
-      }
-    } finally {
-      await loading.dismiss();
-    }
+    this.cashierQrImageUrl = gcash.qrImage;
 
     this.cashierSecondsLeft = 15 * 60;
     this.stopCashierTimer();
@@ -416,9 +462,11 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       } else {
         this.stopCashierTimer();
       }
+      this.cdr.detectChanges();
     }, 1000);
 
     this.isQrCashierOpen = true;
+    this.cdr.detectChanges();
   }
 
   closeQrCashier() {
@@ -435,6 +483,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
   async copyAdminGcashNumber() {
     const cleanNum = this.adminGcash.number.replace(/-/g, '');
+    if (!cleanNum) return;
     try {
       await navigator.clipboard.writeText(cleanNum);
       this.showToast(`GCash number (${cleanNum}) copied!`, 'success');
@@ -445,12 +494,19 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
   async openInGcash() {
     const cleanNum = this.adminGcash.number.replace(/-/g, '');
-    try {
-      await navigator.clipboard.writeText(cleanNum);
-    } catch {}
+    if (cleanNum) {
+      try {
+        await navigator.clipboard.writeText(cleanNum);
+      } catch {}
+    }
 
     if (Capacitor.isNativePlatform()) {
-      this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
+      this.showToast(
+        cleanNum
+          ? `Number ${cleanNum} copied! Opening GCash — pay ₱${this.totalAmount.toFixed(2)}.`
+          : `Opening GCash — scan the QR and pay ₱${this.totalAmount.toFixed(2)}.`,
+        'success'
+      );
       try {
         const { value: hasPackage } = await AppLauncher.canOpenUrl({
           url: 'com.globe.gcash.android',
@@ -486,21 +542,21 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     const isIOS = /iphone|ipad|ipod/i.test(ua);
 
     if (isAndroid) {
-      this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
+      this.showToast(`Opening GCash — pay exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
       window.location.href = 'intent://#Intent;scheme=gcash;package=com.globe.gcash.android;end';
       return;
     }
 
     if (isIOS) {
-      this.showToast(`Number ${cleanNum} copied! Opening GCash — send exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
+      this.showToast(`Opening GCash — pay exact ₱${this.totalAmount.toFixed(2)}.`, 'success');
       window.location.href = 'gcash://';
       return;
     }
 
     const alert = await this.alertCtrl.create({
-      header: 'Send via GCash App',
-      subHeader: `Number Copied: ${cleanNum}`,
-      message: `Open GCash on your phone → tap QR → Upload QR (or send to ${cleanNum}) for ₱${this.totalAmount.toFixed(2)}.`,
+      header: 'Pay via GCash App',
+      subHeader: cleanNum ? `Number Copied: ${cleanNum}` : this.adminGcash.accountName,
+      message: `Open GCash on your phone → tap QR → Scan this QR (or tap Save QR Code and Upload QR from Gallery) for ₱${this.totalAmount.toFixed(2)}.`,
       buttons: ['OK']
     });
     await alert.present();
@@ -512,7 +568,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       if (this.cashierQrImageUrl.startsWith('data:')) {
         const a = document.createElement('a');
         a.href = this.cashierQrImageUrl;
-        a.download = `qr-payment-${this.cashierOrderId}.png`;
+        a.download = `gcash-qr-${this.cashierOrderId}.png`;
         a.click();
       } else {
         const res = await fetch(this.cashierQrImageUrl);
@@ -520,7 +576,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
         const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
-        a.download = `qr-payment-${this.cashierOrderId}.png`;
+        a.download = `gcash-qr-${this.cashierOrderId}.png`;
         a.click();
         URL.revokeObjectURL(blobUrl);
       }
@@ -531,39 +587,6 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   }
 
   async confirmQrPaymentAndPlaceOrder() {
-    // If Xendit QR Ph is active, verify payment status automatically with Xendit
-    if (this.cashierQrId) {
-      const loading = await this.loadingCtrl.create({
-        message: 'Verifying QR Ph payment with Xendit...',
-      });
-      await loading.present();
-
-      try {
-        const resp = await fetch(
-          `${this.XENDIT_BACKEND_URL}/api/check-payment/${this.cashierQrId}`
-        );
-        const data = await resp.json();
-
-        if (!data.paid && data.status !== 'SUCCEEDED') {
-          await loading.dismiss();
-          this.showToast('Payment not completed yet. Please scan and pay the QR Ph code first.', 'warning');
-          return;
-        }
-
-        const verifiedRef = data.paymentId || this.cashierQrId;
-        await loading.dismiss();
-        const orderId = this.cashierOrderId || Math.floor(100000 + Math.random() * 900000).toString();
-        this.closeQrCashier();
-        await this.finalizeOrderRecord(orderId, verifiedRef);
-        return;
-      } catch (err) {
-        await loading.dismiss();
-        this.showToast('Could not verify payment status with Xendit. Please try again.', 'danger');
-        return;
-      }
-    }
-
-    // Fallback: manual reference number verification when using static uploaded QR
     const cleanRef = this.gcashReferenceNumber.replace(/\s+/g, '').trim();
     if (cleanRef.length < 6) {
       this.showToast('Please enter your GCash / Bank Reference Number (at least 6 characters).', 'warning');
@@ -591,7 +614,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 20px Arial, sans-serif';
-      ctx.fillText('QR CASHIER • PAYMENT DETAILS', 24, 44);
+      ctx.fillText('GCASH QR • PAYMENT DETAILS', 24, 44);
 
       ctx.fillStyle = '#fef3c7';
       ctx.fillRect(24, 92, 210, 30);
@@ -607,7 +630,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       ctx.font = '15px Arial, sans-serif';
       ctx.fillText(`Reference No: ${refNo}`, 24, 198);
       ctx.fillText(`Transaction ID: ${this.cashierTransactionId}`, 24, 226);
-      ctx.fillText(`To GCash: ${this.adminGcash.number}`, 24, 254);
+      ctx.fillText(`To: ${this.adminGcash.number || this.adminGcash.accountName}`, 24, 254);
       ctx.fillText(`Submitted: ${new Date().toLocaleString()}`, 24, 282);
 
       return canvas.toDataURL('image/png');
@@ -621,6 +644,22 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
   // ============================================
 
   increaseQty(foodId: any, selectedOption?: string) {
+    const liveFood = this.foodService.getFoods().find(f => String(f.id) === String(foodId));
+    if (liveFood) {
+      const maxStock =
+        liveFood.available === false
+          ? 0
+          : (typeof liveFood.stock === 'number' ? liveFood.stock : 20);
+      const totalForFood = this.checkoutItems
+        .filter(i => String(i.food.id) === String(foodId))
+        .reduce((sum, i) => sum + i.quantity, 0);
+
+      if (totalForFood >= maxStock) {
+        this.showToast(`Only ${maxStock} order(s) available for "${liveFood.name}".`, 'warning');
+        return;
+      }
+    }
+
     if (this.isBuyNow) {
       this.buyNow.changeQuantity(1);
       return;
@@ -664,16 +703,8 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
         longitude: pos.coords.longitude
       };
       this.deliveryAddress = `Lat: ${pos.coords.latitude.toFixed(5)}, Lng: ${pos.coords.longitude.toFixed(5)}`;
-
-      const store = this.getStoreLocation();
-      const calculatedKm = this.calculateDistance(
-        store.latitude,
-        store.longitude,
-        pos.coords.latitude,
-        pos.coords.longitude
-      );
-
-      this.distanceInKm = Math.max(1.0, Math.round(calculatedKm * 10) / 10);
+      this.recalculateDistanceFromStore();
+      this.cdr.detectChanges();
 
       const feeText = this.isFreeShippingVoucher
         ? 'FREE shipping applied'
@@ -712,6 +743,46 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
         position: 'top'
       });
       return toast.present();
+    }
+
+    const qtyByFood = new Map<string, { name: string; qty: number }>();
+    for (const item of this.checkoutItems) {
+      const id = item.food?.id;
+      if (id === undefined || id === null) continue;
+      const key = String(id);
+      const prev = qtyByFood.get(key);
+      qtyByFood.set(key, {
+        name: item.food.name,
+        qty: (prev ? prev.qty : 0) + (item.quantity || 1)
+      });
+    }
+
+    const allFoods = this.foodService.getFoods();
+    for (const [foodKey, entry] of qtyByFood.entries()) {
+      const liveFood = allFoods.find(f => String(f.id) === foodKey);
+      if (liveFood) {
+        const availableStock = liveFood.available === false
+          ? 0
+          : (typeof liveFood.stock === 'number' ? liveFood.stock : 20);
+
+        if (availableStock <= 0) {
+          const alert = await this.alertCtrl.create({
+            header: 'Item Sold Out',
+            message: `Sorry, "${entry.name}" is already out of stock.`,
+            buttons: ['OK']
+          });
+          return alert.present();
+        }
+
+        if (entry.qty > availableStock) {
+          const alert = await this.alertCtrl.create({
+            header: 'Insufficient Orders Available',
+            message: `Sorry, "${entry.name}" only has ${availableStock} order(s) available.`,
+            buttons: ['OK']
+          });
+          return alert.present();
+        }
+      }
     }
 
     if (this.orderType === 'delivery' && !this.userCoords) {
@@ -788,7 +859,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       distance: this.orderType === 'delivery' ? this.distanceInKm : 0,
       subtotal: this.subtotal,
       shippingFee: this.finalShippingFee,
-      discountAmount: this.discountAmount,
+      discountAmount: this.discountAmount + this.membershipDiscount,
       totalAmount: this.totalAmount,
       paymentMethod: this.paymentMethod,
       paymentProof: this.paymentMethod === 'online' && gcashRef
@@ -800,6 +871,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
 
     try {
       await this.orderService.addOrder(newOrder);
+      this.membershipInfo = this.membershipService.refresh();
     } catch (e) {
       const toast = await this.toastCtrl.create({
         message: 'Could not save your order. Please try again or contact the store.',
@@ -811,11 +883,19 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
       return;
     }
 
+    const usedVoucher = this.activeAppliedVoucher;
+    if (usedVoucher) {
+      const user = this.authService.getCurrentUser();
+      const customerKey =
+        (user && (user.phone || user.fullName)) || 'guest';
+      this.voucherService.markUsed(usedVoucher.id, customerKey);
+      this.appliedVoucher = null;
+      localStorage.removeItem('applied_voucher');
+    }
+
     if (this.paymentMethod === 'shopeepay') {
       this.walletService.deduct(this.totalAmount);
     }
-
-    localStorage.removeItem('applied_voucher');
 
     let paymentText = '';
     if (this.paymentMethod === 'shopeepay') {
@@ -823,7 +903,7 @@ private readonly XENDIT_BACKEND_URL = 'https://xendit-qrph-server.onrender.com';
     } else if (this.paymentMethod === 'cod') {
       paymentText = this.orderType === 'delivery' ? 'Cash on Delivery (COD)' : this.orderType === 'dine-in' ? 'Cash (Counter/Table)' : 'Cash upon Pick-Up';
     } else {
-      paymentText = `QR Payment (Ref: ${gcashRef})`;
+      paymentText = `GCash QR (Ref: ${gcashRef})`;
     }
 
     let alertMessage = '';

@@ -2,7 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { CloudSyncService } from './cloud-sync';
 
-export type MealSchedule = 'today' | 'tomorrow' | 'friday' | 'weekend';
+export type MealSchedule = 'today' | 'tomorrow' | 'weekend';
+
+export interface FeaturedMealVariation {
+  name: string;
+  size?: string;
+  price: number;
+}
 
 export interface FeaturedMealItem {
   id: number;
@@ -10,7 +16,11 @@ export interface FeaturedMealItem {
   subtitle: string;
   description: string;
   price: number;
+  stock?: number;
   image: string;
+  images?: string[];
+  variations?: FeaturedMealVariation[];
+  sizes?: string[];
   schedule: MealSchedule;
 }
 
@@ -23,7 +33,11 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Classic Filipino Chicken Adobo',
     description: 'Slow-simmered tender chicken braised in garlic, bay leaves, soy sauce, and peppercorns.',
     price: 100,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600',
+    images: ['https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 100 }],
+    sizes: ['Regular'],
     schedule: 'today'
   },
   {
@@ -32,7 +46,11 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Beef Steak with Onion Rings',
     description: 'Thinly sliced tender beef marinated in calamansi and soy sauce topped with fresh onions.',
     price: 140,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600',
+    images: ['https://images.unsplash.com/photo-1544025162-d76694265947?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 140 }],
+    sizes: ['Regular'],
     schedule: 'today'
   },
   {
@@ -41,7 +59,11 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Sour & Savory Tamarind Broth',
     description: 'Tangy and comforting soup with fresh kangkong, radish, tomatoes, and tender chicken.',
     price: 130,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=600',
+    images: ['https://images.unsplash.com/photo-1547592180-85f173990554?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 130 }],
+    sizes: ['Regular'],
     schedule: 'tomorrow'
   },
   {
@@ -50,26 +72,12 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Rich Cream Stew with Sausage',
     description: 'Hearty chicken stew cooked in creamy white sauce with carrots, potatoes, and mushrooms.',
     price: 145,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600',
+    images: ['https://images.unsplash.com/photo-1551183053-bf91a1d81141?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 145 }],
+    sizes: ['Regular'],
     schedule: 'tomorrow'
-  },
-  {
-    id: 903,
-    title: 'Crispy Lechon Kawali',
-    subtitle: 'Golden Crisp Pork Belly',
-    description: 'Deep-fried pork belly with super crunchy skin and juicy meat served with liver sauce.',
-    price: 160,
-    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600',
-    schedule: 'friday'
-  },
-  {
-    id: 906,
-    title: 'Inihaw na Bangus Feast',
-    subtitle: 'Stuffed Grilled Milkfish',
-    description: 'Boneless grilled milkfish stuffed with fresh tomatoes, onions, ginger, and spices.',
-    price: 155,
-    image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=600',
-    schedule: 'friday'
   },
   {
     id: 907,
@@ -77,7 +85,11 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Slow-Boiled Marrow & Shank',
     description: 'Rich and hearty broth simmered for hours with beef shank, sweet corn, and cabbage.',
     price: 190,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1547592180-85f173990554?w=600',
+    images: ['https://images.unsplash.com/photo-1547592180-85f173990554?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 190 }],
+    sizes: ['Regular'],
     schedule: 'weekend'
   },
   {
@@ -86,7 +98,11 @@ const SEED_MEALS: FeaturedMealItem[] = [
     subtitle: 'Crispy Sizzling Plate',
     description: 'Savory minced pork with calamansi, chili, egg, and mayonnaise on a hot plate.',
     price: 150,
+    stock: 20,
     image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600',
+    images: ['https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600'],
+    variations: [{ name: 'Regular', size: 'Regular', price: 150 }],
+    sizes: ['Regular'],
     schedule: 'weekend'
   }
 ];
@@ -106,7 +122,7 @@ export class FeaturedMealService {
         try {
           const parsed = JSON.parse(e.newValue);
           if (Array.isArray(parsed)) {
-            this.mealsSubject.next(parsed);
+            this.mealsSubject.next(this.sanitizeMeals(parsed));
           }
         } catch {}
       }
@@ -114,9 +130,15 @@ export class FeaturedMealService {
 
     this.cloudSync.changes$.subscribe(({ key, data }) => {
       if (key === STORAGE_KEY && Array.isArray(data)) {
-        this.mealsSubject.next(data);
+        this.mealsSubject.next(this.sanitizeMeals(data));
       }
     });
+  }
+
+  private sanitizeMeals(list: any[]): FeaturedMealItem[] {
+    return list.filter(
+      (m) => m && (m.schedule === 'today' || m.schedule === 'tomorrow' || m.schedule === 'weekend')
+    );
   }
 
   private readMeals(): FeaturedMealItem[] {
@@ -124,8 +146,14 @@ export class FeaturedMealService {
       const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          const sanitized = this.sanitizeMeals(parsed);
+          if (sanitized.length > 0) {
+            if (sanitized.length !== parsed.length) {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+            }
+            return sanitized;
+          }
         }
       }
     } catch {}

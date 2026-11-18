@@ -13,14 +13,9 @@
           title="Account Settings">
         </ion-icon>
 
-        <div class="cart-icon-wrapper" (click)="openPurchaseModal('all')">
+        <div class="cart-icon-wrapper" (click)="goToCart()" title="View Cart">
           <ion-icon name="cart-outline" class="action-icon"></ion-icon>
-          <span class="bubble-badge">{{ allOrders.length || 11 }}</span>
-        </div>
-
-        <div class="chat-icon-wrapper" routerLink="/notifications">
-          <ion-icon name="chatbubble-ellipses-outline" class="action-icon"></ion-icon>
-          <span class="bubble-badge">5</span>
+          <span class="bubble-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
         </div>
       </div>
 
@@ -34,7 +29,7 @@
           <div class="username-row">
             <h3 class="user-name">{{ username }}</h3>
             <span class="tier-pill" (click)="openTierInfo()">
-              {{ userTier }}
+              {{ userTier }} • {{ membership?.discountPercent ?? 10 }}% OFF
               <ion-icon name="chevron-forward-outline"></ion-icon>
             </span>
           </div>
@@ -46,35 +41,29 @@
     <div class="profile-body-container">
 
       <!-- ============================================
-           1. VERIFY EMAIL CARD
+           MEMBERSHIP BADGE CARD
            ============================================ -->
-      <div class="verify-email-card" *ngIf="showEmailBanner">
-        <div class="email-card-header">
-          <div class="email-title-row">
-            <ion-icon name="mail-outline" class="mail-icon"></ion-icon>
-            <h4>Verify Email</h4>
+      <div class="membership-card" [ngClass]="userTier.toLowerCase()" *ngIf="membership" (click)="openTierInfo()">
+        <div class="membership-left">
+          <div class="membership-badge-icon">
+            <ion-icon name="medal-outline"></ion-icon>
           </div>
-          <ion-icon
-            name="close-outline"
-            class="close-card-btn"
-            (click)="dismissEmailBanner()">
-          </ion-icon>
+          <div class="membership-tier-block">
+            <span class="membership-tier-name">{{ userTier }} Member</span>
+            <span class="membership-tier-discount">{{ membership.discountPercent }}% discount on every food order</span>
+          </div>
         </div>
-        <p class="email-card-sub">
-          Keep your email up to date to ensure you can always log in to your account
-        </p>
-        <div class="email-buttons-row">
-          <button type="button" class="btn-email-outline" (click)="verifyEmailAction()">
-            Change Email
-          </button>
-          <button type="button" class="btn-email-outline" (click)="verifyEmailAction()">
-            Verify Now
-          </button>
+        <div class="membership-right">
+          <span class="membership-qualifying">{{ membership.qualifyingOrders }}/{{ membership.nextRequirement || membership.qualifyingOrders }}</span>
+          <span class="membership-next" *ngIf="membership.nextTier; else topTier">
+            {{ membership.ordersToNext }} more to {{ membership.nextTier }}
+          </span>
+          <ng-template #topTier><span class="membership-next top">Top tier reached 🎉</span></ng-template>
         </div>
       </div>
 
       <!-- ============================================
-           2. MY PURCHASES (4-Grid with Badges)
+           1. MY PURCHASES (4-Grid with Badges)
            ============================================ -->
       <div class="menu-white-card">
         <div class="card-header-bar" (click)="openPurchaseModal('all')">
@@ -119,12 +108,23 @@
             <span class="purchase-label">To Receive</span>
           </div>
 
-          <!-- 4. TO RATE -->
+          <!-- 4. COMPLETED -->
+          <div class="purchase-item" (click)="openPurchaseModal('completed')">
+            <div class="purchase-icon-box">
+              <ion-icon name="checkmark-done-outline"></ion-icon>
+              <span class="counter-badge" *ngIf="unseenCompletedCount > 0">
+                {{ unseenCompletedCount }}
+              </span>
+            </div>
+            <span class="purchase-label">Completed</span>
+          </div>
+
+          <!-- 5. TO RATE -->
           <div class="purchase-item" (click)="openPurchaseModal('toRate')">
             <div class="purchase-icon-box">
               <ion-icon name="star-outline"></ion-icon>
-              <span class="counter-badge count-highlight">
-                {{ toRateOrders.length || 3 }}
+              <span class="counter-badge count-highlight" *ngIf="toRateOrders.length > 0">
+                {{ toRateOrders.length }}
               </span>
             </div>
             <span class="purchase-label">To Rate</span>
@@ -133,7 +133,7 @@
       </div>
 
       <!-- ============================================
-           3. MY WALLET & VOUCHERS
+           2. MY WALLET & VOUCHERS
            ============================================ -->
       <div class="menu-white-card wallet-card">
         <div class="card-header-bar card-header-no-border">
@@ -177,7 +177,7 @@
   <!-- ============================================
        VOUCHERS MODAL
        ============================================ -->
-  <ion-modal [isOpen]="isVouchersModalOpen" (didDismiss)="closeVouchersModal()">
+  <ion-modal #vouchersModal [isOpen]="isVouchersModalOpen" (didDismiss)="closeVouchersModal()">
     <ng-template>
       <ion-header class="ion-no-border">
         <ion-toolbar color="primary">
@@ -211,7 +211,7 @@
             class="v-tab-btn" 
             [class.active]="selectedVoucherTab === 'all'" 
             (click)="setVoucherTab('all')">
-            All ({{ myVouchers.length }})
+            All ({{ availableVouchers.length }})
           </button>
           <button 
             type="button" 
@@ -243,14 +243,14 @@
           <!-- Empty State -->
           <div *ngIf="filteredVouchers.length === 0" class="empty-vouchers-box">
             <ion-icon name="ticket-outline"></ion-icon>
-            <p>No vouchers available in this category.</p>
+            <p *ngIf="returnUrl">No vouchers are applicable for this order right now.</p>
+            <p *ngIf="!returnUrl">No vouchers available in this category.</p>
           </div>
 
           <!-- Shopee Ticket Card -->
           <div 
             class="voucher-ticket-card" 
-            *ngFor="let voucher of filteredVouchers"
-            [class.claimed]="voucher.isUsed">
+            *ngFor="let voucher of filteredVouchers">
             
             <!-- Left Side Ticket Stub -->
             <div class="ticket-left" [ngClass]="voucher.category">
@@ -287,12 +287,11 @@
                   {{ voucher.expiry }}
                 </span>
                 
-                <button 
-                  type="button" 
-                  class="btn-use-voucher" 
-                  (click)="useVoucher(voucher)"
-                  [disabled]="voucher.isUsed">
-                  {{ voucher.isUsed ? 'CLAIMED' : (returnUrl ? 'APPLY' : 'USE NOW') }}
+                <button
+                  type="button"
+                  class="btn-use-voucher"
+                  (click)="useVoucher(voucher)">
+                  {{ returnUrl ? 'APPLY' : 'USE NOW' }}
                 </button>
               </div>
             </div>
@@ -325,6 +324,8 @@
                 ? 'Orders To Receive'
                 : selectedModalType === 'toRate'
                 ? 'Orders To Rate'
+                : selectedModalType === 'completed'
+                ? 'Completed Orders'
                 : 'Purchase History'
             }}
           </ion-title>
@@ -426,6 +427,36 @@
             <div class="order-foot-row">
               <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
               <button type="button" class="btn-shopee-rate" (click)="openRatingModal(order)">⭐ Rate Meal</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- COMPLETED -->
+        <div *ngIf="selectedModalType === 'completed'">
+          <div *ngIf="completedOrders.length === 0" class="empty-modal-box">
+            <ion-icon name="checkmark-done-outline"></ion-icon>
+            <p>No completed orders yet.</p>
+          </div>
+          <div *ngFor="let order of completedOrders" class="order-item-card">
+            <div class="order-card-head">
+              <span class="order-id">Order #{{ order.id }}</span>
+              <ion-badge color="success">Completed</ion-badge>
+            </div>
+            <div class="order-foods-list">
+              <div *ngFor="let item of order.items" class="food-line">
+                <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+              </div>
+            </div>
+            <div class="order-foot-row">
+              <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+              <span class="completed-date-text" *ngIf="order.deliveredAt">
+                Delivered {{ order.deliveredAt | date:'mediumDate' }}
+              </span>
+            </div>
+            <div *ngIf="order.deliveryProof" class="completed-proof-line">
+              <img [src]="order.deliveryProof" alt="Proof of delivery" class="completed-proof-thumb" />
+              <span class="completed-proof-label">✓ Proof of delivery attached</span>
             </div>
           </div>
         </div>

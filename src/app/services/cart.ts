@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { CartItem, FoodItem } from '../models/food.model';
 
@@ -6,8 +6,24 @@ import { CartItem, FoodItem } from '../models/food.model';
   providedIn: 'root'
 })
 export class CartService {
+  private ngZone = inject(NgZone);
   private cartItems = new BehaviorSubject<CartItem[]>(this.loadCart());
   public cart$ = this.cartItems.asObservable();
+
+  constructor() {
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'app_cart' && e.newValue !== null) {
+        this.ngZone.run(() => {
+          try {
+            const parsed = JSON.parse(e.newValue!);
+            if (Array.isArray(parsed)) {
+              this.cartItems.next(parsed);
+            }
+          } catch {}
+        });
+      }
+    });
+  }
 
   private loadCart(): CartItem[] {
     try {
@@ -71,8 +87,7 @@ export class CartService {
 
   setAllSelected(checked: boolean): void {
     const current = this.cartItems.value.map(item => ({ ...item, selected: checked }));
-    this.cartItems.next(current);
-    localStorage.setItem('app_cart', JSON.stringify(current));
+    this.saveCart(current);
   }
 
   getCheckedItems(): CartItem[] {
@@ -89,8 +104,7 @@ export class CartService {
   /** Removes only the checked items — unchecked items stay in the cart. */
   removeChecked(): void {
     const remaining = this.cartItems.value.filter(item => !this.isChecked(item));
-    this.cartItems.next(remaining);
-    localStorage.setItem('app_cart', JSON.stringify(remaining));
+    this.saveCart(remaining);
   }
 
   increaseQuantity(foodId: number, selectedOption?: string): void {

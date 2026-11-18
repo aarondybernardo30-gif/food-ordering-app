@@ -18,9 +18,30 @@ export interface Rider {
   email?: string;
   address?: string;
   licenseNumber?: string;
-  yearsExperience?: string;
-  emergencyContactName?: string;
-  emergencyContactNumber?: string;
+}
+
+/** Admin-managed voucher; auto-distributed to all customers. */
+export interface Voucher {
+  id: string;
+  code: string;
+  headline: string;
+  title: string;
+  description: string;
+  category: 'shipping' | 'discount' | 'cashback';
+  /** freeship = waive delivery fee; fixed = ₱ off; percent = % off */
+  discountType: 'freeship' | 'fixed' | 'percent';
+  discountValue: number;
+  minSpend: number;
+  expiry: string;
+  tag: string;
+  /** Customer keys (phone) that have used this voucher — it disappears for them. */
+  usedBy: string[];
+}
+
+export interface CategoryItem {
+  name: string;
+  imageUrl: string;
+  image?: string;
 }
 
 export interface FoodReview {
@@ -34,6 +55,8 @@ export interface FoodReview {
 
 export interface FoodVariation {
   name: string;
+  /** Food portion or cup size (e.g., "Solo", "Regular", "Medium", "Large", "Family") */
+  size?: string;
   price?: number;
   [key: string]: any;
 }
@@ -49,18 +72,25 @@ export interface FoodItem {
   image?: string;
   images?: string[];
   available?: boolean;
+  /** Number of orders/servings remaining for this food item */
+  stock?: number;
   isMall?: boolean;
+  freeShipping?: boolean;
   discount?: string;
   soldCount?: number | string;
   reviews?: FoodReview[] | any[];
   options?: string[];
   variations?: FoodVariation[];
+  /** Predefined available sizes for this food item (e.g., ["Solo", "Medium", "Large"]) */
+  sizes?: string[];
 }
 
 export interface CartItem {
   food: FoodItem;
   quantity: number;
   selectedOption?: string;
+  /** Selected size for this order item (e.g., "Regular", "Large", "Solo") */
+  selectedSize?: string;
   /** Effective unit price for the chosen variation; falls back to the food's base price. */
   unitPrice?: number;
   /** Optional schedule/notes label (e.g. "Scheduled for Today" for daily featured meals). */
@@ -93,6 +123,10 @@ export interface Order {
 
   /** Total discount from applied vouchers */
   discountAmount?: number;
+
+  /** Discount from customer membership tier */
+  membershipDiscount?: number;
+  membershipTier?: string;
 
   /** Final amount payable: subtotal + shippingFee - discountAmount */
   totalAmount: number;

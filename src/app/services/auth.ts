@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, NgZone, inject } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Rider, User } from '../models/food.model';
 import { CloudSyncService } from './cloud-sync';
@@ -8,6 +8,7 @@ import { CloudSyncService } from './cloud-sync';
 })
 export class AuthService {
   private cloudSync = inject(CloudSyncService);
+  private ngZone = inject(NgZone);
 
   private readonly USER_KEY = 'currentUser';
   private readonly USERS_LIST_KEY = 'registered_users';
@@ -34,6 +35,9 @@ export class AuthService {
   private currentUserSubject: BehaviorSubject<User | null>;
   public currentUser$: Observable<User | null>;
 
+  private ridersSubject: BehaviorSubject<Rider[]>;
+  public riders$: Observable<Rider[]>;
+
   constructor() {
     let savedUser: User | null = null;
     try {
@@ -48,6 +52,34 @@ export class AuthService {
     this.currentUser$ = this.currentUserSubject.asObservable();
 
     this.seedDefaultAccounts();
+    this.ridersSubject = new BehaviorSubject<Rider[]>(this.readList(this.RIDERS_LIST_KEY));
+    this.riders$ = this.ridersSubject.asObservable();
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === this.USER_KEY) {
+        this.ngZone.run(() => {
+          try {
+            this.currentUserSubject.next(e.newValue ? JSON.parse(e.newValue) : null);
+          } catch {
+            this.currentUserSubject.next(null);
+          }
+        });
+      }
+      if (e.key === this.RIDERS_LIST_KEY && e.newValue) {
+        this.ngZone.run(() => {
+          try {
+            const parsed = JSON.parse(e.newValue!);
+            if (Array.isArray(parsed)) this.ridersSubject.next(parsed);
+          } catch {}
+        });
+      }
+    });
+
+    this.cloudSync.changes$.subscribe(({ key, data }) => {
+      if (key === this.RIDERS_LIST_KEY && Array.isArray(data)) {
+        this.ridersSubject.next(data);
+      }
+    });
   }
 
   private seedDefaultAccounts(): void {
@@ -282,6 +314,7 @@ export class AuthService {
 
     riders.push({ ...riderData, username });
     localStorage.setItem(this.RIDERS_LIST_KEY, JSON.stringify(riders));
+    this.ridersSubject.next([...riders]);
     this.cloudSync.pushKey(this.RIDERS_LIST_KEY, riders);
     return true;
   }

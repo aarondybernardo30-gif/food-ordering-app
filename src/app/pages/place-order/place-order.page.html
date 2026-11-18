@@ -81,12 +81,6 @@
         <ion-card-subtitle>Pick up your fresh order directly at our restaurant counter</ion-card-subtitle>
       </ion-card-header>
       <ion-card-content>
-        <div class="pickup-details-box">
-          <p><strong>Store Address: </strong> Food Ordering Kitchen, Ground Floor, Central Mall</p>
-          <p><strong>Operating Hours: </strong> 9:00 AM - 10:00 PM</p>
-          <p><strong style="color: #16a34a;">Delivery Fee: FREE (₱0.00)</strong></p>
-        </div>
-
         <ion-item class="custom-input-item">
           <ion-input 
             label="Estimated Pick-Up Time" 
@@ -123,12 +117,12 @@
         <ion-card-title>Voucher / Promo Code</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <div class="voucher-display-box" *ngIf="appliedVoucher">
+        <div class="voucher-display-box" *ngIf="activeAppliedVoucher">
           <div class="v-left">
             <ion-icon name="ticket-outline" class="v-icon"></ion-icon>
             <div>
-              <strong class="v-code">{{ appliedVoucher.code }}</strong>
-              <span class="v-sub">{{ appliedVoucher.headline }} &bull; {{ appliedVoucher.title }}</span>
+              <strong class="v-code">{{ activeAppliedVoucher.code }}</strong>
+              <span class="v-sub">{{ activeAppliedVoucher.headline }} &bull; {{ activeAppliedVoucher.title }}</span>
             </div>
           </div>
           <button type="button" class="btn-remove-voucher" (click)="removeVoucher()">
@@ -137,7 +131,7 @@
           </button>
         </div>
 
-        <div class="no-voucher-box" *ngIf="!appliedVoucher">
+        <div class="no-voucher-box" *ngIf="!activeAppliedVoucher">
           <span>No voucher applied</span>
           <ion-button fill="clear" size="small" color="primary" (click)="selectVoucherFromMe()">
             Select from Me <ion-icon name="chevron-forward-outline" slot="end"></ion-icon>
@@ -204,7 +198,7 @@
           <ion-icon name="qr-code-outline"></ion-icon>
           <div>
             <strong>QR Code Payment</strong>
-            <p>Tap <strong>Confirm &amp; Place Order</strong> below to generate your payment QR code (GCash / Maya / Bank QR Ph).</p>
+            <p>Tap <strong>Confirm &amp; Place Order</strong> below to display the payment QR code (GCash / Maya / Bank QR Ph).</p>
           </div>
         </div>
       </ion-card-content>
@@ -270,9 +264,15 @@
           </div>
 
           <!-- Applied Voucher Discount -->
-          <div class="bill-row discount-line" *ngIf="discountAmount > 0">
-            <span>Voucher Discount ({{ appliedVoucher?.code }}):</span>
+          <div class="bill-row discount-line" *ngIf="discountAmount > 0 && activeAppliedVoucher">
+            <span>Voucher Discount ({{ activeAppliedVoucher.code }}):</span>
             <span class="discount-num">-₱{{ discountAmount.toFixed(2) }}</span>
+          </div>
+
+          <!-- Membership Badge Discount -->
+          <div class="bill-row discount-line membership-line" *ngIf="membershipDiscount > 0">
+            <span>{{ membershipInfo?.tier }} Member Discount ({{ membershipInfo?.discountPercent }}%):</span>
+            <span class="discount-num">-₱{{ membershipDiscount.toFixed(2) }}</span>
           </div>
 
           <div class="total-row">
@@ -352,12 +352,9 @@
 
             <div class="qr-white-frame">
               <img [src]="cashierQrImageUrl" alt="Payment QR Code" class="qr-img" />
-              <div class="qr-center-emblem">
-                <span class="qr-emblem-dot"></span>
-              </div>
             </div>
 
-            <div class="gcash-number-pill">
+            <div class="gcash-number-pill" *ngIf="adminGcash.number">
               <span>GCash No: <strong>{{ adminGcash.number }}</strong></span>
               <button type="button" class="copy-mini-btn" (click)="copyAdminGcashNumber()">
                 <ion-icon name="copy-outline"></ion-icon> Copy

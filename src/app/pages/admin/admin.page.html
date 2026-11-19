@@ -193,9 +193,23 @@
             <div class="feature-badges-row">
               <span class="feature-badge-pill">₱{{ meal.price.toFixed(2) }}</span>
               <span class="feature-placement-tag">{{ scheduleLabel(meal.schedule) }}</span>
+              <ion-badge [color]="(meal.stock ?? 20) > 0 ? 'success' : 'danger'">
+                {{ (meal.stock ?? 20) > 0 ? (meal.stock ?? 20) + ' orders left' : 'Out of Stock' }}
+              </ion-badge>
             </div>
             <h4>{{ meal.title }}</h4>
             <p class="feature-sub" *ngIf="meal.subtitle">{{ meal.subtitle }}</p>
+
+            <div class="card-options-strip" *ngIf="meal.variations && meal.variations.length > 0">
+              <span class="strip-label">Variations & Prices:</span>
+              <span class="opt-pill" *ngFor="let v of meal.variations">{{ mealVariationLabel(v) }}</span>
+            </div>
+
+            <div class="card-options-strip" *ngIf="meal.sizes && meal.sizes.length > 0">
+              <span class="strip-label">Sizes:</span>
+              <span class="opt-pill" *ngFor="let sz of meal.sizes">{{ sz }}</span>
+            </div>
+
             <p class="feature-desc" *ngIf="meal.description">{{ meal.description }}</p>
           </div>
           <div class="feature-actions">
@@ -568,54 +582,6 @@
             </div>
           </div>
 
-          <!-- FOOD SIZE OPTIONS BLOCK -->
-          <div class="section-card-block">
-            <div class="section-title-tag variations-tag">
-              <ion-icon name="options-outline"></ion-icon>
-              Food Size Options
-            </div>
-            <p class="section-explanation">Select or add portion sizes customers can choose when ordering this food.</p>
-
-            <!-- Quick Size Presets -->
-            <div class="variations-chips-wrap" style="margin-bottom: 10px;">
-              <button
-                type="button"
-                *ngFor="let preset of quickSizePresets"
-                class="var-badge-chip"
-                (click)="togglePresetSize(preset)"
-                [style.cursor]="'pointer'"
-                [style.background]="isSizeSelected(preset) ? '#fff1f0' : '#f1f5f9'"
-                [style.borderColor]="isSizeSelected(preset) ? '#ee4d2d' : '#cbd5e1'"
-                [style.color]="isSizeSelected(preset) ? '#ee4d2d' : '#475569'">
-                <span class="v-name">{{ isSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
-              </button>
-            </div>
-
-            <!-- Active Sizes List -->
-            <div class="variations-chips-wrap" *ngIf="editSizesList.length > 0">
-              <div class="var-badge-chip" *ngFor="let sz of editSizesList; let i = index">
-                <span class="v-name">{{ sz }}</span>
-                <button type="button" class="btn-remove-v" (click)="removeEditSize(i)" title="Remove size">
-                  <ion-icon name="close-circle-outline"></ion-icon>
-                </button>
-              </div>
-            </div>
-
-            <!-- Add Custom Size Bar -->
-            <div class="add-var-row-bar">
-              <div class="input-wrap name-field">
-                <input
-                  type="text"
-                  [(ngModel)]="newEditSizeName"
-                  (keyup.enter)="addEditSize()"
-                  placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
-              </div>
-              <button type="button" class="btn-add-var-row" (click)="addEditSize()">
-                <ion-icon name="add-circle-outline"></ion-icon> Add Size
-              </button>
-            </div>
-          </div>
-
           <!-- VARIATIONS & CUSTOM PRICING BLOCK -->
           <div class="section-card-block">
             <div class="section-title-tag variations-tag">
@@ -645,7 +611,10 @@
                 <input type="text" [(ngModel)]="newEditVarName" placeholder="Option name (e.g. Spicy, Regular)" />
               </div>
               <div class="input-wrap size-field">
-                <input type="text" [(ngModel)]="newEditVarSize" placeholder="Size (e.g. Regular, Large)" />
+                <select [(ngModel)]="newEditVarSize" aria-label="Select size">
+                  <option value="">Select Size</option>
+                  <option *ngFor="let sz of editSizeDropdownOptions" [value]="sz">{{ sz }}</option>
+                </select>
               </div>
               <div class="input-wrap price-field">
                 <span class="p-sign">₱</span>
@@ -957,6 +926,7 @@
                   label="Base Price (₱) *"
                   labelPlacement="floating"
                   [(ngModel)]="mealPrice"
+                  (ngModelChange)="onMealBasePriceChange()"
                   (ionChange)="onMealBasePriceChange()"
                   type="number"
                   placeholder="e.g. 150">
@@ -997,54 +967,6 @@
               </ion-textarea>
             </ion-item>
 
-            <!-- FOOD SIZE OPTIONS BLOCK (MATCHES EDIT FOOD ITEM STYLE) -->
-            <div class="section-card-block">
-              <div class="section-title-tag variations-tag">
-                <ion-icon name="options-outline"></ion-icon>
-                Food Size Options
-              </div>
-              <p class="section-explanation">Select or add portion sizes customers can choose when ordering this meal.</p>
-
-              <!-- Quick Size Presets -->
-              <div class="variations-chips-wrap" style="margin-bottom: 10px;">
-                <button
-                  type="button"
-                  *ngFor="let preset of quickSizePresets"
-                  class="var-badge-chip"
-                  (click)="toggleMealPresetSize(preset)"
-                  [style.cursor]="'pointer'"
-                  [style.background]="isMealSizeSelected(preset) ? '#fff1f0' : '#f1f5f9'"
-                  [style.borderColor]="isMealSizeSelected(preset) ? '#ee4d2d' : '#cbd5e1'"
-                  [style.color]="isMealSizeSelected(preset) ? '#ee4d2d' : '#475569'">
-                  <span class="v-name">{{ isMealSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
-                </button>
-              </div>
-
-              <!-- Active Sizes List -->
-              <div class="variations-chips-wrap" *ngIf="mealSizesList.length > 0">
-                <div class="var-badge-chip" *ngFor="let sz of mealSizesList; let i = index">
-                  <span class="v-name">{{ sz }}</span>
-                  <button type="button" class="btn-remove-v" (click)="removeMealSize(i)" title="Remove size">
-                    <ion-icon name="close-circle-outline"></ion-icon>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Add Custom Size Bar -->
-              <div class="add-var-row-bar">
-                <div class="input-wrap name-field">
-                  <input
-                    type="text"
-                    [(ngModel)]="newMealSizeName"
-                    (keyup.enter)="addMealSize()"
-                    placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
-                </div>
-                <button type="button" class="btn-add-var-row" (click)="addMealSize()">
-                  <ion-icon name="add-circle-outline"></ion-icon> Add Size
-                </button>
-              </div>
-            </div>
-
             <!-- VARIATIONS & CUSTOM PRICING BLOCK (MATCHES EDIT FOOD ITEM STYLE) -->
             <div class="section-card-block">
               <div class="section-title-tag variations-tag">
@@ -1074,7 +996,10 @@
                   <input type="text" [(ngModel)]="newMealVarName" placeholder="Option name (e.g. Spicy, Regular)" />
                 </div>
                 <div class="input-wrap size-field">
-                  <input type="text" [(ngModel)]="newMealVarSize" placeholder="Size (e.g. Regular, Large)" />
+                  <select [(ngModel)]="newMealVarSize" aria-label="Select size">
+                    <option value="">Select Size</option>
+                    <option *ngFor="let sz of mealSizeDropdownOptions" [value]="sz">{{ sz }}</option>
+                  </select>
                 </div>
                 <div class="input-wrap price-field">
                   <span class="p-sign">₱</span>

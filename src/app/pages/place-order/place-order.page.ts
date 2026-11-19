@@ -123,7 +123,7 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
   isBuyNow: boolean = false;
   checkoutItems: CartItem[] = [];
   orderType: 'delivery' | 'dine-in' | 'pickup' = 'delivery';
-  paymentMethod: 'cod' | 'online' | 'shopeepay' = 'shopeepay';
+  paymentMethod: 'cod' | 'online' | 'shopeepay' = 'cod';
   
   deliveryAddress: string = '';
   userCoords?: { latitude: number; longitude: number };
@@ -240,6 +240,27 @@ export class PlaceOrderPage implements OnInit, OnDestroy {
     this.loadVoucher();
     this.membershipInfo = this.membershipService.refresh();
     this.cdr.detectChanges();
+  }
+
+  onOrderTypeChange(event: any) {
+    const val = event?.detail?.value;
+    if (val === 'delivery' || val === 'dine-in' || val === 'pickup') {
+      this.orderType = val;
+      this.cdr.detectChanges();
+    }
+  }
+
+  setPaymentMethod(method: 'cod' | 'online' | 'shopeepay') {
+    this.paymentMethod = method;
+    this.cdr.detectChanges();
+  }
+
+  onPaymentMethodChange(event: any) {
+    const val = event?.detail?.value;
+    if (val === 'cod' || val === 'online' || val === 'shopeepay') {
+      this.paymentMethod = val;
+      this.cdr.detectChanges();
+    }
   }
 
   loadVoucher() {

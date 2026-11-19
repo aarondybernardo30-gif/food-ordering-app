@@ -72,7 +72,6 @@ $shopee-orange-dark: #d73211;
             margin-bottom: 2px;
           }
 
-          // Active/Checked tab: orange text & icon to stay readable on the light segment
           &.segment-button-checked,
           &.ion-activated {
             color: #{$shopee-orange} !important;
@@ -718,7 +717,8 @@ ion-modal.edit-food-dialog-modal {
             }
           }
 
-          input {
+          input,
+          select {
             width: 100%;
             height: 44px;
             background: #f8fafc;
@@ -733,6 +733,11 @@ ion-modal.edit-food-dialog-modal {
               border-color: $shopee-orange;
               box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.15);
             }
+          }
+
+          select {
+            cursor: pointer;
+            font-weight: 600;
           }
         }
 
@@ -901,7 +906,6 @@ ion-modal.edit-food-dialog-modal {
   }
 }
 
-
 // ========================================================
 // EDIT MODAL: MEAL PHOTOS (UPLOAD / CHANGE / REMOVE)
 // ========================================================
@@ -1000,7 +1004,7 @@ ion-modal.edit-food-dialog-modal {
 }
 
 // ========================================================
-// EDIT FEATURES TAB (promo banners)
+// EDIT FEATURES TAB (promo banners & featured meals)
 // ========================================================
 .feature-admin-card {
   background: #ffffff;
@@ -1014,6 +1018,10 @@ ion-modal.edit-food-dialog-modal {
     display: flex;
     gap: 12px;
     align-items: flex-start;
+
+    @media (max-width: 520px) {
+      flex-wrap: wrap;
+    }
   }
 
   .feature-thumb {
@@ -1072,6 +1080,30 @@ ion-modal.edit-food-dialog-modal {
       font-weight: 600;
     }
 
+    .card-options-strip {
+      margin: 4px 0 6px 0;
+
+      .strip-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        font-weight: 700;
+        margin-right: 4px;
+      }
+
+      .opt-pill {
+        display: inline-block;
+        background: #fff7ed;
+        color: #ea580c;
+        border: 1px solid #fed7aa;
+        border-radius: 4px;
+        padding: 2px 7px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        margin-right: 4px;
+        margin-top: 3px;
+      }
+    }
+
     .feature-desc {
       margin: 0 0 2px;
       font-size: 0.8rem;
@@ -1090,6 +1122,16 @@ ion-modal.edit-food-dialog-modal {
     flex-direction: column;
     gap: 8px;
     flex-shrink: 0;
+
+    @media (max-width: 520px) {
+      flex-direction: row;
+      width: 100%;
+
+      button {
+        flex: 1;
+        justify-content: center;
+      }
+    }
 
     .btn-feature-delete {
       height: 38px;
@@ -1453,7 +1495,6 @@ ion-modal.edit-food-dialog-modal {
   margin: 0 auto;
 }
 
-// Drawer: rider link + divider + logout item
 .sidebar-divider {
   height: 1px;
   background: #1e293b;
@@ -1624,7 +1665,6 @@ ion-modal.edit-food-dialog-modal {
     flex-direction: column;
     align-items: stretch;
 
-    // Center the QR preview block
     .edit-images-block {
       display: flex;
       flex-direction: column;
@@ -1651,7 +1691,6 @@ ion-modal.edit-food-dialog-modal {
       }
     }
 
-    // Center the save action
     .btn-action.save {
       align-self: center;
       min-width: 220px;
@@ -1661,8 +1700,7 @@ ion-modal.edit-food-dialog-modal {
 }
 
 // ========================================================
-// SHARED SAVE BUTTON — orange everywhere (store location,
-// wallet QR, and any future tab using .btn-action.save)
+// SHARED SAVE BUTTON
 // ========================================================
 .btn-action.save {
   background: #{$shopee-orange};

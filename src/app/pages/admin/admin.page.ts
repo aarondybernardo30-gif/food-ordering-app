@@ -222,6 +222,17 @@ export class AdminPage implements OnInit {
   qrAccountNumber: string = '';
   qrCity: string = 'Manila';
 
+  // --- SHARED SIZE DROPDOWN OPTIONS FOR VARIATIONS & CUSTOM PRICING ---
+  readonly sizeDropdownOptions: string[] = [
+    'Solo',
+    'Regular',
+    'Medium',
+    'Large',
+    'Family',
+    'Sharing',
+    'XL'
+  ];
+
   // --- FEATURED MEAL EDITOR STATE (Food Information + Edit Food style) ---
   isMealModalOpen: boolean = false;
   editingMealId: number | null = null;
@@ -233,10 +244,6 @@ export class AdminPage implements OnInit {
   mealSchedule: MealSchedule = 'today';
   mealImage: string = '';
   mealImages: string[] = [];
-
-  // Featured Meal Food Size Options
-  mealSizesList: string[] = ['Regular'];
-  newMealSizeName: string = '';
 
   // Featured Meal Variations & Custom Pricing
   mealVariationList: FeaturedMealVariation[] = [{ name: 'Regular', size: 'Regular', price: 100 }];
@@ -255,17 +262,35 @@ export class AdminPage implements OnInit {
   editFoodDesc: string = '';
   editFoodImages: string[] = [];
 
-  // Food Size Options
-  readonly quickSizePresets: string[] = ['Solo', 'Regular', 'Medium', 'Large', 'Family'];
-  editSizesList: string[] = [];
-  newEditSizeName: string = '';
-
   // Variations & Custom Pricing
   editVariationsList: FoodVariation[] = [];
   editingVarIndex: number = -1;
   newEditVarSize: string = '';
   newEditVarName: string = '';
   newEditVarPrice: number | null = null;
+
+  get editSizeDropdownOptions(): string[] {
+    return this.buildSizeDropdownOptions(this.editVariationsList);
+  }
+
+  get mealSizeDropdownOptions(): string[] {
+    return this.buildSizeDropdownOptions(this.mealVariationList);
+  }
+
+  private buildSizeDropdownOptions(variations: Array<{ size?: string }>): string[] {
+    const seen = new Set<string>();
+    const options: string[] = [];
+    const pushUnique = (sz?: string) => {
+      const clean = (sz || '').trim();
+      if (clean && !seen.has(clean.toLowerCase())) {
+        seen.add(clean.toLowerCase());
+        options.push(clean);
+      }
+    };
+    this.sizeDropdownOptions.forEach(pushUnique);
+    variations.forEach(v => pushUnique(v?.size));
+    return options;
+  }
 
   constructor() {
     addIcons({
@@ -605,27 +630,10 @@ export class AdminPage implements OnInit {
       this.editVariationsList = [{ name: 'Regular', size: 'Regular', price: food.price }];
     }
 
-    // Build Food Size Options from saved food.sizes + any variation sizes
-    const sizeSeen = new Set<string>();
-    const sizes: string[] = [];
-    const pushUniqueSize = (sz?: string) => {
-      const clean = (sz || '').trim();
-      if (clean && !sizeSeen.has(clean.toLowerCase())) {
-        sizeSeen.add(clean.toLowerCase());
-        sizes.push(clean);
-      }
-    };
-    if (Array.isArray(food.sizes)) {
-      food.sizes.forEach(pushUniqueSize);
-    }
-    this.editVariationsList.forEach(v => pushUniqueSize(v.size));
-    this.editSizesList = sizes.length > 0 ? sizes : ['Regular'];
-
     this.editingVarIndex = -1;
     this.newEditVarName = '';
     this.newEditVarSize = '';
     this.newEditVarPrice = null;
-    this.newEditSizeName = '';
     this.isEditModalOpen = true;
   }
 
@@ -645,48 +653,6 @@ export class AdminPage implements OnInit {
       this.editFoodStock = 0;
     }
     this.toggleStock(this.editingFood);
-  }
-
-  // --- FOOD SIZE OPTIONS HANDLERS ---
-  isSizeSelected(sizeName: string): boolean {
-    const target = sizeName.trim().toLowerCase();
-    return this.editSizesList.some(s => s.trim().toLowerCase() === target);
-  }
-
-  togglePresetSize(preset: string) {
-    const target = preset.trim().toLowerCase();
-    const idx = this.editSizesList.findIndex(s => s.trim().toLowerCase() === target);
-    if (idx > -1) {
-      if (this.editSizesList.length <= 1) {
-        this.presentToast('At least one food size should remain.', 'warning');
-        return;
-      }
-      this.editSizesList.splice(idx, 1);
-    } else {
-      this.editSizesList.push(preset);
-    }
-  }
-
-  addEditSize() {
-    const clean = (this.newEditSizeName || '').trim();
-    if (!clean) {
-      this.presentToast('Please enter a food size (e.g. Solo, Medium, Large).', 'warning');
-      return;
-    }
-    if (this.isSizeSelected(clean)) {
-      this.presentToast(`Size "${clean}" is already in the list.`, 'warning');
-      return;
-    }
-    this.editSizesList.push(clean);
-    this.newEditSizeName = '';
-  }
-
-  removeEditSize(index: number) {
-    if (this.editSizesList.length <= 1) {
-      this.presentToast('At least one food size should remain.', 'warning');
-      return;
-    }
-    this.editSizesList.splice(index, 1);
   }
 
   onEditImagesSelected(event: any) {
@@ -819,10 +785,6 @@ export class AdminPage implements OnInit {
       this.editVariationsList.push(nextVariation);
     }
 
-    if (size && !this.isSizeSelected(size)) {
-      this.editSizesList.push(size);
-    }
-
     this.newEditVarName = '';
     this.newEditVarPrice = null;
     this.newEditVarSize = '';
@@ -865,7 +827,14 @@ export class AdminPage implements OnInit {
       return `${v.name}${sizePart} P${(v.price ?? 0).toFixed(0)}`;
     });
 
-    const savedSizes = this.editSizesList.length > 0 ? [...this.editSizesList] : ['Regular'];
+    const derivedSizes = Array.from(
+      new Set(
+        resolvedVariations
+          .map(v => (v.size || '').trim())
+          .filter(Boolean)
+      )
+    );
+    const savedSizes = derivedSizes.length > 0 ? derivedSizes : ['Regular'];
 
     const savedImages = this.editFoodImages.length > 0
       ? [...this.editFoodImages]
@@ -1234,6 +1203,11 @@ export class AdminPage implements OnInit {
     }
   }
 
+  mealVariationLabel(v: FeaturedMealVariation): string {
+    const sizePart = v.size ? ` (${v.size})` : '';
+    return `${v.name}${sizePart} P${(v.price ?? 0).toFixed(0)}`;
+  }
+
   openMealModal(meal?: FeaturedMealItem) {
     if (meal) {
       this.editingMealId = meal.id;
@@ -1254,21 +1228,6 @@ export class AdminPage implements OnInit {
       this.mealVariationList = meal.variations && meal.variations.length > 0
         ? meal.variations.map(v => ({ ...v }))
         : [{ name: 'Regular', size: 'Regular', price: meal.price }];
-
-      const sizeSeen = new Set<string>();
-      const sizes: string[] = [];
-      const pushUniqueSize = (sz?: string) => {
-        const clean = (sz || '').trim();
-        if (clean && !sizeSeen.has(clean.toLowerCase())) {
-          sizeSeen.add(clean.toLowerCase());
-          sizes.push(clean);
-        }
-      };
-      if (Array.isArray(meal.sizes)) {
-        meal.sizes.forEach(pushUniqueSize);
-      }
-      this.mealVariationList.forEach(v => pushUniqueSize(v.size));
-      this.mealSizesList = sizes.length > 0 ? sizes : ['Regular'];
     } else {
       this.editingMealId = null;
       this.mealTitle = '';
@@ -1280,13 +1239,11 @@ export class AdminPage implements OnInit {
       this.mealImage = '';
       this.mealImages = [];
       this.mealVariationList = [{ name: 'Regular', size: 'Regular', price: 100 }];
-      this.mealSizesList = ['Regular'];
     }
     this.editingMealVarIndex = -1;
     this.newMealVarName = '';
     this.newMealVarSize = '';
     this.newMealVarPrice = null;
-    this.newMealSizeName = '';
     this.isMealModalOpen = true;
   }
 
@@ -1301,48 +1258,6 @@ export class AdminPage implements OnInit {
     if (!isNaN(p) && p > 0 && this.mealVariationList.length === 1 && this.mealVariationList[0].name === 'Regular') {
       this.mealVariationList[0].price = p;
     }
-  }
-
-  // --- FEATURED MEAL FOOD SIZE OPTIONS HANDLERS ---
-  isMealSizeSelected(sizeName: string): boolean {
-    const target = sizeName.trim().toLowerCase();
-    return this.mealSizesList.some(s => s.trim().toLowerCase() === target);
-  }
-
-  toggleMealPresetSize(preset: string) {
-    const target = preset.trim().toLowerCase();
-    const idx = this.mealSizesList.findIndex(s => s.trim().toLowerCase() === target);
-    if (idx > -1) {
-      if (this.mealSizesList.length <= 1) {
-        this.presentToast('At least one food size should remain.', 'warning');
-        return;
-      }
-      this.mealSizesList.splice(idx, 1);
-    } else {
-      this.mealSizesList.push(preset);
-    }
-  }
-
-  addMealSize() {
-    const clean = (this.newMealSizeName || '').trim();
-    if (!clean) {
-      this.presentToast('Please enter a food size (e.g. Solo, Medium, Large).', 'warning');
-      return;
-    }
-    if (this.isMealSizeSelected(clean)) {
-      this.presentToast(`Size "${clean}" is already in the list.`, 'warning');
-      return;
-    }
-    this.mealSizesList.push(clean);
-    this.newMealSizeName = '';
-  }
-
-  removeMealSize(index: number) {
-    if (this.mealSizesList.length <= 1) {
-      this.presentToast('At least one food size should remain.', 'warning');
-      return;
-    }
-    this.mealSizesList.splice(index, 1);
   }
 
   // --- FEATURED MEAL VARIATIONS & CUSTOM PRICING HANDLERS ---
@@ -1393,10 +1308,6 @@ export class AdminPage implements OnInit {
       this.presentToast('Variation updated!', 'success');
     } else {
       this.mealVariationList.push(entry);
-    }
-
-    if (size && !this.isMealSizeSelected(size)) {
-      this.mealSizesList.push(size);
     }
 
     this.newMealVarName = '';
@@ -1493,7 +1404,15 @@ export class AdminPage implements OnInit {
     const resolvedVariations = this.mealVariationList.length > 0
       ? this.mealVariationList.map(v => ({ ...v }))
       : [{ name: 'Regular', size: 'Regular', price: Number(this.mealPrice) }];
-    const savedMealSizes = this.mealSizesList.length > 0 ? [...this.mealSizesList] : ['Regular'];
+
+    const derivedMealSizes = Array.from(
+      new Set(
+        resolvedVariations
+          .map(v => (v.size || '').trim())
+          .filter(Boolean)
+      )
+    );
+    const savedMealSizes = derivedMealSizes.length > 0 ? derivedMealSizes : ['Regular'];
 
     const meal: FeaturedMealItem = {
       id: this.editingMealId || Date.now(),

@@ -80,10 +80,16 @@ export class AddFoodPage implements OnInit {
   newFoodStock: number | null = 20;
   newFoodDesc: string = '';
 
-  // Food Size Options (mirrors Edit Food Item modal)
-  readonly quickSizePresets: string[] = ['Solo', 'Regular', 'Medium', 'Large', 'Family'];
-  sizesList: string[] = ['Regular'];
-  newSizeName: string = '';
+  // Shared Size Dropdown Options for Variations & Custom Pricing
+  readonly sizeDropdownOptions: string[] = [
+    'Solo',
+    'Regular',
+    'Medium',
+    'Large',
+    'Family',
+    'Sharing',
+    'XL'
+  ];
 
   // Variations & Custom Pricing (mirrors Edit Food Item modal)
   variationList: FoodVariation[] = [
@@ -93,6 +99,21 @@ export class AddFoodPage implements OnInit {
   newVarName: string = '';
   newVarSize: string = '';
   newVarPrice: number | null = null;
+
+  get sizeDropdownOptionsList(): string[] {
+    const seen = new Set<string>();
+    const options: string[] = [];
+    const pushUnique = (sz?: string) => {
+      const clean = (sz || '').trim();
+      if (clean && !seen.has(clean.toLowerCase())) {
+        seen.add(clean.toLowerCase());
+        options.push(clean);
+      }
+    };
+    this.sizeDropdownOptions.forEach(pushUnique);
+    this.variationList.forEach(v => pushUnique(v?.size));
+    return options;
+  }
 
   // Add New Category Modal State
   isCategoryModalOpen: boolean = false;
@@ -224,48 +245,6 @@ export class AddFoodPage implements OnInit {
     }
   }
 
-  // --- FOOD SIZE OPTIONS HANDLERS ---
-  isSizeSelected(sizeName: string): boolean {
-    const target = sizeName.trim().toLowerCase();
-    return this.sizesList.some(s => s.trim().toLowerCase() === target);
-  }
-
-  togglePresetSize(preset: string) {
-    const target = preset.trim().toLowerCase();
-    const idx = this.sizesList.findIndex(s => s.trim().toLowerCase() === target);
-    if (idx > -1) {
-      if (this.sizesList.length <= 1) {
-        this.showToast('At least one food size should remain.', 'warning');
-        return;
-      }
-      this.sizesList.splice(idx, 1);
-    } else {
-      this.sizesList.push(preset);
-    }
-  }
-
-  addSize() {
-    const clean = (this.newSizeName || '').trim();
-    if (!clean) {
-      this.showToast('Please enter a food size (e.g. Solo, Medium, Large).', 'warning');
-      return;
-    }
-    if (this.isSizeSelected(clean)) {
-      this.showToast(`Size "${clean}" is already in the list.`, 'warning');
-      return;
-    }
-    this.sizesList.push(clean);
-    this.newSizeName = '';
-  }
-
-  removeSize(index: number) {
-    if (this.sizesList.length <= 1) {
-      this.showToast('At least one food size should remain.', 'warning');
-      return;
-    }
-    this.sizesList.splice(index, 1);
-  }
-
   // --- VARIATIONS & CUSTOM PRICING HANDLERS ---
   editExistingVariation(index: number) {
     const v = this.variationList[index];
@@ -314,10 +293,6 @@ export class AddFoodPage implements OnInit {
       this.showToast('Variation updated!', 'success');
     } else {
       this.variationList.push(nextVariation);
-    }
-
-    if (size && !this.isSizeSelected(size)) {
-      this.sizesList.push(size);
     }
 
     this.newVarName = '';
@@ -448,7 +423,14 @@ export class AddFoodPage implements OnInit {
       return `${v.name}${sizePart} P${(v.price ?? 0).toFixed(0)}`;
     });
 
-    const savedSizes = this.sizesList.length > 0 ? [...this.sizesList] : ['Regular'];
+    const derivedSizes = Array.from(
+      new Set(
+        resolvedVariations
+          .map(v => (v.size || '').trim())
+          .filter(Boolean)
+      )
+    );
+    const savedSizes = derivedSizes.length > 0 ? derivedSizes : ['Regular'];
 
     const newFoodItem: FoodItem = {
       id: Date.now(),

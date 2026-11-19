@@ -84,53 +84,6 @@
       </ion-item>
 
       <!-- ======================================================== -->
-      <!-- FOOD SIZE OPTIONS BLOCK (MATCHES EDIT FOOD ITEM STYLE)   -->
-      <!-- ======================================================== -->
-      <div class="section-card-block">
-        <div class="section-title-tag variations-tag">
-          <ion-icon name="options-outline"></ion-icon>
-          Food Size Options
-        </div>
-        <p class="section-explanation">Select or add portion sizes customers can choose when ordering this food.</p>
-
-        <!-- Quick Size Presets -->
-        <div class="variations-chips-wrap" style="margin-bottom: 10px;">
-          <button
-            type="button"
-            *ngFor="let preset of quickSizePresets"
-            class="var-badge-chip preset-chip-btn"
-            [class.preset-active]="isSizeSelected(preset)"
-            (click)="togglePresetSize(preset)">
-            <span class="v-name">{{ isSizeSelected(preset) ? '✓ ' : '+ ' }}{{ preset }}</span>
-          </button>
-        </div>
-
-        <!-- Active Sizes List -->
-        <div class="variations-chips-wrap" *ngIf="sizesList.length > 0">
-          <div class="var-badge-chip" *ngFor="let sz of sizesList; let i = index">
-            <span class="v-name">{{ sz }}</span>
-            <button type="button" class="btn-remove-v" (click)="removeSize(i)" title="Remove size">
-              <ion-icon name="close-circle-outline"></ion-icon>
-            </button>
-          </div>
-        </div>
-
-        <!-- Add Custom Size Bar -->
-        <div class="add-var-row-bar">
-          <div class="input-wrap name-field">
-            <input
-              type="text"
-              [(ngModel)]="newSizeName"
-              (keyup.enter)="addSize()"
-              placeholder="Custom size (e.g. Sharing, XL, 16 oz)" />
-          </div>
-          <button type="button" class="btn-add-var-row" (click)="addSize()">
-            <ion-icon name="add-circle-outline"></ion-icon> Add Size
-          </button>
-        </div>
-      </div>
-
-      <!-- ======================================================== -->
       <!-- VARIATIONS & CUSTOM PRICING BLOCK (MATCHES EDIT MODAL)   -->
       <!-- ======================================================== -->
       <div class="section-card-block">
@@ -164,10 +117,10 @@
               placeholder="Option name (e.g. Spicy, Regular)" />
           </div>
           <div class="input-wrap size-field">
-            <input
-              type="text"
-              [(ngModel)]="newVarSize"
-              placeholder="Size (e.g. Regular, Large)" />
+            <select [(ngModel)]="newVarSize" aria-label="Select size">
+              <option value="">Select Size</option>
+              <option *ngFor="let sz of sizeDropdownOptionsList" [value]="sz">{{ sz }}</option>
+            </select>
           </div>
           <div class="input-wrap price-field">
             <span class="p-sign">₱</span>

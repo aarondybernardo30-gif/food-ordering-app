@@ -156,11 +156,11 @@
                   type="button" 
                   class="btn-order-action" 
                   [ngClass]="meal.dayLabel"
-                  [class.unavailable-today]="!isMealOrderableToday(meal)"
-                  [disabled]="!isMealOrderableToday(meal)"
+                  [class.unavailable-today]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
+                  [disabled]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
                   (click)="openMealOrderModal(meal)">
-                  <ion-icon [name]="isMealOrderableToday(meal) ? 'checkmark-circle' : 'lock-closed-outline'"></ion-icon>
-                  <span>{{ meal.buttonText }}</span>
+                  <ion-icon [name]="isMealOrderableToday(meal) && (meal.stock ?? 20) > 0 ? 'checkmark-circle' : 'lock-closed-outline'"></ion-icon>
+                  <span>{{ (meal.stock ?? 20) <= 0 ? 'Out of Stock' : meal.buttonText }}</span>
                 </button>
               </div>
             </div>
@@ -409,44 +409,65 @@
     </ng-template>
   </ion-modal>
 
-  <!-- 6b. DAILY MEAL ORDER POPUP -->
+  <!-- 6b. DAILY MEAL ORDER POPUP (COPIES FOOD ORDER STYLE WITH SEPARATE VARIATION & SIZE) -->
   <ion-modal
     [isOpen]="isMealModalOpen"
     (didDismiss)="closeMealOrderModal()"
     class="shopee-variation-bottom-sheet">
     <ng-template>
-      <div class="var-sheet-wrapper" *ngIf="selectedMeal" [class.dark-theme]="isDarkMode">
+      <div class="var-sheet-wrapper" *ngIf="selectedMeal && getSelectedMealFood() as mealFood" [class.dark-theme]="isDarkMode">
 
         <div class="var-top-header">
-          <div class="var-thumb-box">
+          <div class="var-thumb-box" (click)="openFullScreenViewer(mealFood, 0, $event)">
             <img [src]="selectedMeal.imageUrl" [alt]="selectedMeal.title" />
+            <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
           </div>
 
           <div class="var-meta-box">
             <h4 class="var-meal-name">{{ selectedMeal.title }}</h4>
             <div class="var-price-row">
-              <span class="var-sale-price">₱{{ getMealUnitPrice().toFixed(2) }}</span>
+              <span class="var-sale-price">₱{{ getMealTotal().toFixed(2) }}</span>
+              <span class="var-orig-price">₱{{ (getMealTotal() * 1.35).toFixed(0) }}</span>
             </div>
-            <p class="var-stock-text">{{ mealScheduleNote(selectedMeal) }}</p>
+            <p class="var-stock-text">
+              Stock: {{ getAvailableStock(mealFood) }} available &bull; {{ mealScheduleNote(selectedMeal) }}
+            </p>
           </div>
 
-          <button class="var-close-btn" (click)="closeMealOrderModal()" title="Close">
+          <button type="button" class="var-close-btn" (click)="closeMealOrderModal()" title="Close">
             <ion-icon name="close-outline"></ion-icon>
           </button>
         </div>
 
         <div class="var-scrollable-body">
+          <!-- Variation Choice -->
           <div class="var-options-section">
-            <h4 class="var-section-label">Options / Size</h4>
+            <h4 class="var-section-label">Variation Choice</h4>
 
             <div class="var-chips-grid">
               <button
                 type="button"
-                *ngFor="let v of getSelectedMealFood()?.variations"
+                *ngFor="let choice of getVariationChoices(mealFood)"
                 class="var-chip"
-                [class.active]="selectedMealVariant === v.name"
-                (click)="selectMealVariant(v.name)">
-                {{ cleanOptionLabel(v.name) }}
+                [class.active]="selectedMealVariant === choice"
+                (click)="selectMealVariant(choice)">
+                {{ choice }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Size -->
+          <div class="var-options-section">
+            <h4 class="var-section-label">Size</h4>
+
+            <div class="var-chips-grid">
+              <button
+                type="button"
+                *ngFor="let sz of getVariationSizes(mealFood)"
+                class="var-chip"
+                [class.active]="selectedMealSize === sz"
+                (click)="selectMealSize(sz)">
+                {{ sz }}
               </button>
             </div>
           </div>
@@ -460,18 +481,21 @@
               <button type="button" class="step-btn" (click)="increaseMealQty()">+</button>
             </div>
           </div>
-
-          <div class="var-total-row">
-            <span class="var-total-label">Total</span>
-            <span class="var-total-value">₱{{ getMealTotal().toFixed(2) }}</span>
-          </div>
         </div>
 
         <div class="var-bottom-footer meal-footer">
-          <button type="button" class="var-submit-btn order-now-submit" (click)="confirmMealOrder(true)">
+          <button
+            type="button"
+            class="var-submit-btn order-now-submit btn-buy-now-red"
+            (click)="confirmMealOrder(true)"
+            [disabled]="isSoldOut(mealFood)">
             Order Now
           </button>
-          <button type="button" class="var-submit-btn add-cart-submit" (click)="confirmMealOrder()">
+          <button
+            type="button"
+            class="var-submit-btn add-cart-submit"
+            (click)="confirmMealOrder(false)"
+            [disabled]="isSoldOut(mealFood)">
             Add to Cart
           </button>
         </div>
@@ -826,8 +850,9 @@
 
         <!-- Header Info -->
         <div class="var-top-header modal-top-row">
-          <div class="var-thumb-box food-thumb-box">
+          <div class="var-thumb-box food-thumb-box" (click)="openFullScreenViewer(selectedFoodForModal, 0, $event)">
             <img [src]="selectedFoodForModal.imageUrl" [alt]="selectedFoodForModal.name" />
+            <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
           </div>
 
           <div class="var-meta-box food-pricing-meta">

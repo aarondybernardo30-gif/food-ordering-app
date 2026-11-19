@@ -1,6 +1,3 @@
-// ========================================================
-// 1. TOP HEADER & SHOPEEPAY QUICK BAR
-// ========================================================
 .shopee-header {
   --background: #ee4d2d;
   background: #ee4d2d;
@@ -208,8 +205,6 @@
       color: #94a3b8 !important;
     }
 
-    // Daily Featured Meals section — keep its surface dark so the
-    // inherited light text stays readable.
     .daily-featured-slider-section {
       background: #1e293b;
       color: #f8fafc;
@@ -253,21 +248,18 @@
       }
     }
 
-    // Review chip on product cards (mirrors base nesting to win the cascade)
     .shopee-card .product-info .customer-review-chip {
       background: #0f172a;
       border-color: #334155;
       color: #cbd5e1;
     }
 
-    // Variation & size tags on product cards
     .shopee-card .product-info .options-tag-row .opt-tag {
       background: rgba(234, 88, 12, 0.16);
       border-color: rgba(251, 146, 60, 0.4);
       color: #fb923c;
     }
 
-    // Stock tag on product cards
     .shopee-card .product-info .tags-row .stock-tag {
       background: rgba(22, 163, 74, 0.18);
       border-color: rgba(34, 197, 94, 0.4);
@@ -1181,6 +1173,7 @@
         overflow: hidden;
         position: relative;
         cursor: pointer;
+        flex-shrink: 0;
 
         img {
           width: 100%;
@@ -1197,6 +1190,9 @@
           padding: 2px;
           border-radius: 3px;
           font-size: 0.7rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
       }
 
@@ -1913,6 +1909,12 @@
 
       .var-total-label { color: #f8fafc; }
     }
+  }
+
+  .var-bottom-footer.meal-footer .add-cart-submit {
+    background: transparent;
+    color: #fb923c;
+    border-color: #ee4d2d;
   }
 }
 

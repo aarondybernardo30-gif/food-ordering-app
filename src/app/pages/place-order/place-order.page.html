@@ -16,7 +16,7 @@
         <ion-card-title>Fulfillment Mode</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <ion-segment [(ngModel)]="orderType">
+        <ion-segment [(ngModel)]="orderType" (ionChange)="onOrderTypeChange($event)">
           <ion-segment-button value="delivery">
             <ion-icon name="bicycle"></ion-icon>
             <ion-label>Delivery</ion-label>
@@ -146,8 +146,15 @@
         <ion-card-title>Payment Method</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <ion-radio-group [(ngModel)]="paymentMethod">
-          <ion-item class="radio-item shopeepay-radio">
+        <ion-radio-group
+          [value]="paymentMethod"
+          (ionChange)="onPaymentMethodChange($event)">
+
+          <ion-item
+            button
+            lines="none"
+            class="radio-item shopeepay-radio"
+            (click)="setPaymentMethod('shopeepay')">
             <ion-radio value="shopeepay">
               <div class="sp-radio-content">
                 <span class="sp-badge">Wallet</span>
@@ -156,13 +163,21 @@
             </ion-radio>
           </ion-item>
 
-          <ion-item class="radio-item">
+          <ion-item
+            button
+            lines="none"
+            class="radio-item"
+            (click)="setPaymentMethod('cod')">
             <ion-radio value="cod">
               {{ orderType === 'delivery' ? 'Cash on Delivery (COD)' : (orderType === 'dine-in' ? 'Cash (Pay at Counter / Table)' : 'Cash upon Pick-Up') }}
             </ion-radio>
           </ion-item>
 
-          <ion-item class="radio-item">
+          <ion-item
+            button
+            lines="none"
+            class="radio-item"
+            (click)="setPaymentMethod('online')">
             <ion-radio value="online">Online Payment (GCash / Maya / QR Ph)</ion-radio>
           </ion-item>
         </ion-radio-group>

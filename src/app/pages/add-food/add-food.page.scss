@@ -80,7 +80,7 @@ $shopee-orange-dark: #d73211;
   }
 
   // ========================================================
-  // EDIT FOOD ITEM STYLE: FOOD SIZE OPTIONS & VARIATIONS
+  // EDIT FOOD ITEM STYLE: VARIATIONS & CUSTOM PRICING
   // ========================================================
   .section-card-block {
     background: #ffffff;
@@ -128,27 +128,6 @@ $shopee-orange-dark: #d73211;
         padding: 6px 12px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
         font-family: inherit;
-
-        &.preset-chip-btn {
-          cursor: pointer;
-          background: #f1f5f9;
-          border-color: #cbd5e1;
-          box-shadow: none;
-
-          .v-name {
-            color: #475569;
-            margin-right: 0;
-          }
-
-          &.preset-active {
-            background: #fff1f0;
-            border-color: #ee4d2d;
-
-            .v-name {
-              color: #ee4d2d;
-            }
-          }
-        }
 
         &.editing-chip {
           border-color: #ee4d2d;
@@ -230,7 +209,8 @@ $shopee-orange-dark: #d73211;
           }
         }
 
-        input {
+        input,
+        select {
           width: 100%;
           height: 44px;
           background: #f8fafc;
@@ -245,6 +225,11 @@ $shopee-orange-dark: #d73211;
             border-color: $shopee-orange;
             box-shadow: 0 0 0 2px rgba(238, 77, 45, 0.15);
           }
+        }
+
+        select {
+          cursor: pointer;
+          font-weight: 600;
         }
       }
 

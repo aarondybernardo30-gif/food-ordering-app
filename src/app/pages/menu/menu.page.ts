@@ -59,7 +59,7 @@ import { FoodService } from '../../services/food';
 import { OrderService } from '../../services/order';
 import { CartService } from '../../services/cart';
 import { WalletService } from '../../services/wallet';
-import { FeaturedMealService, FeaturedMealItem, MealSchedule } from '../../services/featured-meal';
+import { FeaturedMealService, FeaturedMealItem, FeaturedMealVariation, MealSchedule } from '../../services/featured-meal';
 import { ThemeService } from '../../services/theme.service';
 import { BuyNowService } from '../../services/buynow';
 import { CartItem, FoodItem, FoodVariation } from '../../models/food.model';
@@ -80,7 +80,11 @@ export interface FeaturedMeal {
   subtitle: string;
   description: string;
   price: number;
+  stock?: number;
   imageUrl: string;
+  images?: string[];
+  variations?: FeaturedMealVariation[];
+  sizes?: string[];
   buttonText: string;
   [key: string]: any;
 }
@@ -216,7 +220,11 @@ export class MenuPage implements OnInit {
             subtitle: m.subtitle,
             description: m.description,
             price: m.price,
+            stock: typeof m.stock === 'number' && !isNaN(m.stock) ? m.stock : 20,
             imageUrl: m.image,
+            images: m.images && m.images.length > 0 ? m.images : (m.image ? [m.image] : []),
+            variations: m.variations,
+            sizes: m.sizes,
             buttonText: meta.buttonText
           }));
         return {
@@ -290,7 +298,9 @@ export class MenuPage implements OnInit {
   // Daily Meal Order Modal
   isMealModalOpen: boolean = false;
   selectedMeal: FeaturedMeal | null = null;
-  selectedMealVariant: string = 'Regular Serving';
+  selectedMealFood: FoodItem | null = null;
+  selectedMealVariant: string = 'Regular';
+  selectedMealSize: string = 'Regular';
   mealQuantity: number = 1;
 
   constructor() {
@@ -355,6 +365,28 @@ export class MenuPage implements OnInit {
       this.featuredMeals = meals;
       if (this.activeSlideIndex >= this.dailyMealSlides.length) {
         this.activeSlideIndex = 0;
+      }
+      if (this.selectedMeal) {
+        const refreshed = meals.find(m => m.id === this.selectedMeal?.id);
+        if (refreshed) {
+          const meta = this.getScheduleMeta(refreshed.schedule);
+          this.selectedMeal = {
+            id: refreshed.id,
+            dayBadge: meta.dayBadge,
+            dayLabel: refreshed.schedule,
+            title: refreshed.title,
+            subtitle: refreshed.subtitle,
+            description: refreshed.description,
+            price: refreshed.price,
+            stock: typeof refreshed.stock === 'number' && !isNaN(refreshed.stock) ? refreshed.stock : 20,
+            imageUrl: refreshed.image,
+            images: refreshed.images && refreshed.images.length > 0 ? refreshed.images : (refreshed.image ? [refreshed.image] : []),
+            variations: refreshed.variations,
+            sizes: refreshed.sizes,
+            buttonText: meta.buttonText
+          };
+          this.selectedMealFood = this.mealToFoodItem(this.selectedMeal);
+        }
       }
       this.cdr.detectChanges();
     });
@@ -654,15 +686,17 @@ export class MenuPage implements OnInit {
       }
     };
 
-    if (Array.isArray(food.variations) && food.variations.length > 0) {
-      for (const v of food.variations) {
-        pushSize(v?.size || 'Regular');
-      }
-    }
-
     if (Array.isArray(food.sizes) && food.sizes.length > 0) {
       for (const s of food.sizes) {
         pushSize(s);
+      }
+    }
+
+    if (Array.isArray(food.variations) && food.variations.length > 0) {
+      for (const v of food.variations) {
+        if (v?.size && v.size.trim()) {
+          pushSize(v.size);
+        }
       }
     }
 
@@ -679,18 +713,20 @@ export class MenuPage implements OnInit {
       const exact = food.variations.find(
         (v: FoodVariation) =>
           normalize(v.name) === targetName &&
-          normalize(v.size || 'Regular') === targetSize
+          normalize(v.size || '') === targetSize
       );
       if (exact) return exact;
-
-      const bySize = food.variations.find(
-        (v: FoodVariation) => normalize(v.size || 'Regular') === targetSize
-      );
-      if (bySize) return bySize;
     }
 
     const byName = food.variations.find((v: FoodVariation) => normalize(v.name) === targetName);
     if (byName) return byName;
+
+    if (targetSize) {
+      const bySize = food.variations.find(
+        (v: FoodVariation) => normalize(v.size || '') === targetSize
+      );
+      if (bySize) return bySize;
+    }
 
     return null;
   }
@@ -860,19 +896,10 @@ export class MenuPage implements OnInit {
         const exactMatch = food.variations.find(
           (v) =>
             (normalize(v.name) === normOpt || normalize(v.name) === normNameOnly) &&
-            normalize(v.size || 'Regular') === normSize
+            normalize(v.size || '') === normSize
         );
         if (exactMatch && exactMatch.price !== undefined && exactMatch.price !== null) {
           return Number(exactMatch.price) || 0;
-        }
-      }
-
-      if (normSize) {
-        const matchedBySize = food.variations.find(
-          (v) => normalize(v.size || 'Regular') === normSize
-        );
-        if (matchedBySize && matchedBySize.price !== undefined && matchedBySize.price !== null) {
-          return Number(matchedBySize.price) || 0;
         }
       }
 
@@ -881,6 +908,15 @@ export class MenuPage implements OnInit {
       );
       if (matchedByName && matchedByName.price !== undefined && matchedByName.price !== null) {
         return Number(matchedByName.price) || 0;
+      }
+
+      if (normSize) {
+        const matchedBySize = food.variations.find(
+          (v) => normalize(v.size || '') === normSize
+        );
+        if (matchedBySize && matchedBySize.price !== undefined && matchedBySize.price !== null) {
+          return Number(matchedBySize.price) || 0;
+        }
       }
     }
 
@@ -951,6 +987,7 @@ export class MenuPage implements OnInit {
   }
 
   openFullScreenViewer(food?: any, index: any = 0, event?: any, ...args: any[]) {
+    if (event?.stopPropagation) event.stopPropagation();
     this.fullScreenFood = food;
     this.fullScreenImageIndex = typeof index === 'number' ? index : 0;
     this.isFullScreenViewerOpen = true;
@@ -1061,19 +1098,57 @@ export class MenuPage implements OnInit {
   }
 
   mealToFoodItem(meal: FeaturedMeal): FoodItem {
+    const variations: FoodVariation[] =
+      Array.isArray(meal.variations) && meal.variations.length > 0
+        ? meal.variations.map((v) => ({
+            name: v.name,
+            ...(v.size ? { size: v.size } : {}),
+            price: Number(v.price ?? meal.price)
+          }))
+        : [{ name: 'Regular', size: 'Regular', price: meal.price }];
+
+    const sizes: string[] =
+      Array.isArray(meal.sizes) && meal.sizes.length > 0
+        ? [...meal.sizes]
+        : Array.from(
+            new Set(
+              variations
+                .map((v) => (v.size || '').trim())
+                .filter(Boolean)
+            )
+          );
+
+    const options = variations.map((v) => {
+      const sizePart = v.size ? ` (${v.size})` : '';
+      return `${v.name}${sizePart} P${(v.price ?? meal.price).toFixed(0)}`;
+    });
+
+    const images =
+      Array.isArray(meal.images) && meal.images.length > 0
+        ? [...meal.images]
+        : meal.imageUrl
+          ? [meal.imageUrl]
+          : [];
+
+    const resolvedStock =
+      typeof meal.stock === 'number' && !isNaN(meal.stock)
+        ? Math.max(0, Math.floor(meal.stock))
+        : 20;
+
     return {
       id: meal.id,
       name: meal.title,
       category: 'Daily Featured',
       description: meal.description,
       price: meal.price,
+      stock: resolvedStock,
+      available: resolvedStock > 0,
       rating: 5.0,
-      imageUrl: meal.imageUrl,
-      options: ['Regular Serving', 'Special Combo (+Rice)'],
-      variations: [
-        { name: 'Regular Serving', price: meal.price },
-        { name: 'Special Combo (+Rice)', price: meal.price + 30 }
-      ]
+      imageUrl: images[0] || meal.imageUrl,
+      images,
+      options,
+      variations,
+      sizes: sizes.length > 0 ? sizes : ['Regular']
     };
   }
 
@@ -1103,8 +1178,20 @@ export class MenuPage implements OnInit {
       this.presentToast(this.getBlockedMealMessage(meal), 'warning');
       return;
     }
+
+    const mealFood = this.mealToFoodItem(meal);
+    if (this.isSoldOut(mealFood)) {
+      this.presentToast(`"${meal.title}" is currently out of stock.`, 'warning');
+      return;
+    }
+
+    const choices = this.getVariationChoices(mealFood);
+    const sizes = this.getVariationSizes(mealFood);
+
     this.selectedMeal = meal;
-    this.selectedMealVariant = 'Regular Serving';
+    this.selectedMealFood = mealFood;
+    this.selectedMealVariant = choices[0] || 'Regular';
+    this.selectedMealSize = sizes[0] || 'Regular';
     this.mealQuantity = 1;
     this.isMealModalOpen = true;
   }
@@ -1112,20 +1199,26 @@ export class MenuPage implements OnInit {
   closeMealOrderModal() {
     this.isMealModalOpen = false;
     this.selectedMeal = null;
+    this.selectedMealFood = null;
   }
 
   selectMealVariant(name: string) {
     this.selectedMealVariant = name;
   }
 
+  selectMealSize(size: string) {
+    this.selectedMealSize = size;
+  }
+
   getSelectedMealFood(): FoodItem | null {
+    if (this.selectedMealFood) return this.selectedMealFood;
     return this.selectedMeal ? this.mealToFoodItem(this.selectedMeal) : null;
   }
 
   getMealUnitPrice(): number {
     const food = this.getSelectedMealFood();
     if (!food) return 0;
-    return this.resolveUnitPrice(food, this.selectedMealVariant);
+    return this.resolveUnitPrice(food, this.selectedMealVariant, this.selectedMealSize);
   }
 
   getMealTotal(): number {
@@ -1133,6 +1226,11 @@ export class MenuPage implements OnInit {
   }
 
   increaseMealQty() {
+    const maxStock = this.getAvailableStock(this.getSelectedMealFood());
+    if (maxStock > 0 && this.mealQuantity >= maxStock) {
+      this.presentToast(`Only ${maxStock} order(s) available.`, 'warning');
+      return;
+    }
     this.mealQuantity++;
   }
 
@@ -1145,11 +1243,16 @@ export class MenuPage implements OnInit {
       this.presentToast(this.getBlockedMealMessage(meal), 'warning');
       return;
     }
+    const food = this.mealToFoodItem(meal);
+    const choice = this.getVariationChoices(food)[0] || 'Regular';
+    const size = this.getVariationSizes(food)[0] || 'Regular';
+    const optionLabel = `${choice} (${size})`;
+    const unitPrice = this.resolveUnitPrice(food, choice, size);
     this.executeAddToCart(
-      this.mealToFoodItem(meal),
-      'Regular',
+      food,
+      optionLabel,
       1,
-      meal.price,
+      unitPrice,
       this.mealScheduleNote(meal)
     );
   }
@@ -1162,8 +1265,16 @@ export class MenuPage implements OnInit {
       return;
     }
     const food = this.getSelectedMealFood();
-    if (!food) return;
-    const unitPrice = this.resolveUnitPrice(food, this.selectedMealVariant);
+    if (!food || this.isSoldOut(food)) {
+      this.presentToast(`"${this.selectedMeal.title}" is currently out of stock.`, 'warning');
+      this.closeMealOrderModal();
+      return;
+    }
+
+    const choice = this.selectedMealVariant || 'Regular';
+    const size = this.selectedMealSize || 'Regular';
+    const optionLabel = `${choice} (${size})`;
+    const unitPrice = this.resolveUnitPrice(food, choice, size);
     const note = this.mealScheduleNote(this.selectedMeal);
     const qty = this.mealQuantity || 1;
 
@@ -1171,7 +1282,7 @@ export class MenuPage implements OnInit {
       this.buyNow.setItem({
         food,
         quantity: qty,
-        selectedOption: this.selectedMealVariant,
+        selectedOption: optionLabel,
         unitPrice,
         note
       });
@@ -1180,9 +1291,9 @@ export class MenuPage implements OnInit {
       return;
     }
 
-    this.cartService.addToCart(food, this.selectedMealVariant, qty, unitPrice, note);
+    this.cartService.addToCart(food, optionLabel, qty, unitPrice, note);
     this.updateCartCount();
-    this.presentToast(`Added ${qty}x "${food.name}" (${this.selectedMealVariant}) to cart!`);
+    this.presentToast(`Added ${qty}x "${food.name}" [${optionLabel}] to cart!`);
     this.closeMealOrderModal();
   }
 

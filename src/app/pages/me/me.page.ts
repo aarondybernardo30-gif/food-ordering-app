@@ -47,6 +47,7 @@ import { TopUpService } from '../../services/topup';
 import { AuthService } from '../../services/auth';
 import { VoucherService } from '../../services/voucher';
 import { MembershipService, MembershipInfo } from '../../services/membership';
+import { CloudSyncService } from '../../services/cloud-sync';
 import { Order, Voucher } from '../../models/food.model';
 import { UserBottomNavComponent } from '../../user-bottom-nav/user-bottom-nav.component';
 
@@ -84,6 +85,7 @@ export class MePage implements OnInit {
   public membershipService = inject(MembershipService);
   public themeService = inject(ThemeService);
   private topupService = inject(TopUpService);
+  private cloudSync = inject(CloudSyncService, { optional: true });
   private toastCtrl = inject(ToastController);
   private alertCtrl = inject(AlertController);
   private router = inject(Router);
@@ -218,32 +220,7 @@ export class MePage implements OnInit {
     // 2. Orders subscription + live membership evaluation
     if (this.orderService && this.orderService.orders$) {
       this.orderService.orders$.subscribe((orders: Order[]) => {
-        this.allOrders = orders || [];
-
-        this.toPayOrders = this.allOrders.filter(
-          (o: Order) => o.status === 'Pending' && o.paymentMethod !== 'shopeepay'
-        );
-
-        this.toShipOrders = this.allOrders.filter(
-          (o: Order) => o.status === 'Preparing'
-        );
-
-        this.toReceiveOrders = this.allOrders.filter(
-          (o: Order) =>
-            o.status === 'Out for Delivery' || o.status === 'Ready for Pickup'
-        );
-
-        this.toRateOrders = this.allOrders.filter(
-          (o: Order) => o.status === 'Completed' && !o.rating
-        );
-
-        this.completedOrders = this.allOrders.filter(
-          (o: Order) => o.status === 'Completed'
-        );
-
-        this.membership = this.membershipService.refresh(this.allOrders);
-        this.userTier = this.membership.tier;
-        this.cdr.detectChanges();
+        this.applyOrdersList(orders || []);
       });
     }
 
@@ -295,6 +272,8 @@ export class MePage implements OnInit {
     this.membership = this.membershipService.refresh(this.allOrders);
     this.userTier = this.membership.tier;
 
+    void this.cloudSync?.syncFromCloudDelta();
+
     const snap = this.route.snapshot.queryParams;
     if (snap['openVouchers'] === 'true') {
       this.applyCheckoutParams(snap);
@@ -302,6 +281,85 @@ export class MePage implements OnInit {
       this.isVouchersModalOpen = true;
     }
     this.cdr.detectChanges();
+  }
+
+  /**
+   * Cash on Delivery (cod), Wallet (shopeepay), and already-submitted QR payments
+   * should not show up under "Orders To Pay".
+   */
+  private isOrderSettledOrCod(order: Order): boolean {
+    if (!order) return false;
+    if (order.paymentMethod === 'cod') return true;
+    if (order.paymentMethod === 'shopeepay') return true;
+    if (
+      order.paymentMethod === 'online' &&
+      Boolean(order.paymentProof || (order.notes && order.notes.includes('QR Payment Ref:')))
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private applyOrdersList(orders: Order[]) {
+    this.allOrders = orders || [];
+
+    this.toPayOrders = this.allOrders.filter(
+      (o: Order) => o.status === 'Pending' && !this.isOrderSettledOrCod(o)
+    );
+
+    this.toShipOrders = this.allOrders.filter(
+      (o: Order) =>
+        o.status === 'Preparing' ||
+        (o.status === 'Pending' && this.isOrderSettledOrCod(o))
+    );
+
+    this.toReceiveOrders = this.allOrders.filter(
+      (o: Order) =>
+        o.status === 'Out for Delivery' || o.status === 'Ready for Pickup'
+    );
+
+    this.toRateOrders = this.allOrders.filter(
+      (o: Order) => o.status === 'Completed' && !o.rating
+    );
+
+    this.completedOrders = this.allOrders.filter(
+      (o: Order) => o.status === 'Completed'
+    );
+
+    this.membership = this.membershipService.refresh(this.allOrders);
+    this.userTier = this.membership.tier;
+    this.cdr.detectChanges();
+  }
+
+  itemLineTotal(item: any): number {
+    const unit = item?.unitPrice ?? item?.food?.price ?? 0;
+    return Number(unit) * Number(item?.quantity || 1);
+  }
+
+  orderPaymentBadge(order: Order): string {
+    if (order.paymentMethod === 'cod') {
+      return order.orderType === 'delivery' ? 'Pending (COD)' : 'Pending (Cash)';
+    }
+    if (order.paymentMethod === 'shopeepay') return 'Paid (Wallet)';
+    if (order.paymentMethod === 'online') return 'Paid (QR)';
+    return 'Pending';
+  }
+
+  paymentMethodLabel(order: Order): string {
+    switch (order.paymentMethod) {
+      case 'cod':
+        return order.orderType === 'delivery'
+          ? 'Cash on Delivery (COD)'
+          : order.orderType === 'dine-in'
+            ? 'Cash at Counter/Table'
+            : 'Cash upon Pick-Up';
+      case 'shopeepay':
+        return 'Paid via Wallet';
+      case 'online':
+        return 'Paid via GCash / QR';
+      default:
+        return '';
+    }
   }
 
   private seenCompletedStorageKey(): string {
@@ -528,6 +586,7 @@ export class MePage implements OnInit {
     }
     this.selectedModalType = type;
     this.isPurchaseModalOpen = true;
+    void this.cloudSync?.syncFromCloudDelta();
   }
 
   closePurchaseModal() {

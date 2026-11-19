@@ -150,7 +150,7 @@
             </div>
             <span class="wallet-title">Wallet</span>
             <span class="wallet-balance">
-              ₱{{ (shopeePayBalance || 132.0).toFixed(2) }}
+              ₱{{ (shopeePayBalance || 0).toFixed(2) }}
             </span>
             <span class="pill-btn">Top Up</span>
           </div>
@@ -351,7 +351,7 @@
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">
@@ -365,21 +365,26 @@
         <div *ngIf="selectedModalType === 'toShip'">
           <div *ngIf="toShipOrders.length === 0" class="empty-modal-box">
             <ion-icon name="time-outline"></ion-icon>
-            <p>No orders being prepared right now.</p>
+            <p>No orders pending confirmation or preparing right now.</p>
           </div>
           <div *ngFor="let order of toShipOrders" class="order-item-card">
             <div class="order-card-head">
               <span class="order-id">Order #{{ order.id }}</span>
-              <ion-badge color="warning">Preparing</ion-badge>
+              <ion-badge [color]="order.status === 'Preparing' ? 'warning' : 'primary'">
+                {{ order.status === 'Preparing' ? 'Preparing' : orderPaymentBadge(order) }}
+              </ion-badge>
             </div>
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">
               <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+              <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">
+                {{ paymentMethodLabel(order) }}
+              </span>
             </div>
           </div>
         </div>
@@ -398,11 +403,14 @@
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">
               <span class="total-text">Total: ₱{{ order.totalAmount.toFixed(2) }}</span>
+              <span style="font-size: 0.78rem; color: #64748b; font-weight: 600;">
+                {{ paymentMethodLabel(order) }}
+              </span>
             </div>
           </div>
         </div>
@@ -421,7 +429,7 @@
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">
@@ -445,7 +453,7 @@
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">
@@ -469,14 +477,14 @@
           <div *ngFor="let order of allOrders" class="order-item-card">
             <div class="order-card-head">
               <span class="order-id">Order #{{ order.id }}</span>
-              <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : 'primary')">
+              <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : (order.status === 'Cancelled' ? 'danger' : 'primary'))">
                 {{ order.status }}
               </ion-badge>
             </div>
             <div class="order-foods-list">
               <div *ngFor="let item of order.items" class="food-line">
                 <span>{{ item.quantity }}x {{ item.food.name }}</span>
-                <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                <span>₱{{ itemLineTotal(item).toFixed(2) }}</span>
               </div>
             </div>
             <div class="order-foot-row">

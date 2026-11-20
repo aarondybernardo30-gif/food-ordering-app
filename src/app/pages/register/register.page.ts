@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -27,7 +27,6 @@ import { AuthService } from '../../services/auth';
   styleUrls: ['./register.page.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     IonHeader,
@@ -42,7 +41,7 @@ import { AuthService } from '../../services/auth';
     IonIcon,
     IonCard,
     IonCardContent
-  ]
+]
 })
 export class RegisterPage implements OnInit {
   private fb = inject(FormBuilder);

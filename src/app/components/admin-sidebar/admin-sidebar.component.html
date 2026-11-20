@@ -16,15 +16,16 @@
   </button>
 
   <div class="sidebar-label">Manage</div>
-  <button
-    type="button"
-    *ngFor="let nav of manageNav"
-    class="side-item"
-    [class.active]="active === nav.key"
-    (click)="onTabClick(nav.key)">
-    <ion-icon [name]="nav.icon"></ion-icon>
-    <span>{{ nav.label }}</span>
-  </button>
+  @for (nav of manageNav; track nav) {
+    <button
+      type="button"
+      class="side-item"
+      [class.active]="active === nav.key"
+      (click)="onTabClick(nav.key)">
+      <ion-icon [name]="nav.icon"></ion-icon>
+      <span>{{ nav.label }}</span>
+    </button>
+  }
 
   <div class="sidebar-label">Reports</div>
   <button

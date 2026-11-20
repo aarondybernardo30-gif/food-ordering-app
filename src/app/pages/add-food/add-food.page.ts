@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, ChangeDetectorRef, NgZone, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
@@ -45,7 +45,6 @@ import { FoodItem, FoodVariation } from '../../models/food.model';
   styleUrls: ['./add-food.page.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     RouterModule,
     IonHeader,
@@ -62,7 +61,7 @@ import { FoodItem, FoodVariation } from '../../models/food.model';
     IonSelectOption,
     IonTextarea,
     IonModal
-  ],
+],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class AddFoodPage implements OnInit {

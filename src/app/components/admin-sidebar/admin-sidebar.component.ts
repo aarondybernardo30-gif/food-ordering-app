@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -29,7 +29,7 @@ export type AdminNavDest = 'reports' | 'rider';
   templateUrl: './admin-sidebar.component.html',
   styleUrls: ['./admin-sidebar.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonIcon]
+  imports: [IonIcon]
 })
 export class AdminSidebarComponent {
   /** Key of the currently active section ('' for none). */

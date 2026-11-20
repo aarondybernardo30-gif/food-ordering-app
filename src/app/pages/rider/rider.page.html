@@ -7,18 +7,24 @@
           <ion-icon name="bicycle-outline" class="rider-bike-icon"></ion-icon>
           <h2>Rider Portal</h2>
         </div>
-        <span class="rider-welcome-text" *ngIf="currentRider">
-          Courier: <strong>{{ currentRider.fullName || currentRider.username }}</strong>
-          <small *ngIf="currentRider.phone"> ({{ currentRider.phone }})</small>
-        </span>
+        @if (currentRider) {
+          <span class="rider-welcome-text">
+            Courier: <strong>{{ currentRider.fullName || currentRider.username }}</strong>
+            @if (currentRider.phone) {
+              <small> ({{ currentRider.phone }})</small>
+            }
+          </span>
+        }
       </div>
 
       <!-- Right: Rider Profile Badge & Logout -->
       <div class="rider-header-right">
-        <div class="rider-name-chip" *ngIf="currentRider">
-          <ion-icon name="person-circle-outline"></ion-icon>
-          <span>{{ currentRider.fullName || currentRider.username }}</span>
-        </div>
+        @if (currentRider) {
+          <div class="rider-name-chip">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>{{ currentRider.fullName || currentRider.username }}</span>
+          </div>
+        }
 
         <ion-button fill="clear" color="light" (click)="onRiderLogout()" class="logout-btn">
           <ion-icon name="log-out-outline" slot="start"></ion-icon>
@@ -48,223 +54,251 @@
   <div class="rider-orders-container">
 
     <!-- 1. ACTIVE DELIVERIES TAB -->
-    <div *ngIf="selectedSegment === 'active'">
-      <div *ngIf="activeOrders.length === 0" class="empty-state-box">
-        <ion-icon name="bicycle-outline"></ion-icon>
-        <h3>No Active Deliveries</h3>
-        <p>No orders currently assigned to you. Dispatched orders will appear here automatically.</p>
-      </div>
-
-      <ion-card *ngFor="let order of activeOrders" class="rider-order-card">
-        <ion-card-header>
-          <div class="card-head-row">
-            <div>
-              <ion-card-title>Order #{{ order.id }}</ion-card-title>
-              <ion-card-subtitle>{{ order.createdAt | date:'shortTime' }}</ion-card-subtitle>
-            </div>
-            <ion-badge color="warning">Out for Delivery</ion-badge>
-          </div>
-        </ion-card-header>
-
-        <ion-card-content>
-          <!-- Assigned Rider Notice -->
-          <div class="assigned-notice-pill">
+    @if (selectedSegment === 'active') {
+      <div>
+        @if (activeOrders.length === 0) {
+          <div class="empty-state-box">
             <ion-icon name="bicycle-outline"></ion-icon>
-            <span>Assigned to: <strong>{{ currentRider?.fullName || order.assignedRiderName }}</strong></span>
+            <h3>No Active Deliveries</h3>
+            <p>No orders currently assigned to you. Dispatched orders will appear here automatically.</p>
           </div>
-
-          <!-- Customer Destination Box -->
-          <div class="destination-box" *ngIf="order.deliveryAddress">
-            <div class="dest-title">
-              <ion-icon name="location-outline"></ion-icon>
-              <strong>Delivery Destination:</strong>
-            </div>
-            <p class="dest-address">{{ order.deliveryAddress }}</p>
-          </div>
-
-          <!-- Payment Info -->
-          <p class="payment-collect-line">
-            <strong>Payment to Collect: </strong>
-            <span *ngIf="order.paymentMethod === 'cod'" class="cod-text">
-              Collect Cash on Delivery: ₱{{ order.totalAmount.toFixed(2) }}
-            </span>
-            <span *ngIf="order.paymentMethod === 'shopeepay'" class="paid-text">
-              Wallet (Already Paid)
-            </span>
-            <span *ngIf="order.paymentMethod !== 'cod' && order.paymentMethod !== 'shopeepay'" class="paid-text">
-              Paid Online
-            </span>
-          </p>
-
-          <p *ngIf="order.customerName" class="customer-info-line">
-            <strong>Customer: </strong> {{ order.customerName }} 
-            <span *ngIf="order.customerPhone">({{ order.customerPhone }})</span>
-          </p>
-
-          <p *ngIf="order.notes" class="order-notes-line">
-            <strong>Note: </strong> {{ order.notes }}
-          </p>
-
-          <!-- Food items -->
-          <div class="order-items-wrapper">
-            <div *ngFor="let item of order.items" class="item-line">
-              <span>{{ item.quantity }}x {{ item.food.name }}</span>
-              <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
-            </div>
-          </div>
-
-          <!-- Action Buttons -->
-          <ion-button 
-            expand="block" 
-            color="primary" 
-            (click)="trackExactLocation(order)" 
-            class="action-btn-gps">
-            <ion-icon name="navigate-outline" slot="start"></ion-icon>
-            TRACK EXACT LOCATION (GPS)
-          </ion-button>
-
-          <ion-button 
-            expand="block" 
-            color="success" 
-            (click)="setDelivered(order)" 
-            class="action-btn-delivered">
-            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
-            SET AS DELIVERED
-          </ion-button>
-        </ion-card-content>
-      </ion-card>
-    </div>
+        }
+        @for (order of activeOrders; track order) {
+          <ion-card class="rider-order-card">
+            <ion-card-header>
+              <div class="card-head-row">
+                <div>
+                  <ion-card-title>Order #{{ order.id }}</ion-card-title>
+                  <ion-card-subtitle>{{ order.createdAt | date:'shortTime' }}</ion-card-subtitle>
+                </div>
+                <ion-badge color="warning">Out for Delivery</ion-badge>
+              </div>
+            </ion-card-header>
+            <ion-card-content>
+              <!-- Assigned Rider Notice -->
+              <div class="assigned-notice-pill">
+                <ion-icon name="bicycle-outline"></ion-icon>
+                <span>Assigned to: <strong>{{ currentRider?.fullName || order.assignedRiderName }}</strong></span>
+              </div>
+              <!-- Customer Destination Box -->
+              @if (order.deliveryAddress) {
+                <div class="destination-box">
+                  <div class="dest-title">
+                    <ion-icon name="location-outline"></ion-icon>
+                    <strong>Delivery Destination:</strong>
+                  </div>
+                  <p class="dest-address">{{ order.deliveryAddress }}</p>
+                </div>
+              }
+              <!-- Payment Info -->
+              <p class="payment-collect-line">
+                <strong>Payment to Collect: </strong>
+                @if (order.paymentMethod === 'cod') {
+                  <span class="cod-text">
+                    Collect Cash on Delivery: ₱{{ order.totalAmount.toFixed(2) }}
+                  </span>
+                }
+                @if (order.paymentMethod === 'shopeepay') {
+                  <span class="paid-text">
+                    Wallet (Already Paid)
+                  </span>
+                }
+                @if (order.paymentMethod !== 'cod' && order.paymentMethod !== 'shopeepay') {
+                  <span class="paid-text">
+                    Paid Online
+                  </span>
+                }
+              </p>
+              @if (order.customerName) {
+                <p class="customer-info-line">
+                  <strong>Customer: </strong> {{ order.customerName }}
+                  @if (order.customerPhone) {
+                    <span>({{ order.customerPhone }})</span>
+                  }
+                </p>
+              }
+              @if (order.notes) {
+                <p class="order-notes-line">
+                  <strong>Note: </strong> {{ order.notes }}
+                </p>
+              }
+              <!-- Food items -->
+              <div class="order-items-wrapper">
+                @for (item of order.items; track item) {
+                  <div class="item-line">
+                    <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                    <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+              <!-- Action Buttons -->
+              <ion-button
+                expand="block"
+                color="primary"
+                (click)="trackExactLocation(order)"
+                class="action-btn-gps">
+                <ion-icon name="navigate-outline" slot="start"></ion-icon>
+                TRACK EXACT LOCATION (GPS)
+              </ion-button>
+              <ion-button
+                expand="block"
+                color="success"
+                (click)="setDelivered(order)"
+                class="action-btn-delivered">
+                <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+                SET AS DELIVERED
+              </ion-button>
+            </ion-card-content>
+          </ion-card>
+        }
+      </div>
+    }
 
     <!-- 2. DELIVERED HISTORY TAB -->
-    <div *ngIf="selectedSegment === 'delivered'">
-      <div *ngIf="deliveredOrders.length === 0" class="empty-state-box">
-        <ion-icon name="checkmark-done-outline"></ion-icon>
-        <h3>No Delivered Orders Yet</h3>
-        <p>Completed deliveries will be archived here.</p>
+    @if (selectedSegment === 'delivered') {
+      <div>
+        @if (deliveredOrders.length === 0) {
+          <div class="empty-state-box">
+            <ion-icon name="checkmark-done-outline"></ion-icon>
+            <h3>No Delivered Orders Yet</h3>
+            <p>Completed deliveries will be archived here.</p>
+          </div>
+        }
+        @for (order of deliveredOrders; track order) {
+          <ion-card class="rider-order-card completed-card">
+            <ion-card-header>
+              <div class="card-head-row">
+                <div>
+                  <ion-card-title>Order #{{ order.id }}</ion-card-title>
+                  <ion-card-subtitle>{{ order.createdAt | date:'medium' }}</ion-card-subtitle>
+                </div>
+                <ion-badge color="success">Completed</ion-badge>
+              </div>
+            </ion-card-header>
+            <ion-card-content>
+              <p><strong>Delivered by:</strong> {{ currentRider?.fullName || order.assignedRiderName }}</p>
+              @if (order.deliveryAddress) {
+                <p><strong>Delivered To:</strong> {{ order.deliveryAddress }}</p>
+              }
+              <p><strong>Amount Collected:</strong> ₱{{ order.totalAmount.toFixed(2) }}</p>
+              @for (item of order.items; track item) {
+                <div class="item-line">
+                  <span>{{ item.quantity }}x {{ item.food.name }}</span>
+                  <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
+                </div>
+              }
+              <!-- Proof of Delivery thumbnail -->
+              @if (order.deliveryProof) {
+                <div class="proof-thumb-box" (click)="viewProof(order)">
+                  <img [src]="order.deliveryProof" alt="Proof of delivery" class="proof-thumb" />
+                  <span class="proof-thumb-label">
+                    <ion-icon name="image-outline"></ion-icon>
+                    Proof of Delivery — tap to view
+                  </span>
+                </div>
+              }
+            </ion-card-content>
+          </ion-card>
+        }
       </div>
-
-      <ion-card *ngFor="let order of deliveredOrders" class="rider-order-card completed-card">
-        <ion-card-header>
-          <div class="card-head-row">
-            <div>
-              <ion-card-title>Order #{{ order.id }}</ion-card-title>
-              <ion-card-subtitle>{{ order.createdAt | date:'medium' }}</ion-card-subtitle>
-            </div>
-            <ion-badge color="success">Completed</ion-badge>
-          </div>
-        </ion-card-header>
-
-        <ion-card-content>
-          <p><strong>Delivered by:</strong> {{ currentRider?.fullName || order.assignedRiderName }}</p>
-          <p *ngIf="order.deliveryAddress"><strong>Delivered To:</strong> {{ order.deliveryAddress }}</p>
-          <p><strong>Amount Collected:</strong> ₱{{ order.totalAmount.toFixed(2) }}</p>
-
-          <div *ngFor="let item of order.items" class="item-line">
-            <span>{{ item.quantity }}x {{ item.food.name }}</span>
-            <span>₱{{ (item.food.price * item.quantity).toFixed(2) }}</span>
-          </div>
-
-          <!-- Proof of Delivery thumbnail -->
-          <div *ngIf="order.deliveryProof" class="proof-thumb-box" (click)="viewProof(order)">
-            <img [src]="order.deliveryProof" alt="Proof of delivery" class="proof-thumb" />
-            <span class="proof-thumb-label">
-              <ion-icon name="image-outline"></ion-icon>
-              Proof of Delivery — tap to view
-            </span>
-          </div>
-        </ion-card-content>
-      </ion-card>
-    </div>
+    }
 
   </div>
 
   <!-- ============================================
-       PROOF OF DELIVERY MODAL
-       ============================================ -->
+  PROOF OF DELIVERY MODAL
+  ============================================ -->
   <ion-modal [isOpen]="isProofModalOpen" (didDismiss)="closeProofModal()" class="proof-delivery-modal">
     <ng-template>
-      <div class="proof-sheet" *ngIf="proofModalOrder">
-        <div class="proof-sheet-head">
-          <div>
-            <h3>Proof of Delivery</h3>
-            <span>Order #{{ proofModalOrder.id }}</span>
+      @if (proofModalOrder) {
+        <div class="proof-sheet">
+          <div class="proof-sheet-head">
+            <div>
+              <h3>Proof of Delivery</h3>
+              <span>Order #{{ proofModalOrder.id }}</span>
+            </div>
+            <button type="button" class="proof-close-btn" (click)="closeProofModal()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
           </div>
-          <button type="button" class="proof-close-btn" (click)="closeProofModal()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
-        </div>
-
-        <p class="proof-instruction">
-          Please attach a photo of the delivered package or hand-over to the customer
-          as proof that this order was successfully delivered.
-        </p>
-
-        <!-- Live camera viewfinder -->
-        <div class="camera-viewfinder" *ngIf="isCameraOpen">
-          <video autoplay playsinline muted></video>
-          <p class="camera-hint">Point at the delivered package, then capture</p>
-          <div class="camera-controls">
-            <button type="button" class="camera-cancel-btn" (click)="cancelCamera()">CANCEL</button>
-            <button type="button" class="camera-shutter-btn" (click)="captureCameraPhoto()" title="Capture photo"></button>
+          <p class="proof-instruction">
+            Please attach a photo of the delivered package or hand-over to the customer
+            as proof that this order was successfully delivered.
+          </p>
+          <!-- Live camera viewfinder -->
+          @if (isCameraOpen) {
+            <div class="camera-viewfinder">
+              <video autoplay playsinline muted></video>
+              <p class="camera-hint">Point at the delivered package, then capture</p>
+              <div class="camera-controls">
+                <button type="button" class="camera-cancel-btn" (click)="cancelCamera()">CANCEL</button>
+                <button type="button" class="camera-shutter-btn" (click)="captureCameraPhoto()" title="Capture photo"></button>
+              </div>
+            </div>
+          }
+          @if (!proofImage && !isCameraOpen) {
+            <div class="proof-photo-area">
+              @if (cameraError) {
+                <p class="camera-error">{{ cameraError }} Using the camera app instead.</p>
+              }
+              <button type="button" class="proof-capture-btn" (click)="openCamera()">
+                <ion-icon name="camera-outline"></ion-icon>
+                <span>Take a Photo</span>
+                <small>Opens your camera to capture the proof</small>
+              </button>
+              <!-- Fallback input: native camera app on mobile browsers -->
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="proof-hidden-file-input"
+                (change)="onProofSelected($event)" />
+            </div>
+          }
+          @if (proofImage) {
+            <div class="proof-preview-box">
+              <img [src]="proofImage" alt="Proof preview" class="proof-preview-img" />
+              <button type="button" class="proof-remove-btn" (click)="removeProofImage()">
+                <ion-icon name="trash-outline"></ion-icon>
+                Retake / Remove Photo
+              </button>
+            </div>
+          }
+          <div class="proof-actions">
+            <ion-button fill="outline" color="medium" (click)="closeProofModal()" class="proof-cancel-btn">
+              Cancel
+            </ion-button>
+            <ion-button
+              expand="block"
+              color="success"
+              [disabled]="!proofImage || isConfirmingDelivery"
+              (click)="confirmDeliveryWithProof()"
+              class="proof-confirm-btn">
+              <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+              {{ isConfirmingDelivery ? 'SAVING...' : 'CONFIRM DELIVERY' }}
+            </ion-button>
           </div>
         </div>
-
-        <div class="proof-photo-area" *ngIf="!proofImage && !isCameraOpen">
-          <p class="camera-error" *ngIf="cameraError">{{ cameraError }} Using the camera app instead.</p>
-          <button type="button" class="proof-capture-btn" (click)="openCamera()">
-            <ion-icon name="camera-outline"></ion-icon>
-            <span>Take a Photo</span>
-            <small>Opens your camera to capture the proof</small>
-          </button>
-          <!-- Fallback input: native camera app on mobile browsers -->
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            class="proof-hidden-file-input"
-            (change)="onProofSelected($event)" />
-        </div>
-
-        <div class="proof-preview-box" *ngIf="proofImage">
-          <img [src]="proofImage" alt="Proof preview" class="proof-preview-img" />
-          <button type="button" class="proof-remove-btn" (click)="removeProofImage()">
-            <ion-icon name="trash-outline"></ion-icon>
-            Retake / Remove Photo
-          </button>
-        </div>
-
-        <div class="proof-actions">
-          <ion-button fill="outline" color="medium" (click)="closeProofModal()" class="proof-cancel-btn">
-            Cancel
-          </ion-button>
-          <ion-button
-            expand="block"
-            color="success"
-            [disabled]="!proofImage || isConfirmingDelivery"
-            (click)="confirmDeliveryWithProof()"
-            class="proof-confirm-btn">
-            <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
-            {{ isConfirmingDelivery ? 'SAVING...' : 'CONFIRM DELIVERY' }}
-          </ion-button>
-        </div>
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
   <!-- ============================================
-       VIEW PROOF PHOTO (full screen)
-       ============================================ -->
+  VIEW PROOF PHOTO (full screen)
+  ============================================ -->
   <ion-modal [isOpen]="isViewProofOpen" (didDismiss)="closeViewProof()" class="view-proof-modal">
     <ng-template>
-      <div class="view-proof-sheet" *ngIf="viewProofUrl">
-        <div class="view-proof-head">
-          <h3>Proof of Delivery</h3>
-          <button type="button" class="proof-close-btn" (click)="closeViewProof()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
+      @if (viewProofUrl) {
+        <div class="view-proof-sheet">
+          <div class="view-proof-head">
+            <h3>Proof of Delivery</h3>
+            <button type="button" class="proof-close-btn" (click)="closeViewProof()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+          <img [src]="viewProofUrl" alt="Proof of delivery" class="view-proof-img" />
         </div>
-        <img [src]="viewProofUrl" alt="Proof of delivery" class="view-proof-img" />
-      </div>
+      }
     </ng-template>
   </ion-modal>
 </ion-content>

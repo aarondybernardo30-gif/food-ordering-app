@@ -10,7 +10,9 @@
       </div>
       <button type="button" class="notif-bell" (click)="openNotifications()" title="Wallet notifications">
         <ion-icon name="notifications-outline"></ion-icon>
-        <span class="notif-count" *ngIf="pendingTopUpCount > 0">{{ pendingTopUpCount }}</span>
+        @if (pendingTopUpCount > 0) {
+          <span class="notif-count">{{ pendingTopUpCount }}</span>
+        }
       </button>
     </div>
   </ion-toolbar>
@@ -29,388 +31,414 @@
   <div class="admin-main-area">
     <div class="tab-container">
 
-    <!-- ========================================== -->
-    <!-- TAB 1: CUSTOMER ORDERS                     -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'orders'">
-
-      <div *ngIf="orders.length === 0" class="empty-state">
-        <ion-icon name="bag-handle-outline"></ion-icon>
-        <p>No customer orders yet.</p>
-      </div>
-
-      <ion-card class="order-card" *ngFor="let order of orders">
-        <div class="order-header-row">
-          <ion-card-title>Order #{{ order.id }}</ion-card-title>
-          <div class="order-status-group">
-            <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : 'primary')">
-              {{ order.status }}
-            </ion-badge>
-            <button type="button" class="view-details-btn" (click)="openOrderDetails(order)">
-              <ion-icon name="eye-outline"></ion-icon>
-              View Details
-            </button>
-          </div>
+      <!-- ========================================== -->
+      <!-- TAB 1: CUSTOMER ORDERS                     -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'orders') {
+        <div>
+          @if (orders.length === 0) {
+            <div class="empty-state">
+              <ion-icon name="bag-handle-outline"></ion-icon>
+              <p>No customer orders yet.</p>
+            </div>
+          }
+          @for (order of orders; track order) {
+            <ion-card class="order-card">
+              <div class="order-header-row">
+                <ion-card-title>Order #{{ order.id }}</ion-card-title>
+                <div class="order-status-group">
+                  <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Preparing' ? 'warning' : 'primary')">
+                    {{ order.status }}
+                  </ion-badge>
+                  <button type="button" class="view-details-btn" (click)="openOrderDetails(order)">
+                    <ion-icon name="eye-outline"></ion-icon>
+                    View Details
+                  </button>
+                </div>
+              </div>
+              <div class="meta-info">
+                <p><strong>Customer:</strong> {{ order.customerName }} ({{ order.customerPhone }})</p>
+                <p><strong>Type:</strong> <span style="text-transform: capitalize;">{{ order.orderType }}</span></p>
+                <p><strong>Placed:</strong> {{ order.createdAt | date:'medium' }}</p>
+                @if (order.tableNumber) {
+                  <p><strong>Table:</strong> {{ order.tableNumber }}</p>
+                }
+                @if (order.deliveryAddress) {
+                  <p class="location-text">
+                    <ion-icon name="location-outline"></ion-icon> {{ order.deliveryAddress }}
+                  </p>
+                }
+                @if (order.assignedRiderName) {
+                  <p>
+                    <strong>Rider:</strong> 🛵 {{ order.assignedRiderName }} ({{ order.assignedRiderPhone }})
+                  </p>
+                }
+              </div>
+              <div class="total-row">
+                <h4>Total: <span class="total-price">₱{{ order.totalAmount.toFixed(2) }}</span></h4>
+                <div class="order-action-buttons">
+                  <ion-button size="small" class="order-actions-btn" fill="solid" (click)="openOrderActions(order)">
+                    <ion-icon name="options-outline" slot="start"></ion-icon>
+                    Actions
+                  </ion-button>
+                </div>
+              </div>
+            </ion-card>
+          }
         </div>
+      }
 
-        <div class="meta-info">
-          <p><strong>Customer:</strong> {{ order.customerName }} ({{ order.customerPhone }})</p>
-          <p><strong>Type:</strong> <span style="text-transform: capitalize;">{{ order.orderType }}</span></p>
-          <p><strong>Placed:</strong> {{ order.createdAt | date:'medium' }}</p>
-          <p *ngIf="order.tableNumber"><strong>Table:</strong> {{ order.tableNumber }}</p>
-          <p *ngIf="order.deliveryAddress" class="location-text">
-            <ion-icon name="location-outline"></ion-icon> {{ order.deliveryAddress }}
-          </p>
-          <p *ngIf="order.assignedRiderName">
-            <strong>Rider:</strong> 🛵 {{ order.assignedRiderName }} ({{ order.assignedRiderPhone }})
-          </p>
-        </div>
-
-        <div class="total-row">
-          <h4>Total: <span class="total-price">₱{{ order.totalAmount.toFixed(2) }}</span></h4>
-          <div class="order-action-buttons">
-            <ion-button size="small" class="order-actions-btn" fill="solid" (click)="openOrderActions(order)">
-              <ion-icon name="options-outline" slot="start"></ion-icon>
-              Actions
+      <!-- ========================================== -->
+      <!-- TAB 2: FOOD MENU & PRICING                 -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'menu') {
+        <div>
+          <div class="section-top-header">
+            <div class="section-title">
+              <h3>Manage Food Items & Real-Time Prices</h3>
+              <p>Updates, choices, sizes, categories, and photos reflect immediately on the customer menu</p>
+            </div>
+            <ion-button class="add-food-btn" (click)="goToAddFood()">
+              <ion-icon slot="start" name="add-circle-outline"></ion-icon>
+              ADD NEW FOOD
             </ion-button>
           </div>
-        </div>
-      </ion-card>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TAB 2: FOOD MENU & PRICING                 -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'menu'">
-      <div class="section-top-header">
-        <div class="section-title">
-          <h3>Manage Food Items & Real-Time Prices</h3>
-          <p>Updates, choices, sizes, categories, and photos reflect immediately on the customer menu</p>
-        </div>
-        <ion-button class="add-food-btn" (click)="goToAddFood()">
-          <ion-icon slot="start" name="add-circle-outline"></ion-icon>
-          ADD NEW FOOD
-        </ion-button>
-      </div>
-
-      <!-- CATEGORIES WITH IMAGES STRIP -->
-      <ion-card class="feature-admin-card categories-strip-card">
-        <div class="categories-strip-header">
-          <strong>Categories ({{ categoryItems.length }})</strong>
-        </div>
-        <div class="categories-strip-row">
-          <div
-            *ngFor="let cat of categoryItems"
-            class="category-item-tile"
-            (click)="openCategoryModal(cat)"
-            title="Tap to edit category image or name">
-            <img
-              [src]="cat.imageUrl || cat.image"
-              [alt]="cat.name"
-              class="category-item-img" />
-            <span class="category-item-label">{{ cat.name }}</span>
-          </div>
-
-          <button
-            type="button"
-            class="category-add-tile"
-            (click)="openCategoryModal()"
-            title="Add new category">
-            <span class="category-add-circle">
-              <ion-icon name="add-outline"></ion-icon>
-            </span>
-            <span class="category-add-label">Add Category</span>
-          </button>
-        </div>
-      </ion-card>
-
-      <div *ngIf="foods.length === 0" class="empty-state">
-        <ion-icon name="restaurant-outline"></ion-icon>
-        <p>No food items found in the menu.</p>
-      </div>
-
-      <ion-card class="food-admin-card" *ngFor="let food of foods">
-        <div class="food-item-row">
-          <img [src]="food.imageUrl || 'assets/placeholder.png'" class="food-thumb" alt="Food item" />
-          <div class="food-details">
-            <h4>{{ food.name }}</h4>
-            <div class="category">{{ food.category }}</div>
-
-            <div class="card-options-strip" *ngIf="food.options && food.options.length > 0">
-              <span class="strip-label">Variations & Prices:</span>
-              <span class="opt-pill" *ngFor="let opt of food.options">{{ opt }}</span>
+          <!-- CATEGORIES WITH IMAGES STRIP -->
+          <ion-card class="feature-admin-card categories-strip-card">
+            <div class="categories-strip-header">
+              <strong>Categories ({{ categoryItems.length }})</strong>
             </div>
-
-            <div class="card-options-strip" *ngIf="food.sizes && food.sizes.length > 0">
-              <span class="strip-label">Sizes:</span>
-              <span class="opt-pill" *ngFor="let sz of food.sizes">{{ sz }}</span>
+            <div class="categories-strip-row">
+              @for (cat of categoryItems; track cat) {
+                <div
+                  class="category-item-tile"
+                  (click)="openCategoryModal(cat)"
+                  title="Tap to edit category image or name">
+                  <img
+                    [src]="cat.imageUrl || cat.image"
+                    [alt]="cat.name"
+                    class="category-item-img" />
+                  <span class="category-item-label">{{ cat.name }}</span>
+                </div>
+              }
+              <button
+                type="button"
+                class="category-add-tile"
+                (click)="openCategoryModal()"
+                title="Add new category">
+                <span class="category-add-circle">
+                  <ion-icon name="add-outline"></ion-icon>
+                </span>
+                <span class="category-add-label">Add Category</span>
+              </button>
             </div>
-
-            <p class="desc">{{ food.description || 'Freshly prepared item.' }}</p>
-
-            <div class="price-stock-row">
-              <span class="price-tag">₱{{ food.price.toFixed(2) }}</span>
-              <ion-badge [color]="food.available !== false && (food.stock ?? 20) > 0 ? 'success' : 'danger'">
-                {{ food.available !== false && (food.stock ?? 20) > 0 ? (food.stock ?? 20) + ' orders left' : 'Out of Stock' }}
-              </ion-badge>
+          </ion-card>
+          @if (foods.length === 0) {
+            <div class="empty-state">
+              <ion-icon name="restaurant-outline"></ion-icon>
+              <p>No food items found in the menu.</p>
             </div>
-          </div>
-        </div>
-
-        <div class="admin-actions">
-          <button type="button" class="btn-action btn-edit-details" (click)="openEditFoodModal(food)">
-            <ion-icon name="create-outline"></ion-icon>
-            EDIT DETAILS, SIZES & CHOICES
-          </button>
-        </div>
-      </ion-card>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TAB 3: FEATURED MEALS                      -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'featured'">
-      <div class="section-top-header">
-        <div class="section-title">
-          <h3>Manage Daily Featured Meals</h3>
-          <p>Meals shown in the Daily Featured Meals slider on the customer home screen</p>
-        </div>
-        <button type="button" class="add-food-btn" (click)="openMealModal()">
-          <ion-icon name="add-circle-outline"></ion-icon>
-          ADD NEW MEAL
-        </button>
-      </div>
-
-      <div *ngIf="featuredMeals.length === 0" class="empty-state">
-        <ion-icon name="restaurant-outline"></ion-icon>
-        <p>No featured meals yet. Add one to show it in the Daily Featured Meals slider.</p>
-      </div>
-
-      <ion-card class="feature-admin-card" *ngFor="let meal of featuredMeals">
-        <div class="feature-row">
-          <img [src]="meal.image" [alt]="meal.title" class="feature-thumb" />
-          <div class="feature-details">
-            <div class="feature-badges-row">
-              <span class="feature-badge-pill">₱{{ meal.price.toFixed(2) }}</span>
-              <span class="feature-placement-tag">{{ scheduleLabel(meal.schedule) }}</span>
-              <ion-badge [color]="(meal.stock ?? 20) > 0 ? 'success' : 'danger'">
-                {{ (meal.stock ?? 20) > 0 ? (meal.stock ?? 20) + ' orders left' : 'Out of Stock' }}
-              </ion-badge>
-            </div>
-            <h4>{{ meal.title }}</h4>
-            <p class="feature-sub" *ngIf="meal.subtitle">{{ meal.subtitle }}</p>
-
-            <div class="card-options-strip" *ngIf="meal.variations && meal.variations.length > 0">
-              <span class="strip-label">Variations & Prices:</span>
-              <span class="opt-pill" *ngFor="let v of meal.variations">{{ mealVariationLabel(v) }}</span>
-            </div>
-
-            <div class="card-options-strip" *ngIf="meal.sizes && meal.sizes.length > 0">
-              <span class="strip-label">Sizes:</span>
-              <span class="opt-pill" *ngFor="let sz of meal.sizes">{{ sz }}</span>
-            </div>
-
-            <p class="feature-desc" *ngIf="meal.description">{{ meal.description }}</p>
-          </div>
-          <div class="feature-actions">
-            <button type="button" class="btn-action btn-edit-details" (click)="openMealModal(meal)">
-              <ion-icon name="create-outline"></ion-icon>
-              EDIT
-            </button>
-            <button type="button" class="btn-feature-delete" (click)="deleteMealConfirm(meal)">
-              <ion-icon name="trash-outline"></ion-icon>
-              DELETE
-            </button>
-          </div>
-        </div>
-      </ion-card>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TAB 4: WALLET QR                           -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'walletqr'">
-      <div class="section-top-header centered-header">
-        <div class="section-title">
-          <h3>Store Wallet Payment QR</h3>
-          <p>Upload your real GCash / Maya QR so customers can scan and send top-up payments</p>
-        </div>
-      </div>
-
-      <ion-card class="feature-admin-card wallet-qr-main-card">
-        <div class="wallet-qr-card">
-          <div class="edit-images-block">
-            <div class="edit-images-grid">
-              <div class="edit-image-thumb qr-thumb" *ngIf="qrImage">
-                <img [src]="qrImage" alt="Store wallet QR" />
+          }
+          @for (food of foods; track food) {
+            <ion-card class="food-admin-card">
+              <div class="food-item-row">
+                <img [src]="food.imageUrl || 'assets/placeholder.png'" class="food-thumb" alt="Food item" />
+                <div class="food-details">
+                  <h4>{{ food.name }}</h4>
+                  <div class="category">{{ food.category }}</div>
+                  @if (food.options && food.options.length > 0) {
+                    <div class="card-options-strip">
+                      <span class="strip-label">Variations & Prices:</span>
+                      @for (opt of food.options; track opt) {
+                        <span class="opt-pill">{{ opt }}</span>
+                      }
+                    </div>
+                  }
+                  @if (food.sizes && food.sizes.length > 0) {
+                    <div class="card-options-strip">
+                      <span class="strip-label">Sizes:</span>
+                      @for (sz of food.sizes; track sz) {
+                        <span class="opt-pill">{{ sz }}</span>
+                      }
+                    </div>
+                  }
+                  <p class="desc">{{ food.description || 'Freshly prepared item.' }}</p>
+                  <div class="price-stock-row">
+                    <span class="price-tag">₱{{ food.price.toFixed(2) }}</span>
+                    <ion-badge [color]="food.available !== false && (food.stock ?? 20) > 0 ? 'success' : 'danger'">
+                      {{ food.available !== false && (food.stock ?? 20) > 0 ? (food.stock ?? 20) + ' orders left' : 'Out of Stock' }}
+                    </ion-badge>
+                  </div>
+                </div>
               </div>
-
-              <label class="edit-image-add" *ngIf="!qrImage">
-                <ion-icon name="qr-code-outline"></ion-icon>
-                <span>Upload QR</span>
-                <input type="file" accept="image/*" (change)="onQrImageSelected($event)" />
-              </label>
-            </div>
-
-            <div class="qr-upload-actions" *ngIf="qrImage">
-              <label class="btn-change-photo-inline">
-                <ion-icon name="camera-outline"></ion-icon>
-                Replace QR
-                <input type="file" accept="image/*" (change)="onQrImageSelected($event)" />
-              </label>
-            </div>
-
-            <div class="modal-form-item qr-url-item">
-              <ion-input
-                label="Or paste a QR image link (optional)"
-                label-placement="floating"
-                [(ngModel)]="qrImage"
-                placeholder="https://... (hosted QR image)"></ion-input>
-            </div>
-            <p class="edit-image-hint">
-              Tip: Fill in the <strong>Wallet Number</strong> below to generate a standard QR Ph code.
-            </p>
-          </div>
-
-          <div class="modal-form-item">
-            <ion-input label="Wallet App (e.g. GCash, Maya)" label-placement="floating" [(ngModel)]="qrWalletLabel" placeholder="GCash"></ion-input>
-          </div>
-
-          <div class="modal-form-item">
-            <ion-input label="Registered Account Name" label-placement="floating" [(ngModel)]="qrAccountName" placeholder="e.g. Juan Dela Cruz"></ion-input>
-          </div>
-
-          <div class="modal-form-item">
-            <ion-input label="GCash/Maya Mobile Number (for QR Ph)" label-placement="floating" [(ngModel)]="qrAccountNumber" placeholder="e.g. 0917 123 4567"></ion-input>
-          </div>
-
-          <div class="modal-form-item">
-            <ion-input label="City (registered)" label-placement="floating" [(ngModel)]="qrCity" placeholder="e.g. Manila"></ion-input>
-          </div>
-
-          <button type="button" class="btn-action save" (click)="saveWalletQr()">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            Save Wallet QR
-          </button>
+              <div class="admin-actions">
+                <button type="button" class="btn-action btn-edit-details" (click)="openEditFoodModal(food)">
+                  <ion-icon name="create-outline"></ion-icon>
+                  EDIT DETAILS, SIZES & CHOICES
+                </button>
+              </div>
+            </ion-card>
+          }
         </div>
-      </ion-card>
-    </div>
+      }
 
-    <!-- ========================================== -->
-    <!-- TAB 5: STORE GPS LOCATION SETTINGS         -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'storelocation'">
-      <div class="section-top-header">
-        <div class="section-title">
-          <h3>Store GPS Location & Distance Origin</h3>
-          <p>Customer delivery fees are calculated (₱15/km) from this kitchen location</p>
-        </div>
-      </div>
-
-      <ion-card class="feature-admin-card">
-        <div style="padding: 16px;">
-          <!-- GPS Detect Button -->
-          <ion-button expand="block" color="primary" fill="outline" (click)="detectStoreLocation()" style="margin-bottom: 14px; font-weight: 700;">
-            <ion-icon name="locate-outline" slot="start"></ion-icon>
-            Detect Store Location via Current GPS
-          </ion-button>
-
-          <div class="modal-form-item">
-            <ion-input 
-              label="Store / Kitchen Name & Address" 
-              label-placement="floating" 
-              [(ngModel)]="storeAddress" 
-              placeholder="e.g. Food Ordering Central Kitchen">
-            </ion-input>
-          </div>
-
-          <div class="grid-two-cols">
-            <div class="modal-form-item">
-              <ion-input 
-                type="number" 
-                label="Latitude" 
-                label-placement="floating" 
-                [(ngModel)]="storeLatitude" 
-                placeholder="15.36356">
-              </ion-input>
+      <!-- ========================================== -->
+      <!-- TAB 3: FEATURED MEALS                      -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'featured') {
+        <div>
+          <div class="section-top-header">
+            <div class="section-title">
+              <h3>Manage Daily Featured Meals</h3>
+              <p>Meals shown in the Daily Featured Meals slider on the customer home screen</p>
             </div>
-
-            <div class="modal-form-item">
-              <ion-input 
-                type="number" 
-                label="Longitude" 
-                label-placement="floating" 
-                [(ngModel)]="storeLongitude" 
-                placeholder="121.06583">
-              </ion-input>
-            </div>
-          </div>
-
-          <p style="font-size: 0.8rem; color: #64748b; margin: 10px 0 16px;">
-            📍 Active coordinates: <strong>{{ storeLatitude }}, {{ storeLongitude }}</strong>. When customers select their delivery location at checkout, their distance is measured against this point.
-          </p>
-
-          <button type="button" class="btn-action save" (click)="saveStoreLocation()">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            Save Store Location
-          </button>
-        </div>
-      </ion-card>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TAB 6: VOUCHERS (auto-distributed)         -->
-    <!-- ========================================== -->
-    <div *ngIf="selectedTab === 'vouchers'">
-      <div class="section-top-header">
-        <div class="section-title">
-          <h3>Manage Vouchers</h3>
-          <p>Vouchers created here automatically appear for every customer and apply at checkout. Each customer can use a voucher once.</p>
-        </div>
-        <button type="button" class="add-food-btn" (click)="openVoucherModal()">
-          <ion-icon name="add-circle-outline"></ion-icon>
-          ADD NEW VOUCHER
-        </button>
-      </div>
-
-      <div *ngIf="vouchers.length === 0" class="empty-state">
-        <ion-icon name="ticket-outline"></ion-icon>
-        <p>No vouchers yet. Create one and it becomes available to all customers instantly.</p>
-      </div>
-
-      <ion-card class="feature-admin-card" *ngFor="let voucher of vouchers">
-        <div class="feature-row">
-          <div class="voucher-admin-stub">
-            <span class="voucher-admin-headline">{{ voucher.headline }}</span>
-            <span class="voucher-admin-code">{{ voucher.code }}</span>
-          </div>
-          <div class="feature-details">
-            <div class="feature-badges-row">
-              <span class="feature-badge-pill">{{ voucher.tag }}</span>
-              <span class="feature-placement-tag">
-                {{ voucher.discountType === 'freeship' ? 'Free Shipping' : voucher.discountType === 'percent' ? voucher.discountValue + '% off' : '₱' + voucher.discountValue + ' off' }}
-                &bull; Min spend ₱{{ voucher.minSpend }}
-              </span>
-            </div>
-            <h4>{{ voucher.title }}</h4>
-            <p class="feature-desc">{{ voucher.description }}</p>
-            <p class="feature-meta">{{ voucher.expiry }} &bull; {{ voucherUsesLabel(voucher) }}</p>
-          </div>
-          <div class="feature-actions">
-            <button type="button" class="btn-action btn-edit-details" (click)="openVoucherModal(voucher)">
-              <ion-icon name="create-outline"></ion-icon>
-              EDIT
-            </button>
-            <button type="button" class="btn-feature-delete" (click)="deleteVoucherConfirm(voucher)">
-              <ion-icon name="trash-outline"></ion-icon>
-              DELETE
+            <button type="button" class="add-food-btn" (click)="openMealModal()">
+              <ion-icon name="add-circle-outline"></ion-icon>
+              ADD NEW MEAL
             </button>
           </div>
+          @if (featuredMeals.length === 0) {
+            <div class="empty-state">
+              <ion-icon name="restaurant-outline"></ion-icon>
+              <p>No featured meals yet. Add one to show it in the Daily Featured Meals slider.</p>
+            </div>
+          }
+          @for (meal of featuredMeals; track meal) {
+            <ion-card class="feature-admin-card">
+              <div class="feature-row">
+                <img [src]="meal.image" [alt]="meal.title" class="feature-thumb" />
+                <div class="feature-details">
+                  <div class="feature-badges-row">
+                    <span class="feature-badge-pill">₱{{ meal.price.toFixed(2) }}</span>
+                    <span class="feature-placement-tag">{{ scheduleLabel(meal.schedule) }}</span>
+                    <ion-badge [color]="(meal.stock ?? 20) > 0 ? 'success' : 'danger'">
+                      {{ (meal.stock ?? 20) > 0 ? (meal.stock ?? 20) + ' orders left' : 'Out of Stock' }}
+                    </ion-badge>
+                  </div>
+                  <h4>{{ meal.title }}</h4>
+                  @if (meal.subtitle) {
+                    <p class="feature-sub">{{ meal.subtitle }}</p>
+                  }
+                  @if (meal.variations && meal.variations.length > 0) {
+                    <div class="card-options-strip">
+                      <span class="strip-label">Variations & Prices:</span>
+                      @for (v of meal.variations; track v) {
+                        <span class="opt-pill">{{ mealVariationLabel(v) }}</span>
+                      }
+                    </div>
+                  }
+                  @if (meal.sizes && meal.sizes.length > 0) {
+                    <div class="card-options-strip">
+                      <span class="strip-label">Sizes:</span>
+                      @for (sz of meal.sizes; track sz) {
+                        <span class="opt-pill">{{ sz }}</span>
+                      }
+                    </div>
+                  }
+                  @if (meal.description) {
+                    <p class="feature-desc">{{ meal.description }}</p>
+                  }
+                </div>
+                <div class="feature-actions">
+                  <button type="button" class="btn-action btn-edit-details" (click)="openMealModal(meal)">
+                    <ion-icon name="create-outline"></ion-icon>
+                    EDIT
+                  </button>
+                  <button type="button" class="btn-feature-delete" (click)="deleteMealConfirm(meal)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                    DELETE
+                  </button>
+                </div>
+              </div>
+            </ion-card>
+          }
         </div>
-      </ion-card>
-    </div>
+      }
 
-  </div>
+      <!-- ========================================== -->
+      <!-- TAB 4: WALLET QR                           -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'walletqr') {
+        <div>
+          <div class="section-top-header centered-header">
+            <div class="section-title">
+              <h3>Store Wallet Payment QR</h3>
+              <p>Upload your real GCash / Maya QR so customers can scan and send top-up payments</p>
+            </div>
+          </div>
+          <ion-card class="feature-admin-card wallet-qr-main-card">
+            <div class="wallet-qr-card">
+              <div class="edit-images-block">
+                <div class="edit-images-grid">
+                  @if (qrImage) {
+                    <div class="edit-image-thumb qr-thumb">
+                      <img [src]="qrImage" alt="Store wallet QR" />
+                    </div>
+                  }
+                  @if (!qrImage) {
+                    <label class="edit-image-add">
+                      <ion-icon name="qr-code-outline"></ion-icon>
+                      <span>Upload QR</span>
+                      <input type="file" accept="image/*" (change)="onQrImageSelected($event)" />
+                    </label>
+                  }
+                </div>
+                @if (qrImage) {
+                  <div class="qr-upload-actions">
+                    <label class="btn-change-photo-inline">
+                      <ion-icon name="camera-outline"></ion-icon>
+                      Replace QR
+                      <input type="file" accept="image/*" (change)="onQrImageSelected($event)" />
+                    </label>
+                  </div>
+                }
+                <div class="modal-form-item qr-url-item">
+                  <ion-input
+                    label="Or paste a QR image link (optional)"
+                    label-placement="floating"
+                    [(ngModel)]="qrImage"
+                  placeholder="https://... (hosted QR image)"></ion-input>
+                </div>
+                <p class="edit-image-hint">
+                  Tip: Fill in the <strong>Wallet Number</strong> below to generate a standard QR Ph code.
+                </p>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="Wallet App (e.g. GCash, Maya)" label-placement="floating" [(ngModel)]="qrWalletLabel" placeholder="GCash"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="Registered Account Name" label-placement="floating" [(ngModel)]="qrAccountName" placeholder="e.g. Juan Dela Cruz"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="GCash/Maya Mobile Number (for QR Ph)" label-placement="floating" [(ngModel)]="qrAccountNumber" placeholder="e.g. 0917 123 4567"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="City (registered)" label-placement="floating" [(ngModel)]="qrCity" placeholder="e.g. Manila"></ion-input>
+              </div>
+              <button type="button" class="btn-action save" (click)="saveWalletQr()">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                Save Wallet QR
+              </button>
+            </div>
+          </ion-card>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 5: STORE GPS LOCATION SETTINGS         -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'storelocation') {
+        <div>
+          <div class="section-top-header">
+            <div class="section-title">
+              <h3>Store GPS Location & Distance Origin</h3>
+              <p>Customer delivery fees are calculated (₱15/km) from this kitchen location</p>
+            </div>
+          </div>
+          <ion-card class="feature-admin-card">
+            <div style="padding: 16px;">
+              <!-- GPS Detect Button -->
+              <ion-button expand="block" color="primary" fill="outline" (click)="detectStoreLocation()" style="margin-bottom: 14px; font-weight: 700;">
+                <ion-icon name="locate-outline" slot="start"></ion-icon>
+                Detect Store Location via Current GPS
+              </ion-button>
+              <div class="modal-form-item">
+                <ion-input
+                  label="Store / Kitchen Name & Address"
+                  label-placement="floating"
+                  [(ngModel)]="storeAddress"
+                  placeholder="e.g. Food Ordering Central Kitchen">
+                </ion-input>
+              </div>
+              <div class="grid-two-cols">
+                <div class="modal-form-item">
+                  <ion-input
+                    type="number"
+                    label="Latitude"
+                    label-placement="floating"
+                    [(ngModel)]="storeLatitude"
+                    placeholder="15.36356">
+                  </ion-input>
+                </div>
+                <div class="modal-form-item">
+                  <ion-input
+                    type="number"
+                    label="Longitude"
+                    label-placement="floating"
+                    [(ngModel)]="storeLongitude"
+                    placeholder="121.06583">
+                  </ion-input>
+                </div>
+              </div>
+              <p style="font-size: 0.8rem; color: #64748b; margin: 10px 0 16px;">
+                📍 Active coordinates: <strong>{{ storeLatitude }}, {{ storeLongitude }}</strong>. When customers select their delivery location at checkout, their distance is measured against this point.
+              </p>
+              <button type="button" class="btn-action save" (click)="saveStoreLocation()">
+                <ion-icon name="checkmark-circle-outline"></ion-icon>
+                Save Store Location
+              </button>
+            </div>
+          </ion-card>
+        </div>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 6: VOUCHERS (auto-distributed)         -->
+      <!-- ========================================== -->
+      @if (selectedTab === 'vouchers') {
+        <div>
+          <div class="section-top-header">
+            <div class="section-title">
+              <h3>Manage Vouchers</h3>
+              <p>Vouchers created here automatically appear for every customer and apply at checkout. Each customer can use a voucher once.</p>
+            </div>
+            <button type="button" class="add-food-btn" (click)="openVoucherModal()">
+              <ion-icon name="add-circle-outline"></ion-icon>
+              ADD NEW VOUCHER
+            </button>
+          </div>
+          @if (vouchers.length === 0) {
+            <div class="empty-state">
+              <ion-icon name="ticket-outline"></ion-icon>
+              <p>No vouchers yet. Create one and it becomes available to all customers instantly.</p>
+            </div>
+          }
+          @for (voucher of vouchers; track voucher) {
+            <ion-card class="feature-admin-card">
+              <div class="feature-row">
+                <div class="voucher-admin-stub">
+                  <span class="voucher-admin-headline">{{ voucher.headline }}</span>
+                  <span class="voucher-admin-code">{{ voucher.code }}</span>
+                </div>
+                <div class="feature-details">
+                  <div class="feature-badges-row">
+                    <span class="feature-badge-pill">{{ voucher.tag }}</span>
+                    <span class="feature-placement-tag">
+                      {{ voucher.discountType === 'freeship' ? 'Free Shipping' : voucher.discountType === 'percent' ? voucher.discountValue + '% off' : '₱' + voucher.discountValue + ' off' }}
+                      &bull; Min spend ₱{{ voucher.minSpend }}
+                    </span>
+                  </div>
+                  <h4>{{ voucher.title }}</h4>
+                  <p class="feature-desc">{{ voucher.description }}</p>
+                  <p class="feature-meta">{{ voucher.expiry }} &bull; {{ voucherUsesLabel(voucher) }}</p>
+                </div>
+                <div class="feature-actions">
+                  <button type="button" class="btn-action btn-edit-details" (click)="openVoucherModal(voucher)">
+                    <ion-icon name="create-outline"></ion-icon>
+                    EDIT
+                  </button>
+                  <button type="button" class="btn-feature-delete" (click)="deleteVoucherConfirm(voucher)">
+                    <ion-icon name="trash-outline"></ion-icon>
+                    DELETE
+                  </button>
+                </div>
+              </div>
+            </ion-card>
+          }
+        </div>
+      }
+
+    </div>
   </div>
 
   <!-- ADD / EDIT CATEGORY MODAL -->
@@ -453,12 +481,14 @@
 
             <div class="edit-images-block">
               <div class="edit-images-grid">
-                <div class="edit-image-thumb" *ngIf="catModalImage">
-                  <img [src]="catModalImage" alt="Category picture" />
-                  <button type="button" class="img-remove-btn" (click)="catModalImage = ''" title="Remove picture">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
-                </div>
+                @if (catModalImage) {
+                  <div class="edit-image-thumb">
+                    <img [src]="catModalImage" alt="Category picture" />
+                    <button type="button" class="img-remove-btn" (click)="catModalImage = ''" title="Remove picture">
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                  </div>
+                }
 
                 <label class="edit-image-add">
                   <ion-icon name="camera-outline"></ion-icon>
@@ -479,18 +509,20 @@
             </div>
           </div>
 
-          <div class="section-card-block status-actions-block" *ngIf="editingCategoryOriginalName">
-            <div class="item-control-row">
-              <div class="control-label-group">
-                <span class="lbl-main">Delete Category</span>
-                <span class="lbl-sub">Remove "{{ editingCategoryOriginalName }}" from the category bar.</span>
+          @if (editingCategoryOriginalName) {
+            <div class="section-card-block status-actions-block">
+              <div class="item-control-row">
+                <div class="control-label-group">
+                  <span class="lbl-main">Delete Category</span>
+                  <span class="lbl-sub">Remove "{{ editingCategoryOriginalName }}" from the category bar.</span>
+                </div>
+                <button type="button" class="btn-modal-action btn-delete-item" (click)="deleteEditingCategory()">
+                  <ion-icon name="trash-outline"></ion-icon>
+                  Delete
+                </button>
               </div>
-              <button type="button" class="btn-modal-action btn-delete-item" (click)="deleteEditingCategory()">
-                <ion-icon name="trash-outline"></ion-icon>
-                Delete
-              </button>
             </div>
-          </div>
+          }
         </div>
 
         <div class="edit-modal-footer">
@@ -510,184 +542,176 @@
   <!-- EDIT FOOD MODAL -->
   <ion-modal [isOpen]="isEditModalOpen" (didDismiss)="closeEditFoodModal()" class="edit-food-dialog-modal">
     <ng-template>
-      <div class="edit-modal-wrapper" *ngIf="editingFood">
-        
-        <div class="edit-modal-top-bar">
-          <div class="top-title-group">
-            <h3>Edit Food Item</h3>
-            <div class="editing-item-tag">Editing: <strong>{{ editingFood.name }}</strong></div>
-          </div>
-          <button type="button" class="btn-close-modal" (click)="closeEditFoodModal()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
-        </div>
-
-        <div class="edit-modal-scrollable">
-
-          <div class="section-card-block">
-            <div class="section-title-tag main-prod">
-              <ion-icon name="pricetag-outline"></ion-icon>
-              Main Product Information
+      @if (editingFood) {
+        <div class="edit-modal-wrapper">
+          <div class="edit-modal-top-bar">
+            <div class="top-title-group">
+              <h3>Edit Food Item</h3>
+              <div class="editing-item-tag">Editing: <strong>{{ editingFood.name }}</strong></div>
             </div>
-
-            <div class="edit-images-block">
-              <div class="edit-images-grid">
-                <div class="edit-image-thumb" *ngFor="let img of editFoodImages; let i = index">
-                  <img [src]="img" [alt]="'Meal photo ' + (i + 1)" />
-                  <span class="img-cover-tag" *ngIf="i === 0">Cover</span>
-                  <button type="button" class="img-remove-btn" (click)="removeEditImage(i)" title="Remove photo">
-                    <ion-icon name="trash-outline"></ion-icon>
+            <button type="button" class="btn-close-modal" (click)="closeEditFoodModal()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+          <div class="edit-modal-scrollable">
+            <div class="section-card-block">
+              <div class="section-title-tag main-prod">
+                <ion-icon name="pricetag-outline"></ion-icon>
+                Main Product Information
+              </div>
+              <div class="edit-images-block">
+                <div class="edit-images-grid">
+                  @for (img of editFoodImages; track img; let i = $index) {
+                    <div class="edit-image-thumb">
+                      <img [src]="img" [alt]="'Meal photo ' + (i + 1)" />
+                      @if (i === 0) {
+                        <span class="img-cover-tag">Cover</span>
+                      }
+                      <button type="button" class="img-remove-btn" (click)="removeEditImage(i)" title="Remove photo">
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </div>
+                  }
+                  <label class="edit-image-add">
+                    <ion-icon name="camera-outline"></ion-icon>
+                    <span>Upload / Change Photo</span>
+                    <input type="file" accept="image/*" multiple (change)="onEditImagesSelected($event)" />
+                  </label>
+                </div>
+                <p class="edit-image-hint">The first photo is the menu cover. Changes appear instantly on the customer menu.</p>
+              </div>
+              <div class="modal-form-item">
+                <ion-input label="Food Name" label-placement="floating" [(ngModel)]="editFoodName" placeholder="e.g. Adobo"></ion-input>
+              </div>
+              <div class="grid-two-cols">
+                <div class="modal-form-item" style="display: flex; align-items: center; gap: 6px;">
+                  <ion-select label="Category" label-placement="floating" [(ngModel)]="editFoodCategory" style="flex: 1;">
+                    @for (cat of availableCategoryNames; track cat) {
+                      <ion-select-option [value]="cat">{{ cat }}</ion-select-option>
+                    }
+                  </ion-select>
+                  <button
+                    type="button"
+                    class="btn-add-var-row"
+                    (click)="openCategoryModal()"
+                    title="Add new category with image"
+                    style="padding: 6px 8px; font-size: 0.72rem; white-space: nowrap;">
+                    + New
                   </button>
                 </div>
-
-                <label class="edit-image-add">
-                  <ion-icon name="camera-outline"></ion-icon>
-                  <span>Upload / Change Photo</span>
-                  <input type="file" accept="image/*" multiple (change)="onEditImagesSelected($event)" />
-                </label>
+                <div class="modal-form-item">
+                  <ion-input type="number" label="Base Price (₱)" label-placement="floating" [(ngModel)]="editFoodPrice" placeholder="100"></ion-input>
+                </div>
               </div>
-              <p class="edit-image-hint">The first photo is the menu cover. Changes appear instantly on the customer menu.</p>
+              <div class="modal-form-item">
+                <ion-input type="number" label="Available Orders (Stock)" label-placement="floating" [(ngModel)]="editFoodStock" min="0" placeholder="20"></ion-input>
+              </div>
+              <div class="modal-form-item">
+                <ion-textarea label="Description" label-placement="floating" rows="3" [(ngModel)]="editFoodDesc" placeholder="Enter food details..."></ion-textarea>
+              </div>
             </div>
-
-            <div class="modal-form-item">
-              <ion-input label="Food Name" label-placement="floating" [(ngModel)]="editFoodName" placeholder="e.g. Adobo"></ion-input>
+            <!-- VARIATIONS & CUSTOM PRICING BLOCK -->
+            <div class="section-card-block">
+              <div class="section-title-tag variations-tag">
+                <ion-icon name="fast-food-outline"></ion-icon>
+                Variations & Custom Pricing
+              </div>
+              <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
+              <div class="variations-chips-wrap">
+                @for (v of editVariationsList; track v; let i = $index) {
+                  <div
+                    class="var-badge-chip"
+                    (click)="editExistingVariation(i)"
+                    [style.cursor]="'pointer'"
+                    [style.borderColor]="editingVarIndex === i ? '#ee4d2d' : ''"
+                    title="Tap to edit variation & size">
+                    <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
+                    <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
+                    <button type="button" class="btn-remove-v" (click)="removeEditVariation(i); $event.stopPropagation()">
+                      <ion-icon name="close-circle-outline"></ion-icon>
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="add-var-row-bar">
+                <div class="input-wrap name-field">
+                  <input type="text" [(ngModel)]="newEditVarName" placeholder="Option name (e.g. Spicy, Regular)" />
+                </div>
+                <div class="input-wrap size-field">
+                  <select [(ngModel)]="newEditVarSize" aria-label="Select size">
+                    <option value="">Select Size</option>
+                    @for (sz of editSizeDropdownOptions; track sz) {
+                      <option [value]="sz">{{ sz }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="input-wrap price-field">
+                  <span class="p-sign">₱</span>
+                  <input type="number" [(ngModel)]="newEditVarPrice" placeholder="Price" />
+                </div>
+                <button type="button" class="btn-add-var-row" (click)="addEditVariation()">
+                  <ion-icon [name]="editingVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
+                  {{ editingVarIndex > -1 ? 'Update' : 'Add' }}
+                </button>
+                @if (editingVarIndex > -1) {
+                  <button
+                    type="button"
+                    class="btn-add-var-row"
+                    style="background: #64748b;"
+                    (click)="cancelEditVariation()">
+                    Cancel
+                  </button>
+                }
+              </div>
             </div>
-
-            <div class="grid-two-cols">
-              <div class="modal-form-item" style="display: flex; align-items: center; gap: 6px;">
-                <ion-select label="Category" label-placement="floating" [(ngModel)]="editFoodCategory" style="flex: 1;">
-                  <ion-select-option *ngFor="let cat of availableCategoryNames" [value]="cat">{{ cat }}</ion-select-option>
-                </ion-select>
+            <div class="section-card-block status-actions-block">
+              <div class="section-title-tag status-tag">
+                <ion-icon name="shield-checkmark-outline"></ion-icon>
+                Stock Status & Item Management
+              </div>
+              <div class="item-control-row">
+                <div class="control-label-group">
+                  <span class="lbl-main">Item Availability</span>
+                  <span class="lbl-sub">
+                    Currently:
+                    <strong [style.color]="editingFood.available !== false ? '#22c55e' : '#ef4444'">
+                      {{ editingFood.available !== false ? 'In Stock (Available)' : 'Out of Stock (Unavailable)' }}
+                    </strong>
+                  </span>
+                </div>
                 <button
                   type="button"
-                  class="btn-add-var-row"
-                  (click)="openCategoryModal()"
-                  title="Add new category with image"
-                  style="padding: 6px 8px; font-size: 0.72rem; white-space: nowrap;">
-                  + New
+                  class="btn-modal-action"
+                  [ngClass]="editingFood.available !== false ? 'btn-stock-out' : 'btn-stock-in'"
+                  (click)="toggleStockInModal()">
+                  <ion-icon [name]="editingFood.available !== false ? 'close-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
+                  {{ editingFood.available !== false ? 'Mark Out of Stock' : 'Mark as In Stock' }}
                 </button>
               </div>
-
-              <div class="modal-form-item">
-                <ion-input type="number" label="Base Price (₱)" label-placement="floating" [(ngModel)]="editFoodPrice" placeholder="100"></ion-input>
-              </div>
-            </div>
-
-            <div class="modal-form-item">
-              <ion-input type="number" label="Available Orders (Stock)" label-placement="floating" [(ngModel)]="editFoodStock" min="0" placeholder="20"></ion-input>
-            </div>
-
-            <div class="modal-form-item">
-              <ion-textarea label="Description" label-placement="floating" rows="3" [(ngModel)]="editFoodDesc" placeholder="Enter food details..."></ion-textarea>
-            </div>
-          </div>
-
-          <!-- VARIATIONS & CUSTOM PRICING BLOCK -->
-          <div class="section-card-block">
-            <div class="section-title-tag variations-tag">
-              <ion-icon name="fast-food-outline"></ion-icon>
-              Variations & Custom Pricing
-            </div>
-            <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
-
-            <div class="variations-chips-wrap">
-              <div
-                class="var-badge-chip"
-                *ngFor="let v of editVariationsList; let i = index"
-                (click)="editExistingVariation(i)"
-                [style.cursor]="'pointer'"
-                [style.borderColor]="editingVarIndex === i ? '#ee4d2d' : ''"
-                title="Tap to edit variation & size">
-                <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
-                <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
-                <button type="button" class="btn-remove-v" (click)="removeEditVariation(i); $event.stopPropagation()">
-                  <ion-icon name="close-circle-outline"></ion-icon>
+              <div class="control-divider"></div>
+              <div class="item-control-row">
+                <div class="control-label-group">
+                  <span class="lbl-main">Delete Food Item</span>
+                  <span class="lbl-sub">Permanently delete this food and all its variations from the menu.</span>
+                </div>
+                <button type="button" class="btn-modal-action btn-delete-item" (click)="deleteFromModal()">
+                  <ion-icon name="trash-outline"></ion-icon>
+                  Delete Food
                 </button>
               </div>
             </div>
-
-            <div class="add-var-row-bar">
-              <div class="input-wrap name-field">
-                <input type="text" [(ngModel)]="newEditVarName" placeholder="Option name (e.g. Spicy, Regular)" />
-              </div>
-              <div class="input-wrap size-field">
-                <select [(ngModel)]="newEditVarSize" aria-label="Select size">
-                  <option value="">Select Size</option>
-                  <option *ngFor="let sz of editSizeDropdownOptions" [value]="sz">{{ sz }}</option>
-                </select>
-              </div>
-              <div class="input-wrap price-field">
-                <span class="p-sign">₱</span>
-                <input type="number" [(ngModel)]="newEditVarPrice" placeholder="Price" />
-              </div>
-              <button type="button" class="btn-add-var-row" (click)="addEditVariation()">
-                <ion-icon [name]="editingVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
-                {{ editingVarIndex > -1 ? 'Update' : 'Add' }}
-              </button>
-              <button
-                type="button"
-                *ngIf="editingVarIndex > -1"
-                class="btn-add-var-row"
-                style="background: #64748b;"
-                (click)="cancelEditVariation()">
-                Cancel
-              </button>
-            </div>
           </div>
-
-          <div class="section-card-block status-actions-block">
-            <div class="section-title-tag status-tag">
-              <ion-icon name="shield-checkmark-outline"></ion-icon>
-              Stock Status & Item Management
-            </div>
-
-            <div class="item-control-row">
-              <div class="control-label-group">
-                <span class="lbl-main">Item Availability</span>
-                <span class="lbl-sub">
-                  Currently: 
-                  <strong [style.color]="editingFood.available !== false ? '#22c55e' : '#ef4444'">
-                    {{ editingFood.available !== false ? 'In Stock (Available)' : 'Out of Stock (Unavailable)' }}
-                  </strong>
-                </span>
-              </div>
-              <button 
-                type="button" 
-                class="btn-modal-action"
-                [ngClass]="editingFood.available !== false ? 'btn-stock-out' : 'btn-stock-in'"
-                (click)="toggleStockInModal()">
-                <ion-icon [name]="editingFood.available !== false ? 'close-circle-outline' : 'checkmark-circle-outline'"></ion-icon>
-                {{ editingFood.available !== false ? 'Mark Out of Stock' : 'Mark as In Stock' }}
-              </button>
-            </div>
-
-            <div class="control-divider"></div>
-
-            <div class="item-control-row">
-              <div class="control-label-group">
-                <span class="lbl-main">Delete Food Item</span>
-                <span class="lbl-sub">Permanently delete this food and all its variations from the menu.</span>
-              </div>
-              <button type="button" class="btn-modal-action btn-delete-item" (click)="deleteFromModal()">
-                <ion-icon name="trash-outline"></ion-icon>
-                Delete Food
-              </button>
-            </div>
+          <div class="edit-modal-footer">
+            <button type="button" class="btn-action cancel" (click)="closeEditFoodModal()">
+              Cancel
+            </button>
+            <button type="button" class="btn-action save" (click)="saveEditedFood()">
+              <ion-icon name="checkmark-circle-outline"></ion-icon>
+              Save All Changes
+            </button>
           </div>
-
         </div>
-
-        <div class="edit-modal-footer">
-          <button type="button" class="btn-action cancel" (click)="closeEditFoodModal()">
-            Cancel
-          </button>
-          <button type="button" class="btn-action save" (click)="saveEditedFood()">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            Save All Changes
-          </button>
-        </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
@@ -760,13 +784,14 @@
 
             <div class="grid-two-cols">
               <div class="modal-form-item">
-                <ion-input
-                  *ngIf="vDiscountType !== 'freeship'"
-                  type="number"
-                  label="{{ vDiscountType === 'percent' ? 'Percent Off (%) *' : 'Discount Amount (₱) *' }}"
-                  label-placement="floating"
-                  [(ngModel)]="vDiscountValue"
+                @if (vDiscountType !== 'freeship') {
+                  <ion-input
+                    type="number"
+                    label="{{ vDiscountType === 'percent' ? 'Percent Off (%) *' : 'Discount Amount (₱) *' }}"
+                    label-placement="floating"
+                    [(ngModel)]="vDiscountValue"
                   placeholder="e.g. 50"></ion-input>
+                }
               </div>
               <div class="modal-form-item">
                 <ion-input type="number" label="Min. Spend (₱)" label-placement="floating" [(ngModel)]="vMinSpend" placeholder="0 = none"></ion-input>
@@ -777,10 +802,12 @@
               <ion-input label="Expiry (display text)" label-placement="floating" [(ngModel)]="vExpiry" placeholder="e.g. Valid until Dec 31, 2026"></ion-input>
             </div>
 
-            <p class="voucher-modal-note" *ngIf="editingVoucherId">
-              This voucher has been used {{ vouchers.find(v => v.id === editingVoucherId)?.usedBy.length || 0 }} time(s).
-              Editing keeps existing usage records.
-            </p>
+            @if (editingVoucherId) {
+              <p class="voucher-modal-note">
+                This voucher has been used {{ vouchers.find(v => v.id === editingVoucherId)?.usedBy.length || 0 }} time(s).
+                Editing keeps existing usage records.
+              </p>
+            }
           </div>
 
         </div>
@@ -802,81 +829,87 @@
   <!-- ORDER DETAILS MODAL -->
   <ion-modal [isOpen]="isOrderDetailsOpen" (didDismiss)="closeOrderDetails()" class="edit-food-dialog-modal">
     <ng-template>
-      <div class="edit-modal-wrapper" *ngIf="selectedOrder">
-
-        <div class="edit-modal-top-bar">
-          <div class="top-title-group">
-            <h3>Order #{{ selectedOrder.id }}</h3>
-            <div class="editing-item-tag">
-              {{ selectedOrder.createdAt | date:'mediumDate' }} &bull; {{ selectedOrder.createdAt | date:'shortTime' }}
-            </div>
-          </div>
-          <button type="button" class="btn-close-modal" (click)="closeOrderDetails()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
-        </div>
-
-        <div class="edit-modal-scrollable">
-
-          <div class="section-card-block">
-            <div class="section-title-tag main-prod">
-              <ion-icon name="fast-food-outline"></ion-icon>
-              Ordered Meals
-            </div>
-
-            <div class="order-detail-item" *ngFor="let item of selectedOrder.items">
-              <img [src]="item.food.imageUrl" [alt]="item.food.name" class="od-item-thumb" />
-              <div class="od-item-info">
-                <h4>{{ item.food.name }}</h4>
-                <p class="od-variant" *ngIf="variantLabel(item.selectedOption)">
-                  Variant: {{ variantLabel(item.selectedOption) }}
-                </p>
-                <p class="od-price-line">
-                  ₱{{ itemUnitPrice(item).toFixed(2) }} &times; {{ item.quantity || 1 }}
-                </p>
-              </div>
-              <div class="od-item-total">
-                ₱{{ itemLineTotal(item).toFixed(2) }}
+      @if (selectedOrder) {
+        <div class="edit-modal-wrapper">
+          <div class="edit-modal-top-bar">
+            <div class="top-title-group">
+              <h3>Order #{{ selectedOrder.id }}</h3>
+              <div class="editing-item-tag">
+                {{ selectedOrder.createdAt | date:'mediumDate' }} &bull; {{ selectedOrder.createdAt | date:'shortTime' }}
               </div>
             </div>
-
-            <div class="od-grand-total">
-              <span>Order Total</span>
-              <strong>₱{{ selectedOrder.totalAmount.toFixed(2) }}</strong>
+            <button type="button" class="btn-close-modal" (click)="closeOrderDetails()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
+          </div>
+          <div class="edit-modal-scrollable">
+            <div class="section-card-block">
+              <div class="section-title-tag main-prod">
+                <ion-icon name="fast-food-outline"></ion-icon>
+                Ordered Meals
+              </div>
+              @for (item of selectedOrder.items; track item) {
+                <div class="order-detail-item">
+                  <img [src]="item.food.imageUrl" [alt]="item.food.name" class="od-item-thumb" />
+                  <div class="od-item-info">
+                    <h4>{{ item.food.name }}</h4>
+                    @if (variantLabel(item.selectedOption)) {
+                      <p class="od-variant">
+                        Variant: {{ variantLabel(item.selectedOption) }}
+                      </p>
+                    }
+                    <p class="od-price-line">
+                      ₱{{ itemUnitPrice(item).toFixed(2) }} &times; {{ item.quantity || 1 }}
+                    </p>
+                  </div>
+                  <div class="od-item-total">
+                    ₱{{ itemLineTotal(item).toFixed(2) }}
+                  </div>
+                </div>
+              }
+              <div class="od-grand-total">
+                <span>Order Total</span>
+                <strong>₱{{ selectedOrder.totalAmount.toFixed(2) }}</strong>
+              </div>
+            </div>
+            <div class="section-card-block">
+              <div class="section-title-tag variations-tag">
+                <ion-icon name="person-outline"></ion-icon>
+                Customer &amp; Delivery Information
+              </div>
+              <div class="od-info-grid">
+                <p><strong>Customer:</strong> {{ selectedOrder.customerName || '—' }}</p>
+                <p><strong>Phone:</strong> {{ selectedOrder.customerPhone || '—' }}</p>
+                <p><strong>Order Type:</strong> <span style="text-transform: capitalize;">{{ selectedOrder.orderType }}</span></p>
+                <p><strong>Payment:</strong> {{ orderPaymentLabel(selectedOrder) }}</p>
+                <p><strong>Status:</strong> {{ selectedOrder.status }}</p>
+                <p><strong>Order Date:</strong> {{ selectedOrder.createdAt | date:'medium' }}</p>
+                @if (selectedOrder.deliveryAddress) {
+                  <p><strong>Delivery Address:</strong> {{ selectedOrder.deliveryAddress }}</p>
+                }
+                @if (selectedOrder.tableNumber) {
+                  <p><strong>Table Number:</strong> {{ selectedOrder.tableNumber }}</p>
+                }
+                @if (selectedOrder.pickupTime) {
+                  <p><strong>Pick-Up Time:</strong> {{ selectedOrder.pickupTime }}</p>
+                }
+                @if (selectedOrder.assignedRiderName) {
+                  <p><strong>Rider:</strong> {{ selectedOrder.assignedRiderName }} ({{ selectedOrder.assignedRiderPhone }})</p>
+                }
+                @if (selectedOrder.notes) {
+                  <p><strong>Notes:</strong> {{ selectedOrder.notes }}</p>
+                }
+              </div>
             </div>
           </div>
-
-          <div class="section-card-block">
-            <div class="section-title-tag variations-tag">
-              <ion-icon name="person-outline"></ion-icon>
-              Customer &amp; Delivery Information
-            </div>
-
-            <div class="od-info-grid">
-              <p><strong>Customer:</strong> {{ selectedOrder.customerName || '—' }}</p>
-              <p><strong>Phone:</strong> {{ selectedOrder.customerPhone || '—' }}</p>
-              <p><strong>Order Type:</strong> <span style="text-transform: capitalize;">{{ selectedOrder.orderType }}</span></p>
-              <p><strong>Payment:</strong> {{ orderPaymentLabel(selectedOrder) }}</p>
-              <p><strong>Status:</strong> {{ selectedOrder.status }}</p>
-              <p><strong>Order Date:</strong> {{ selectedOrder.createdAt | date:'medium' }}</p>
-              <p *ngIf="selectedOrder.deliveryAddress"><strong>Delivery Address:</strong> {{ selectedOrder.deliveryAddress }}</p>
-              <p *ngIf="selectedOrder.tableNumber"><strong>Table Number:</strong> {{ selectedOrder.tableNumber }}</p>
-              <p *ngIf="selectedOrder.pickupTime"><strong>Pick-Up Time:</strong> {{ selectedOrder.pickupTime }}</p>
-              <p *ngIf="selectedOrder.assignedRiderName"><strong>Rider:</strong> {{ selectedOrder.assignedRiderName }} ({{ selectedOrder.assignedRiderPhone }})</p>
-              <p *ngIf="selectedOrder.notes"><strong>Notes:</strong> {{ selectedOrder.notes }}</p>
-            </div>
+          <div class="edit-modal-footer">
+            <button type="button" class="btn-action save" (click)="closeOrderDetails()">
+              <ion-icon name="checkmark-circle-outline"></ion-icon>
+              Done
+            </button>
           </div>
-
         </div>
-
-        <div class="edit-modal-footer">
-          <button type="button" class="btn-action save" (click)="closeOrderDetails()">
-            <ion-icon name="checkmark-circle-outline"></ion-icon>
-            Done
-          </button>
-        </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
@@ -975,21 +1008,24 @@
               </div>
               <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
 
-              <div class="variations-chips-wrap" *ngIf="mealVariationList.length > 0">
-                <div
-                  class="var-badge-chip"
-                  *ngFor="let v of mealVariationList; let i = index"
-                  (click)="editExistingMealVariation(i)"
-                  [style.cursor]="'pointer'"
-                  [style.borderColor]="editingMealVarIndex === i ? '#ee4d2d' : ''"
-                  title="Tap to edit variation & size">
-                  <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
-                  <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
-                  <button type="button" class="btn-remove-v" (click)="removeMealVariation(i); $event.stopPropagation()">
-                    <ion-icon name="close-circle-outline"></ion-icon>
-                  </button>
+              @if (mealVariationList.length > 0) {
+                <div class="variations-chips-wrap">
+                  @for (v of mealVariationList; track v; let i = $index) {
+                    <div
+                      class="var-badge-chip"
+                      (click)="editExistingMealVariation(i)"
+                      [style.cursor]="'pointer'"
+                      [style.borderColor]="editingMealVarIndex === i ? '#ee4d2d' : ''"
+                      title="Tap to edit variation & size">
+                      <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
+                      <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
+                      <button type="button" class="btn-remove-v" (click)="removeMealVariation(i); $event.stopPropagation()">
+                        <ion-icon name="close-circle-outline"></ion-icon>
+                      </button>
+                    </div>
+                  }
                 </div>
-              </div>
+              }
 
               <div class="add-var-row-bar">
                 <div class="input-wrap name-field">
@@ -998,7 +1034,9 @@
                 <div class="input-wrap size-field">
                   <select [(ngModel)]="newMealVarSize" aria-label="Select size">
                     <option value="">Select Size</option>
-                    <option *ngFor="let sz of mealSizeDropdownOptions" [value]="sz">{{ sz }}</option>
+                    @for (sz of mealSizeDropdownOptions; track sz) {
+                      <option [value]="sz">{{ sz }}</option>
+                    }
                   </select>
                 </div>
                 <div class="input-wrap price-field">
@@ -1009,14 +1047,15 @@
                   <ion-icon [name]="editingMealVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
                   {{ editingMealVarIndex > -1 ? 'Update' : 'Add' }}
                 </button>
-                <button
-                  type="button"
-                  *ngIf="editingMealVarIndex > -1"
-                  class="btn-add-var-row"
-                  style="background: #64748b;"
-                  (click)="cancelEditMealVariation()">
-                  Cancel
-                </button>
+                @if (editingMealVarIndex > -1) {
+                  <button
+                    type="button"
+                    class="btn-add-var-row"
+                    style="background: #64748b;"
+                    (click)="cancelEditMealVariation()">
+                    Cancel
+                  </button>
+                }
               </div>
             </div>
 
@@ -1030,15 +1069,21 @@
                 <small>You can select multiple photos. The first photo will be used as the Main Cover Photo.</small>
               </div>
 
-              <div class="photos-preview-grid" *ngIf="mealImages.length > 0" style="margin-top: 0; margin-bottom: 14px;">
-                <div *ngFor="let photo of mealImages; let idx = index" class="preview-box">
-                  <img [src]="photo" [alt]="'Meal photo ' + (idx + 1)" />
-                  <span class="main-badge" *ngIf="idx === 0">Cover</span>
-                  <button type="button" class="remove-btn" (click)="removeMealPhoto(idx)" title="Remove photo">
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
+              @if (mealImages.length > 0) {
+                <div class="photos-preview-grid" style="margin-top: 0; margin-bottom: 14px;">
+                  @for (photo of mealImages; track photo; let idx = $index) {
+                    <div class="preview-box">
+                      <img [src]="photo" [alt]="'Meal photo ' + (idx + 1)" />
+                      @if (idx === 0) {
+                        <span class="main-badge">Cover</span>
+                      }
+                      <button type="button" class="remove-btn" (click)="removeMealPhoto(idx)" title="Remove photo">
+                        <ion-icon name="trash-outline"></ion-icon>
+                      </button>
+                    </div>
+                  }
                 </div>
-              </div>
+              }
 
               <input
                 type="file"
@@ -1093,39 +1138,44 @@
         </div>
 
         <div class="edit-modal-scrollable">
-          <div *ngIf="topupRequests.length === 0" class="empty-state">
-            <ion-icon name="notifications-off-outline"></ion-icon>
-            <p>No wallet notifications yet.</p>
-          </div>
-
-          <div class="section-card-block notif-block" *ngFor="let req of topupRequests">
-            <div class="notif-row">
-              <div class="notif-bell-icon" [ngClass]="req.status === 'Pending' ? 'pending' : (req.status === 'Approved' ? 'approved' : 'declined')">
-                <ion-icon [name]="req.status === 'Pending' ? 'cash-outline' : 'checkmark-circle-outline'"></ion-icon>
-              </div>
-              <div class="notif-details">
-                <h4>
-                  {{ req.customerName }} requested a wallet top-up
-                  <ion-badge class="notif-status-badge" [color]="req.status === 'Pending' ? 'warning' : (req.status === 'Approved' ? 'success' : 'danger')">
-                    {{ req.status }}
-                  </ion-badge>
-                </h4>
-                <p class="notif-line">Amount: <strong>₱{{ req.amount.toFixed(2) }}</strong></p>
-                <p class="notif-line">Reference: {{ req.reference }} &bull; {{ req.createdAt | date:'medium' }}</p>
-              </div>
+          @if (topupRequests.length === 0) {
+            <div class="empty-state">
+              <ion-icon name="notifications-off-outline"></ion-icon>
+              <p>No wallet notifications yet.</p>
             </div>
+          }
 
-            <div class="notif-actions" *ngIf="req.status === 'Pending'">
-              <button type="button" class="btn-action save" (click)="approveTopUp(req)">
-                <ion-icon name="checkmark-circle-outline"></ion-icon>
-                Approve
-              </button>
-              <button type="button" class="notif-decline-btn" (click)="declineTopUp(req)">
-                <ion-icon name="close-circle-outline"></ion-icon>
-                Decline
-              </button>
+          @for (req of topupRequests; track req) {
+            <div class="section-card-block notif-block">
+              <div class="notif-row">
+                <div class="notif-bell-icon" [ngClass]="req.status === 'Pending' ? 'pending' : (req.status === 'Approved' ? 'approved' : 'declined')">
+                  <ion-icon [name]="req.status === 'Pending' ? 'cash-outline' : 'checkmark-circle-outline'"></ion-icon>
+                </div>
+                <div class="notif-details">
+                  <h4>
+                    {{ req.customerName }} requested a wallet top-up
+                    <ion-badge class="notif-status-badge" [color]="req.status === 'Pending' ? 'warning' : (req.status === 'Approved' ? 'success' : 'danger')">
+                      {{ req.status }}
+                    </ion-badge>
+                  </h4>
+                  <p class="notif-line">Amount: <strong>₱{{ req.amount.toFixed(2) }}</strong></p>
+                  <p class="notif-line">Reference: {{ req.reference }} &bull; {{ req.createdAt | date:'medium' }}</p>
+                </div>
+              </div>
+              @if (req.status === 'Pending') {
+                <div class="notif-actions">
+                  <button type="button" class="btn-action save" (click)="approveTopUp(req)">
+                    <ion-icon name="checkmark-circle-outline"></ion-icon>
+                    Approve
+                  </button>
+                  <button type="button" class="notif-decline-btn" (click)="declineTopUp(req)">
+                    <ion-icon name="close-circle-outline"></ion-icon>
+                    Decline
+                  </button>
+                </div>
+              }
             </div>
-          </div>
+          }
         </div>
 
         <div class="edit-modal-footer">

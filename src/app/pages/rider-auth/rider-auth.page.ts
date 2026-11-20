@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
@@ -37,7 +37,6 @@ import { CloudSyncService } from '../../services/cloud-sync';
   styleUrls: ['./rider-auth.page.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     ReactiveFormsModule,
     IonHeader,
@@ -54,7 +53,7 @@ import { CloudSyncService } from '../../services/cloud-sync';
     IonSelect,
     IonSelectOption,
     IonButton
-  ]
+]
 })
 export class RiderAuthPage implements OnInit {
   private fb = inject(FormBuilder);

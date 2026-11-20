@@ -9,7 +9,7 @@
 
 <ion-content class="add-food-page-content ion-padding">
   <div class="add-food-container">
-    
+
     <div class="page-intro-box">
       <h3>Food Information</h3>
       <p>Fill in all details below to publish this food item to the Food Ordering menu.</p>
@@ -18,10 +18,10 @@
     <div class="form-card">
       <!-- Food Name -->
       <ion-item class="input-item">
-        <ion-input 
-          label="Food Name *" 
-          labelPlacement="floating" 
-          [(ngModel)]="newFoodName" 
+        <ion-input
+          label="Food Name *"
+          labelPlacement="floating"
+          [(ngModel)]="newFoodName"
           placeholder="e.g. Special Chicken Adobo">
         </ion-input>
       </ion-item>
@@ -35,7 +35,9 @@
               labelPlacement="floating"
               [(ngModel)]="newFoodCategory"
               interface="popover">
-              <ion-select-option *ngFor="let cat of categories" [value]="cat">{{ cat }}</ion-select-option>
+              @for (cat of categories; track cat) {
+                <ion-select-option [value]="cat">{{ cat }}</ion-select-option>
+              }
             </ion-select>
           </ion-item>
           <button
@@ -49,12 +51,12 @@
         </div>
 
         <ion-item class="input-item">
-          <ion-input 
-            label="Base Price (₱) *" 
-            labelPlacement="floating" 
-            [(ngModel)]="newFoodPrice" 
+          <ion-input
+            label="Base Price (₱) *"
+            labelPlacement="floating"
+            [(ngModel)]="newFoodPrice"
             (ionChange)="onBasePriceChange()"
-            type="number" 
+            type="number"
             placeholder="e.g. 150">
           </ion-input>
         </ion-item>
@@ -62,11 +64,11 @@
 
       <!-- Available Orders (Stock) -->
       <ion-item class="input-item">
-        <ion-input 
-          label="Available Orders (Stock) *" 
-          labelPlacement="floating" 
-          [(ngModel)]="newFoodStock" 
-          type="number" 
+        <ion-input
+          label="Available Orders (Stock) *"
+          labelPlacement="floating"
+          [(ngModel)]="newFoodStock"
+          type="number"
           min="0"
           placeholder="e.g. 20">
         </ion-input>
@@ -74,11 +76,11 @@
 
       <!-- Description -->
       <ion-item class="input-item">
-        <ion-textarea 
-          label="Description" 
-          labelPlacement="floating" 
-          [(ngModel)]="newFoodDesc" 
-          rows="3" 
+        <ion-textarea
+          label="Description"
+          labelPlacement="floating"
+          [(ngModel)]="newFoodDesc"
+          rows="3"
           placeholder="Describe ingredients, taste, or serving portion...">
         </ion-textarea>
       </ion-item>
@@ -93,21 +95,24 @@
         </div>
         <p class="section-explanation">Set distinct prices for different variations, sizes, or combos. Tap a chip to edit it.</p>
 
-        <div class="variations-chips-wrap" *ngIf="variationList.length > 0">
-          <div
-            class="var-badge-chip"
-            *ngFor="let v of variationList; let i = index"
-            (click)="editExistingVariation(i)"
-            [class.editing-chip]="editingVarIndex === i"
-            style="cursor: pointer;"
-            title="Tap to edit variation & size">
-            <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
-            <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
-            <button type="button" class="btn-remove-v" (click)="removeVariation(i); $event.stopPropagation()">
-              <ion-icon name="close-circle-outline"></ion-icon>
-            </button>
+        @if (variationList.length > 0) {
+          <div class="variations-chips-wrap">
+            @for (v of variationList; track v; let i = $index) {
+              <div
+                class="var-badge-chip"
+                (click)="editExistingVariation(i)"
+                [class.editing-chip]="editingVarIndex === i"
+                style="cursor: pointer;"
+                title="Tap to edit variation & size">
+                <span class="v-name">{{ v.name }}{{ v.size ? ' (' + v.size + ')' : '' }}</span>
+                <span class="v-price">P{{ (v.price || 0).toFixed(0) }}</span>
+                <button type="button" class="btn-remove-v" (click)="removeVariation(i); $event.stopPropagation()">
+                  <ion-icon name="close-circle-outline"></ion-icon>
+                </button>
+              </div>
+            }
           </div>
-        </div>
+        }
 
         <div class="add-var-row-bar">
           <div class="input-wrap name-field">
@@ -119,7 +124,9 @@
           <div class="input-wrap size-field">
             <select [(ngModel)]="newVarSize" aria-label="Select size">
               <option value="">Select Size</option>
-              <option *ngFor="let sz of sizeDropdownOptionsList" [value]="sz">{{ sz }}</option>
+              @for (sz of sizeDropdownOptionsList; track sz) {
+                <option [value]="sz">{{ sz }}</option>
+              }
             </select>
           </div>
           <div class="input-wrap price-field">
@@ -133,13 +140,14 @@
             <ion-icon [name]="editingVarIndex > -1 ? 'checkmark-circle-outline' : 'add-circle-outline'"></ion-icon>
             {{ editingVarIndex > -1 ? 'Update' : 'Add' }}
           </button>
-          <button
-            type="button"
-            *ngIf="editingVarIndex > -1"
-            class="btn-add-var-row btn-cancel-var"
-            (click)="cancelEditVariation()">
-            Cancel
-          </button>
+          @if (editingVarIndex > -1) {
+            <button
+              type="button"
+              class="btn-add-var-row btn-cancel-var"
+              (click)="cancelEditVariation()">
+              Cancel
+            </button>
+          }
         </div>
       </div>
 
@@ -154,26 +162,31 @@
         </div>
 
         <!-- Uploaded Photos Grid (immediately visible right above the dropzone) -->
-        <div class="photos-preview-grid" *ngIf="uploadedImages.length > 0">
-          <div
-            *ngFor="let photo of uploadedImages; let idx = index"
-            class="preview-box"
-            [class.is-primary]="idx === primaryImageIndex"
-            (click)="setPrimaryImage(idx)">
-            <img [src]="photo" [alt]="'Photo ' + (idx + 1)" />
-            <span class="main-badge" *ngIf="idx === primaryImageIndex">Cover</span>
-            <button type="button" class="remove-btn" (click)="removePhoto(idx, $event)" title="Remove photo">
-              <ion-icon name="trash-outline"></ion-icon>
-            </button>
+        @if (uploadedImages.length > 0) {
+          <div class="photos-preview-grid">
+            @for (photo of uploadedImages; track photo; let idx = $index) {
+              <div
+                class="preview-box"
+                [class.is-primary]="idx === primaryImageIndex"
+                (click)="setPrimaryImage(idx)">
+                <img [src]="photo" [alt]="'Photo ' + (idx + 1)" />
+                @if (idx === primaryImageIndex) {
+                  <span class="main-badge">Cover</span>
+                }
+                <button type="button" class="remove-btn" (click)="removePhoto(idx, $event)" title="Remove photo">
+                  <ion-icon name="trash-outline"></ion-icon>
+                </button>
+              </div>
+            }
           </div>
-        </div>
+        }
 
-        <input 
-          type="file" 
-          #fileInput 
-          (change)="onImagesSelected($event)" 
-          accept="image/*" 
-          multiple 
+        <input
+          type="file"
+          #fileInput
+          (change)="onImagesSelected($event)"
+          accept="image/*"
+          multiple
           style="display: none;" />
 
         <div class="upload-dropzone" (click)="fileInput.click()">
@@ -188,10 +201,10 @@
       </div>
 
       <!-- Save & Submit Button -->
-      <ion-button 
-        expand="block" 
-        size="large" 
-        (click)="saveNewFood()" 
+      <ion-button
+        expand="block"
+        size="large"
+        (click)="saveNewFood()"
         class="save-food-btn">
         <ion-icon name="add-circle-outline" slot="start"></ion-icon>
         Save &amp; Add to Menu
@@ -233,21 +246,22 @@
               accept="image/*"
               style="display: none;" />
 
-            <div
-              *ngIf="newCatImage"
-              style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
-              <img
-                [src]="newCatImage"
-                alt="Category preview"
-                style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #ee4d2d;" />
-              <button
-                type="button"
-                class="btn-modal-cancel"
-                style="padding: 6px 12px;"
-                (click)="newCatImage = ''">
-                Remove Image
-              </button>
-            </div>
+            @if (newCatImage) {
+              <div
+                style="display: flex; align-items: center; gap: 12px; margin-bottom: 10px;">
+                <img
+                  [src]="newCatImage"
+                  alt="Category preview"
+                  style="width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid #ee4d2d;" />
+                <button
+                  type="button"
+                  class="btn-modal-cancel"
+                  style="padding: 6px 12px;"
+                  (click)="newCatImage = ''">
+                  Remove Image
+                </button>
+              </div>
+            }
 
             <button
               type="button"

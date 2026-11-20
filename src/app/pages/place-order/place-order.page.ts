@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { 
@@ -74,32 +74,31 @@ import { MembershipService, MembershipInfo } from '../../services/membership';
   styleUrls: ['./place-order.page.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
     FormsModule,
     RouterModule,
-    IonHeader, 
-    IonToolbar, 
-    IonTitle, 
-    IonContent, 
-    IonBackButton, 
-    IonButtons, 
-    IonCard, 
-    IonCardHeader, 
-    IonCardTitle, 
-    IonCardSubtitle, 
-    IonCardContent, 
-    IonSegment, 
-    IonSegmentButton, 
-    IonItem, 
-    IonInput, 
-    IonTextarea, 
-    IonButton, 
-    IonRadioGroup, 
-    IonRadio, 
-    IonIcon, 
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonBackButton,
+    IonButtons,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardSubtitle,
+    IonCardContent,
+    IonSegment,
+    IonSegmentButton,
+    IonItem,
+    IonInput,
+    IonTextarea,
+    IonButton,
+    IonRadioGroup,
+    IonRadio,
+    IonIcon,
     IonLabel,
     IonModal
-  ]
+]
 })
 export class PlaceOrderPage implements OnInit, OnDestroy {
   private cartService = inject(CartService);

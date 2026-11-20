@@ -1,5 +1,5 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import {
@@ -35,7 +35,6 @@ import { CartItem } from '../../models/food.model';
   styleUrls: ['./cart.page.scss'],
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     RouterModule,
     IonHeader,
@@ -46,7 +45,7 @@ import { CartItem } from '../../models/food.model';
     IonButtons,
     IonButton,
     IonIcon
-  ]
+]
 })
 export class CartPage implements OnInit {
   private cartService = inject(CartService);

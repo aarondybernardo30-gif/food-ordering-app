@@ -16,7 +16,9 @@
         <button class="top-btn orders-btn" (click)="openOrdersModal()" title="View Orders">
           <ion-icon name="receipt-outline"></ion-icon>
           <span>Orders ({{ orders.length }})</span>
-          <span class="pulse-indicator" *ngIf="activeOrder"></span>
+          @if (activeOrder) {
+            <span class="pulse-indicator"></span>
+          }
         </button>
         <ion-button fill="clear" color="light" class="chat-btn" routerLink="/notifications" title="Notifications">
           <ion-icon name="chatbubble-ellipses-outline" class="hdr-icon"></ion-icon>
@@ -29,10 +31,10 @@
   <ion-toolbar class="shopee-toolbar">
     <div class="shopee-header-content">
       <div class="shopee-search-bar" [class.dark-search]="isDarkMode">
-        <ion-searchbar 
-          [(ngModel)]="searchTerm" 
-          (ionInput)="onSearchChange($event)" 
-          placeholder="Search food, Adobo, Sinigang, Burgers..." 
+        <ion-searchbar
+          [(ngModel)]="searchTerm"
+          (ionInput)="onSearchChange($event)"
+          placeholder="Search food, Adobo, Sinigang, Burgers..."
           search-icon="search"
           [debounce]="200">
         </ion-searchbar>
@@ -41,7 +43,9 @@
       <div class="cart-btn-wrapper">
         <ion-button (click)="goToCart()" class="shopee-cart-button">
           <ion-icon name="cart-outline" class="shopee-cart-icon"></ion-icon>
-          <span class="shopee-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
+          @if (cartCount > 0) {
+            <span class="shopee-badge">{{ cartCount }}</span>
+          }
         </ion-button>
       </div>
     </div>
@@ -50,133 +54,131 @@
 
 <ion-content class="shopee-body" [class.dark-theme]="isDarkMode">
   <div class="shopee-container">
-    
+
     <!-- 1. LIVE ACTIVE ORDER TRACKER CARD -->
-    <div *ngIf="activeOrder" class="live-tracker-card" (click)="openOrdersModal()">
-      <div class="tracker-header">
-        <div class="tracker-title">
-          <span class="live-dot"></span>
-          <strong>Active Order #{{ activeOrder.id }}</strong>
-          <span class="order-mode">
-            &bull; {{ activeOrder.orderType === 'delivery' ? 'Delivery' : (activeOrder.orderType === 'dine-in' ? 'Dine-In' : 'Pick-Up') }}
+    @if (activeOrder) {
+      <div class="live-tracker-card" (click)="openOrdersModal()">
+        <div class="tracker-header">
+          <div class="tracker-title">
+            <span class="live-dot"></span>
+            <strong>Active Order #{{ activeOrder.id }}</strong>
+            <span class="order-mode">
+              &bull; {{ activeOrder.orderType === 'delivery' ? 'Delivery' : (activeOrder.orderType === 'dine-in' ? 'Dine-In' : 'Pick-Up') }}
+            </span>
+          </div>
+          <span class="status-badge" [class.preparing]="activeOrder.status === 'Preparing'" [class.delivering]="activeOrder.status === 'Out for Delivery'">
+            {{ activeOrder.status === 'Preparing' ? 'Kitchen Preparing' : (activeOrder.status === 'Out for Delivery' ? 'Rider on the Way' : activeOrder.status) }}
           </span>
         </div>
-        <span class="status-badge" [class.preparing]="activeOrder.status === 'Preparing'" [class.delivering]="activeOrder.status === 'Out for Delivery'">
-          {{ activeOrder.status === 'Preparing' ? 'Kitchen Preparing' : (activeOrder.status === 'Out for Delivery' ? 'Rider on the Way' : activeOrder.status) }}
-        </span>
+        <div class="stepper-container">
+          <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 1">
+            <div class="step-circle">1</div>
+            <span class="step-label">Placed</span>
+          </div>
+          <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 2"></div>
+          <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 2">
+            <div class="step-circle">2</div>
+            <span class="step-label">Preparing</span>
+          </div>
+          <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 3"></div>
+          <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 3">
+            <div class="step-circle">3</div>
+            <span class="step-label">{{ activeOrder.orderType === 'delivery' ? 'Delivering' : 'Ready' }}</span>
+          </div>
+          <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 4"></div>
+          <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 4">
+            <div class="step-circle">4</div>
+            <span class="step-label">Done</span>
+          </div>
+        </div>
+        <p class="track-hint">Tap here to view full order tracking and details &rarr;</p>
       </div>
-
-      <div class="stepper-container">
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 1">
-          <div class="step-circle">1</div>
-          <span class="step-label">Placed</span>
-        </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 2"></div>
-
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 2">
-          <div class="step-circle">2</div>
-          <span class="step-label">Preparing</span>
-        </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 3"></div>
-
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 3">
-          <div class="step-circle">3</div>
-          <span class="step-label">{{ activeOrder.orderType === 'delivery' ? 'Delivering' : 'Ready' }}</span>
-        </div>
-        <div class="step-line" [class.filled]="getProgressStep(activeOrder) >= 4"></div>
-
-        <div class="stepper-step" [class.completed]="getProgressStep(activeOrder) >= 4">
-          <div class="step-circle">4</div>
-          <span class="step-label">Done</span>
-        </div>
-      </div>
-      
-      <p class="track-hint">Tap here to view full order tracking and details &rarr;</p>
-    </div>
+    }
 
     <!-- 2. DAILY FEATURED MEALS SLIDER -->
-    <div class="daily-featured-slider-section" *ngIf="dailyMealSlides && dailyMealSlides.length > 0">
-      <div class="slider-main-header">
-        <div class="header-title-left">
-          <ion-icon name="calendar-outline" class="cal-ico"></ion-icon>
-          <div>
-            <h2 class="title-bold">Daily Featured Meals</h2>
-            <p class="subtitle-text">Scheduled daily recommendations & upcoming dishes</p>
+    @if (dailyMealSlides && dailyMealSlides.length > 0) {
+      <div class="daily-featured-slider-section">
+        <div class="slider-main-header">
+          <div class="header-title-left">
+            <ion-icon name="calendar-outline" class="cal-ico"></ion-icon>
+            <div>
+              <h2 class="title-bold">Daily Featured Meals</h2>
+              <p class="subtitle-text">Scheduled daily recommendations & upcoming dishes</p>
+            </div>
+          </div>
+          <div class="slide-nav-arrows">
+            <button type="button" class="arrow-btn" (click)="prevSlide()" title="Previous Day">
+              <ion-icon name="chevron-back-outline"></ion-icon>
+            </button>
+            <button type="button" class="arrow-btn" (click)="nextSlide()" title="Next Day">
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
           </div>
         </div>
-
-        <div class="slide-nav-arrows">
-          <button type="button" class="arrow-btn" (click)="prevSlide()" title="Previous Day">
-            <ion-icon name="chevron-back-outline"></ion-icon>
-          </button>
-          <button type="button" class="arrow-btn" (click)="nextSlide()" title="Next Day">
-            <ion-icon name="chevron-forward-outline"></ion-icon>
-          </button>
+        <div class="day-tabs-slider-row">
+          @for (slide of dailyMealSlides; track slide; let i = $index) {
+            <button
+              type="button"
+              class="day-tab-pill"
+              [class.active]="activeSlideIndex === i"
+              [ngClass]="slide.type"
+              (click)="setSlide(i)">
+              <ion-icon [name]="slide.type === 'today' ? 'today-outline' : (slide.type === 'tomorrow' ? 'time-outline' : 'sparkles-outline')"></ion-icon>
+              <span>{{ slide.dayName }}</span>
+            </button>
+          }
         </div>
-      </div>
-
-      <div class="day-tabs-slider-row">
-        <button 
-          type="button" 
-          *ngFor="let slide of dailyMealSlides; let i = index" 
-          class="day-tab-pill"
-          [class.active]="activeSlideIndex === i"
-          [ngClass]="slide.type"
-          (click)="setSlide(i)">
-          <ion-icon [name]="slide.type === 'today' ? 'today-outline' : (slide.type === 'tomorrow' ? 'time-outline' : 'sparkles-outline')"></ion-icon>
-          <span>{{ slide.dayName }}</span>
-        </button>
-      </div>
-
-      <div class="active-slide-stage" *ngIf="dailyMealSlides[activeSlideIndex]">
-        <div class="stage-info-bar">
-          <span class="day-status-pill" [ngClass]="dailyMealSlides[activeSlideIndex].type">
-            {{ dailyMealSlides[activeSlideIndex].badgeLabel }}
-          </span>
-          <span class="stage-sub-info">{{ dailyMealSlides[activeSlideIndex].subTitle }}</span>
-        </div>
-
-        <div class="meals-cards-grid">
-          <div *ngFor="let meal of dailyMealSlides[activeSlideIndex].meals" class="featured-meal-card">
-            <div class="card-img-wrap">
-              <img [src]="meal.imageUrl" [alt]="meal.title" />
-              <span class="top-day-badge" [ngClass]="meal.dayLabel">
-                {{ meal.dayBadge }}
+        @if (dailyMealSlides[activeSlideIndex]) {
+          <div class="active-slide-stage">
+            <div class="stage-info-bar">
+              <span class="day-status-pill" [ngClass]="dailyMealSlides[activeSlideIndex].type">
+                {{ dailyMealSlides[activeSlideIndex].badgeLabel }}
               </span>
+              <span class="stage-sub-info">{{ dailyMealSlides[activeSlideIndex].subTitle }}</span>
             </div>
-
-            <div class="card-body">
-              <h3 class="meal-heading">{{ meal.title }}</h3>
-              <span class="meal-subhead">{{ meal.subtitle }}</span>
-              <p class="meal-desc-text">{{ meal.description }}</p>
-
-              <div class="card-bottom-actions">
-                <span class="meal-price-tag">₱{{ meal.price.toFixed(2) }}</span>
-                <button 
-                  type="button" 
-                  class="btn-order-action" 
-                  [ngClass]="meal.dayLabel"
-                  [class.unavailable-today]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
-                  [disabled]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
-                  (click)="openMealOrderModal(meal)">
-                  <ion-icon [name]="isMealOrderableToday(meal) && (meal.stock ?? 20) > 0 ? 'checkmark-circle' : 'lock-closed-outline'"></ion-icon>
-                  <span>{{ (meal.stock ?? 20) <= 0 ? 'Out of Stock' : meal.buttonText }}</span>
-                </button>
-              </div>
+            <div class="meals-cards-grid">
+              @for (meal of dailyMealSlides[activeSlideIndex].meals; track meal) {
+                <div class="featured-meal-card">
+                  <div class="card-img-wrap">
+                    <img [src]="meal.imageUrl" [alt]="meal.title" />
+                    <span class="top-day-badge" [ngClass]="meal.dayLabel">
+                      {{ meal.dayBadge }}
+                    </span>
+                  </div>
+                  <div class="card-body">
+                    <h3 class="meal-heading">{{ meal.title }}</h3>
+                    <span class="meal-subhead">{{ meal.subtitle }}</span>
+                    <p class="meal-desc-text">{{ meal.description }}</p>
+                    <div class="card-bottom-actions">
+                      <span class="meal-price-tag">₱{{ meal.price.toFixed(2) }}</span>
+                      <button
+                        type="button"
+                        class="btn-order-action"
+                        [ngClass]="meal.dayLabel"
+                        [class.unavailable-today]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
+                        [disabled]="!isMealOrderableToday(meal) || (meal.stock ?? 20) <= 0"
+                        (click)="openMealOrderModal(meal)">
+                        <ion-icon [name]="isMealOrderableToday(meal) && (meal.stock ?? 20) > 0 ? 'checkmark-circle' : 'lock-closed-outline'"></ion-icon>
+                        <span>{{ (meal.stock ?? 20) <= 0 ? 'Out of Stock' : meal.buttonText }}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
             </div>
           </div>
+        }
+        <div class="slider-dots-indicator">
+          @for (dot of dailyMealSlides; track dot; let dIdx = $index) {
+            <span
+              class="slider-dot"
+              [class.active]="activeSlideIndex === dIdx"
+              (click)="setSlide(dIdx)">
+            </span>
+          }
         </div>
       </div>
-
-      <div class="slider-dots-indicator">
-        <span 
-          *ngFor="let dot of dailyMealSlides; let dIdx = index" 
-          class="slider-dot" 
-          [class.active]="activeSlideIndex === dIdx"
-          (click)="setSlide(dIdx)">
-        </span>
-      </div>
-    </div>
+    }
 
     <!-- 4. CATEGORIES SECTION -->
     <div class="shopee-categories-card">
@@ -185,16 +187,17 @@
       </div>
 
       <div class="categories-scroll-wrapper" id="categoriesTrack">
-        <div 
-          *ngFor="let cat of categories" 
-          class="category-item-card" 
-          [class.active]="selectedCategory === cat.name"
-          (click)="setCategory(cat.name)">
-          <div class="category-img-circle">
-            <img [src]="cat.image || cat.imageUrl" [alt]="cat.name" loading="lazy" />
+        @for (cat of categories; track cat) {
+          <div
+            class="category-item-card"
+            [class.active]="selectedCategory === cat.name"
+            (click)="setCategory(cat.name)">
+            <div class="category-img-circle">
+              <img [src]="cat.image || cat.imageUrl" [alt]="cat.name" loading="lazy" />
+            </div>
+            <span class="category-label">{{ cat.name }}</span>
           </div>
-          <span class="category-label">{{ cat.name }}</span>
-        </div>
+        }
       </div>
     </div>
 
@@ -209,203 +212,206 @@
       </div>
 
       <div class="product-grid">
-        <div *ngFor="let item of filteredFoods" class="product-col">
-          <ion-card class="shopee-card" [style.opacity]="isSoldOut(item) ? '0.6' : '1'">
-            
-            <div class="card-gallery-wrapper">
-              <div 
-                class="card-image-slider" 
-                [id]="'card-slider-' + item.id"
-                (scroll)="onCardImageScroll($event, item)"
-                (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)">
-                <div class="card-slide" *ngFor="let img of getCardImages(item)">
-                  <img [src]="img" [alt]="item.name" draggable="false" loading="lazy" />
+        @for (item of filteredFoods; track item) {
+          <div class="product-col">
+            <ion-card class="shopee-card" [style.opacity]="isSoldOut(item) ? '0.6' : '1'">
+              <div class="card-gallery-wrapper">
+                <div
+                  class="card-image-slider"
+                  [id]="'card-slider-' + item.id"
+                  (scroll)="onCardImageScroll($event, item)"
+                  (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)">
+                  @for (img of getCardImages(item); track img) {
+                    <div class="card-slide">
+                      <img [src]="img" [alt]="item.name" draggable="false" loading="lazy" />
+                    </div>
+                  }
                 </div>
-              </div>
-
-              <button 
-                type="button" 
-                class="card-nav-arrow left" 
-                *ngIf="(activeCardImageIndex[item.id] || 0) > 0" 
-                (click)="prevCardImage(item, $event)">
-                <ion-icon name="chevron-back-outline"></ion-icon>
-              </button>
-              <button 
-                type="button" 
-                class="card-nav-arrow right" 
-                *ngIf="(activeCardImageIndex[item.id] || 0) < getCardImages(item).length - 1" 
-                (click)="nextCardImage(item, $event)">
-                <ion-icon name="chevron-forward-outline"></ion-icon>
-              </button>
-
-              <div class="card-gallery-dots" *ngIf="getCardImages(item).length > 1">
-                <span 
-                  *ngFor="let dot of getCardImages(item); let dIdx = index" 
-                  class="dot" 
-                  [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)"
-                  (click)="setCardImage(item, dIdx, $event)">
-                </span>
-              </div>
-
-              <button 
-                type="button" 
-                class="card-expand-btn" 
-                (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)"
-                title="View Full-Screen">
-                <ion-icon name="expand-outline"></ion-icon>
-              </button>
-
-              <span class="badge-mall" *ngIf="isSoldOut(item)" style="background: #555555;">Sold Out</span>
-              <div class="discount-flag" *ngIf="item.discount && !isSoldOut(item)">
-                <span class="discount-text">{{ item.discount }}</span>
-              </div>
-            </div>
-
-            <div class="product-info">
-              <h3 class="product-title" (click)="openFoodModal(item)">{{ item.name }}</h3>
-              <p class="product-description">{{ item.description }}</p>
-
-              <div class="tags-row">
-                <span class="cashback-tag" *ngIf="!isSoldOut(item)">Wallet Accepted</span>
-                <span
-                  class="stock-tag"
-                  [class.low-stock]="getAvailableStock(item) <= 5"
-                  *ngIf="!isSoldOut(item)">
-                  {{ getAvailableStock(item) }} order{{ getAvailableStock(item) === 1 ? '' : 's' }} available
-                </span>
-                <span class="cashback-tag" *ngIf="isSoldOut(item)" style="color: red; border-color: red;">Out of Stock</span>
-              </div>
-
-              <div class="price-rating-row">
-                <div class="price-box">
-                  <span class="currency">₱</span>
-                  <span class="amount">{{ item.price.toFixed(0) }}</span>
-                </div>
-              </div>
-
-              <div class="card-action-buttons">
+                @if ((activeCardImageIndex[item.id] || 0) > 0) {
+                  <button
+                    type="button"
+                    class="card-nav-arrow left"
+                    (click)="prevCardImage(item, $event)">
+                    <ion-icon name="chevron-back-outline"></ion-icon>
+                  </button>
+                }
+                @if ((activeCardImageIndex[item.id] || 0) < getCardImages(item).length - 1) {
+                  <button
+                    type="button"
+                    class="card-nav-arrow right"
+                    (click)="nextCardImage(item, $event)">
+                    <ion-icon name="chevron-forward-outline"></ion-icon>
+                  </button>
+                }
+                @if (getCardImages(item).length > 1) {
+                  <div class="card-gallery-dots">
+                    @for (dot of getCardImages(item); track dot; let dIdx = $index) {
+                      <span
+                        class="dot"
+                        [class.active]="dIdx === (activeCardImageIndex[item.id] || 0)"
+                        (click)="setCardImage(item, dIdx, $event)">
+                      </span>
+                    }
+                  </div>
+                }
                 <button
                   type="button"
-                  class="order-now-btn"
-                  (click)="openVariationModal(item, 'buy', $event)"
-                  [disabled]="isSoldOut(item)">
-                  {{ isSoldOut(item) ? 'Out of Stock' : 'Order Now' }}
+                  class="card-expand-btn"
+                  (click)="openFullScreenViewer(item, activeCardImageIndex[item.id] || 0, $event)"
+                  title="View Full-Screen">
+                  <ion-icon name="expand-outline"></ion-icon>
                 </button>
-                <button
-                  type="button"
-                  class="add-to-cart-text-btn"
-                  (click)="openVariationModal(item, 'cart', $event)"
-                  [disabled]="isSoldOut(item)">
-                  Add to Cart
-                </button>
+                @if (isSoldOut(item)) {
+                  <span class="badge-mall" style="background: #555555;">Sold Out</span>
+                }
+                @if (item.discount && !isSoldOut(item)) {
+                  <div class="discount-flag">
+                    <span class="discount-text">{{ item.discount }}</span>
+                  </div>
+                }
               </div>
-
-              <div class="social-row">
-                <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View all customer feedback">
-                  <span class="stars-group">
-                    <ion-icon
-                      *ngFor="let s of [1, 2, 3, 4, 5]"
-                      [name]="getStarIcon(item.rating, s)">
-                    </ion-icon>
+              <div class="product-info">
+                <h3 class="product-title" (click)="openFoodModal(item)">{{ item.name }}</h3>
+                <p class="product-description">{{ item.description }}</p>
+                <div class="tags-row">
+                  @if (!isSoldOut(item)) {
+                    <span class="cashback-tag">Wallet Accepted</span>
+                  }
+                  @if (!isSoldOut(item)) {
+                    <span
+                      class="stock-tag"
+                      [class.low-stock]="getAvailableStock(item) <= 5"
+                      >
+                      {{ getAvailableStock(item) }} order{{ getAvailableStock(item) === 1 ? '' : 's' }} available
+                    </span>
+                  }
+                  @if (isSoldOut(item)) {
+                    <span class="cashback-tag" style="color: red; border-color: red;">Out of Stock</span>
+                  }
+                </div>
+                <div class="price-rating-row">
+                  <div class="price-box">
+                    <span class="currency">₱</span>
+                    <span class="amount">{{ item.price.toFixed(0) }}</span>
+                  </div>
+                </div>
+                <div class="card-action-buttons">
+                  <button
+                    type="button"
+                    class="order-now-btn"
+                    (click)="openVariationModal(item, 'buy', $event)"
+                    [disabled]="isSoldOut(item)">
+                    {{ isSoldOut(item) ? 'Out of Stock' : 'Order Now' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="add-to-cart-text-btn"
+                    (click)="openVariationModal(item, 'cart', $event)"
+                    [disabled]="isSoldOut(item)">
+                    Add to Cart
+                  </button>
+                </div>
+                <div class="social-row">
+                  <span class="rating clickable-rating" (click)="openReviewsModal(item, $event)" title="View all customer feedback">
+                    <span class="stars-group">
+                      @for (s of [1, 2, 3, 4, 5]; track s) {
+                        <ion-icon
+                          [name]="getStarIcon(item.rating, s)">
+                        </ion-icon>
+                      }
+                    </span>
+                    <span class="rating-val">{{ item.rating || 5.0 }}</span>
+                    <small class="review-count">({{ getReviewsWithFeedback(item).length }})</small>
                   </span>
-                  <span class="rating-val">{{ item.rating || 5.0 }}</span>
-                  <small class="review-count">({{ getReviewsWithFeedback(item).length }})</small>
-                </span>
-                <span class="sold-count">
-                  {{ formatEverydaySold(item.soldCount) }}
-                </span>
+                  <span class="sold-count">
+                    {{ formatEverydaySold(item.soldCount) }}
+                  </span>
+                </div>
               </div>
-            </div>
-          </ion-card>
-        </div>
+            </ion-card>
+          </div>
+        }
       </div>
     </div>
 
   </div>
 
   <!-- 6. PRODUCT VARIATION / CHOICES BOTTOM SHEET MODAL -->
-  <ion-modal 
-    [isOpen]="isVariationModalOpen" 
-    (didDismiss)="closeVariationModal()" 
+  <ion-modal
+    [isOpen]="isVariationModalOpen"
+    (didDismiss)="closeVariationModal()"
     class="shopee-variation-bottom-sheet">
     <ng-template>
-      <div class="var-sheet-wrapper" *ngIf="selectedVariationFood" [class.dark-theme]="isDarkMode">
-        
-        <div class="var-top-header">
-          <div class="var-thumb-box" (click)="openFullScreenViewer(selectedVariationFood, 0, $event)">
-            <img [src]="selectedVariationFood.imageUrl" [alt]="selectedVariationFood.name" />
-            <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
-          </div>
-
-          <div class="var-meta-box">
-            <h4 class="var-meal-name">{{ selectedVariationFood.name }}</h4>
-            <div class="var-price-row">
-              <span class="var-sale-price">₱{{ getCalculatedVariationPrice().toFixed(2) }}</span>
-              <span class="var-orig-price">₱{{ (getCalculatedVariationPrice() * 1.35).toFixed(0) }}</span>
+      @if (selectedVariationFood) {
+        <div class="var-sheet-wrapper" [class.dark-theme]="isDarkMode">
+          <div class="var-top-header">
+            <div class="var-thumb-box" (click)="openFullScreenViewer(selectedVariationFood, 0, $event)">
+              <img [src]="selectedVariationFood.imageUrl" [alt]="selectedVariationFood.name" />
+              <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
             </div>
-            <p class="var-stock-text">Stock: {{ getAvailableStock(selectedVariationFood) }} available</p>
+            <div class="var-meta-box">
+              <h4 class="var-meal-name">{{ selectedVariationFood.name }}</h4>
+              <div class="var-price-row">
+                <span class="var-sale-price">₱{{ getCalculatedVariationPrice().toFixed(2) }}</span>
+                <span class="var-orig-price">₱{{ (getCalculatedVariationPrice() * 1.35).toFixed(0) }}</span>
+              </div>
+              <p class="var-stock-text">Stock: {{ getAvailableStock(selectedVariationFood) }} available</p>
+            </div>
+            <button class="var-close-btn" (click)="closeVariationModal()" title="Close">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
           </div>
-
-          <button class="var-close-btn" (click)="closeVariationModal()" title="Close">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
+          <div class="var-scrollable-body">
+            <!-- Variation Choice -->
+            <div class="var-options-section">
+              <h4 class="var-section-label">Variation Choice</h4>
+              <div class="var-chips-grid">
+                @for (choice of getVariationChoices(selectedVariationFood); track choice) {
+                  <button
+                    type="button"
+                    class="var-chip"
+                    [class.active]="selectedOptionName === choice"
+                    (click)="selectOption(choice)">
+                    {{ choice }}
+                  </button>
+                }
+              </div>
+            </div>
+            <!-- Size -->
+            <div class="var-options-section">
+              <h4 class="var-section-label">Size</h4>
+              <div class="var-chips-grid">
+                @for (sz of getVariationSizes(selectedVariationFood); track sz) {
+                  <button
+                    type="button"
+                    class="var-chip"
+                    [class.active]="selectedSizeName === sz"
+                    (click)="selectSize(sz)">
+                    {{ sz }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="var-quantity-section">
+              <span class="var-qty-label">Quantity</span>
+              <div class="var-stepper-box">
+                <button type="button" class="step-btn" (click)="decreaseVariationQty()">-</button>
+                <span class="step-num">{{ variationQty || 1 }}</span>
+                <button type="button" class="step-btn" (click)="increaseVariationQty()">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="var-bottom-footer">
+            <button
+              type="button"
+              class="var-submit-btn"
+              (click)="confirmVariationSelection()"
+              [disabled]="isSoldOut(selectedVariationFood)">
+              {{ variationMode === 'buy' ? 'Buy Now' : 'Add to Cart' }}
+            </button>
+          </div>
         </div>
-
-        <div class="var-scrollable-body">
-          <!-- Variation Choice -->
-          <div class="var-options-section">
-            <h4 class="var-section-label">Variation Choice</h4>
-
-            <div class="var-chips-grid">
-              <button
-                type="button"
-                *ngFor="let choice of getVariationChoices(selectedVariationFood)"
-                class="var-chip"
-                [class.active]="selectedOptionName === choice"
-                (click)="selectOption(choice)">
-                {{ choice }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Size -->
-          <div class="var-options-section">
-            <h4 class="var-section-label">Size</h4>
-
-            <div class="var-chips-grid">
-              <button
-                type="button"
-                *ngFor="let sz of getVariationSizes(selectedVariationFood)"
-                class="var-chip"
-                [class.active]="selectedSizeName === sz"
-                (click)="selectSize(sz)">
-                {{ sz }}
-              </button>
-            </div>
-          </div>
-
-          <div class="var-quantity-section">
-            <span class="var-qty-label">Quantity</span>
-            
-            <div class="var-stepper-box">
-              <button type="button" class="step-btn" (click)="decreaseVariationQty()">-</button>
-              <span class="step-num">{{ variationQty || 1 }}</span>
-              <button type="button" class="step-btn" (click)="increaseVariationQty()">+</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="var-bottom-footer">
-          <button 
-            type="button" 
-            class="var-submit-btn" 
-            (click)="confirmVariationSelection()" 
-            [disabled]="isSoldOut(selectedVariationFood)">
-            {{ variationMode === 'buy' ? 'Buy Now' : 'Add to Cart' }}
-          </button>
-        </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
@@ -415,183 +421,176 @@
     (didDismiss)="closeMealOrderModal()"
     class="shopee-variation-bottom-sheet">
     <ng-template>
-      <div class="var-sheet-wrapper" *ngIf="selectedMeal && getSelectedMealFood() as mealFood" [class.dark-theme]="isDarkMode">
-
-        <div class="var-top-header">
-          <div class="var-thumb-box" (click)="openFullScreenViewer(mealFood, 0, $event)">
-            <img [src]="selectedMeal.imageUrl" [alt]="selectedMeal.title" />
-            <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
-          </div>
-
-          <div class="var-meta-box">
-            <h4 class="var-meal-name">{{ selectedMeal.title }}</h4>
-            <div class="var-price-row">
-              <span class="var-sale-price">₱{{ getMealTotal().toFixed(2) }}</span>
-              <span class="var-orig-price">₱{{ (getMealTotal() * 1.35).toFixed(0) }}</span>
+      @if (selectedMeal && getSelectedMealFood(); as mealFood) {
+        <div class="var-sheet-wrapper" [class.dark-theme]="isDarkMode">
+          <div class="var-top-header">
+            <div class="var-thumb-box" (click)="openFullScreenViewer(mealFood, 0, $event)">
+              <img [src]="selectedMeal.imageUrl" [alt]="selectedMeal.title" />
+              <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
             </div>
-            <p class="var-stock-text">
-              Stock: {{ getAvailableStock(mealFood) }} available &bull; {{ mealScheduleNote(selectedMeal) }}
-            </p>
+            <div class="var-meta-box">
+              <h4 class="var-meal-name">{{ selectedMeal.title }}</h4>
+              <div class="var-price-row">
+                <span class="var-sale-price">₱{{ getMealTotal().toFixed(2) }}</span>
+                <span class="var-orig-price">₱{{ (getMealTotal() * 1.35).toFixed(0) }}</span>
+              </div>
+              <p class="var-stock-text">
+                Stock: {{ getAvailableStock(mealFood) }} available &bull; {{ mealScheduleNote(selectedMeal) }}
+              </p>
+            </div>
+            <button type="button" class="var-close-btn" (click)="closeMealOrderModal()" title="Close">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
           </div>
-
-          <button type="button" class="var-close-btn" (click)="closeMealOrderModal()" title="Close">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
+          <div class="var-scrollable-body">
+            <!-- Variation Choice -->
+            <div class="var-options-section">
+              <h4 class="var-section-label">Variation Choice</h4>
+              <div class="var-chips-grid">
+                @for (choice of getVariationChoices(mealFood); track choice) {
+                  <button
+                    type="button"
+                    class="var-chip"
+                    [class.active]="selectedMealVariant === choice"
+                    (click)="selectMealVariant(choice)">
+                    {{ choice }}
+                  </button>
+                }
+              </div>
+            </div>
+            <!-- Size -->
+            <div class="var-options-section">
+              <h4 class="var-section-label">Size</h4>
+              <div class="var-chips-grid">
+                @for (sz of getVariationSizes(mealFood); track sz) {
+                  <button
+                    type="button"
+                    class="var-chip"
+                    [class.active]="selectedMealSize === sz"
+                    (click)="selectMealSize(sz)">
+                    {{ sz }}
+                  </button>
+                }
+              </div>
+            </div>
+            <div class="var-quantity-section">
+              <span class="var-qty-label">Quantity</span>
+              <div class="var-stepper-box">
+                <button type="button" class="step-btn" (click)="decreaseMealQty()">-</button>
+                <span class="step-num">{{ mealQuantity }}</span>
+                <button type="button" class="step-btn" (click)="increaseMealQty()">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="var-bottom-footer meal-footer">
+            <button
+              type="button"
+              class="var-submit-btn order-now-submit btn-buy-now-red"
+              (click)="confirmMealOrder(true)"
+              [disabled]="isSoldOut(mealFood)">
+              Order Now
+            </button>
+            <button
+              type="button"
+              class="var-submit-btn add-cart-submit"
+              (click)="confirmMealOrder(false)"
+              [disabled]="isSoldOut(mealFood)">
+              Add to Cart
+            </button>
+          </div>
         </div>
-
-        <div class="var-scrollable-body">
-          <!-- Variation Choice -->
-          <div class="var-options-section">
-            <h4 class="var-section-label">Variation Choice</h4>
-
-            <div class="var-chips-grid">
-              <button
-                type="button"
-                *ngFor="let choice of getVariationChoices(mealFood)"
-                class="var-chip"
-                [class.active]="selectedMealVariant === choice"
-                (click)="selectMealVariant(choice)">
-                {{ choice }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Size -->
-          <div class="var-options-section">
-            <h4 class="var-section-label">Size</h4>
-
-            <div class="var-chips-grid">
-              <button
-                type="button"
-                *ngFor="let sz of getVariationSizes(mealFood)"
-                class="var-chip"
-                [class.active]="selectedMealSize === sz"
-                (click)="selectMealSize(sz)">
-                {{ sz }}
-              </button>
-            </div>
-          </div>
-
-          <div class="var-quantity-section">
-            <span class="var-qty-label">Quantity</span>
-
-            <div class="var-stepper-box">
-              <button type="button" class="step-btn" (click)="decreaseMealQty()">-</button>
-              <span class="step-num">{{ mealQuantity }}</span>
-              <button type="button" class="step-btn" (click)="increaseMealQty()">+</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="var-bottom-footer meal-footer">
-          <button
-            type="button"
-            class="var-submit-btn order-now-submit btn-buy-now-red"
-            (click)="confirmMealOrder(true)"
-            [disabled]="isSoldOut(mealFood)">
-            Order Now
-          </button>
-          <button
-            type="button"
-            class="var-submit-btn add-cart-submit"
-            (click)="confirmMealOrder(false)"
-            [disabled]="isSoldOut(mealFood)">
-            Add to Cart
-          </button>
-        </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
   <!-- 7. FULL-SCREEN IMAGE VIEWER MODAL -->
-  <ion-modal 
-    [isOpen]="isFullScreenViewerOpen" 
-    (didDismiss)="closeFullScreenViewer()" 
+  <ion-modal
+    [isOpen]="isFullScreenViewerOpen"
+    (didDismiss)="closeFullScreenViewer()"
     class="shopee-fullscreen-viewer-modal">
     <ng-template>
-      <div 
-        class="fs-viewer-container" 
-        *ngIf="fullScreenFood"
-        (mouseup)="stopMouseDrag($event)"
-        (mouseleave)="stopMouseDrag($event)">
-        
-        <div class="fs-top-bar">
-          <button class="fs-round-btn" (click)="closeFullScreenViewer()" title="Back">
-            <ion-icon name="arrow-back-outline"></ion-icon>
-          </button>
-
-          <div class="fs-title-box">
-            <h4>{{ fullScreenFood.name }}</h4>
-            <span class="fs-counter">{{ fullScreenImageIndex + 1 }} / {{ getFoodImages(fullScreenFood).length }}</span>
-          </div>
-
-          <button class="fs-round-btn" (click)="closeFullScreenViewer(); goToCart()" title="View Cart">
-            <ion-icon name="cart-outline"></ion-icon>
-            <span class="fs-cart-badge" *ngIf="cartCount > 0">{{ cartCount }}</span>
-          </button>
-        </div>
-
-        <div 
-          class="fs-horizontal-track" 
-          id="fsSliderStage"
-          (scroll)="onFullScreenScroll($event)"
-          (wheel)="onMouseWheel($event, 'fsSliderStage')"
-          (mousedown)="startMouseDrag($event, 'fsSliderStage')"
-          (mousemove)="onMouseMove($event, 'fsSliderStage')">
-          <div 
-            class="fs-slide-item" 
-            *ngFor="let photo of getFoodImages(fullScreenFood); let pIdx = index">
-            <img [src]="photo" [alt]="fullScreenFood.name + ' full image ' + (pIdx + 1)" draggable="false" />
-          </div>
-        </div>
-
-        <button 
-          type="button" 
-          class="fs-nav-arrow left" 
-          *ngIf="fullScreenImageIndex > 0"
-          (click)="prevFullScreenImage()">
-          <ion-icon name="chevron-back-outline"></ion-icon>
-        </button>
-
-        <button 
-          type="button" 
-          class="fs-nav-arrow right" 
-          *ngIf="fullScreenImageIndex < getFoodImages(fullScreenFood).length - 1"
-          (click)="nextFullScreenImage()">
-          <ion-icon name="chevron-forward-outline"></ion-icon>
-        </button>
-
-        <div class="fs-bottom-dock">
-          <div class="fs-thumbnails-strip" *ngIf="getFoodImages(fullScreenFood).length > 1">
-            <div 
-              *ngFor="let th of getFoodImages(fullScreenFood); let tIdx = index" 
-              class="fs-thumb-item"
-              [class.active-thumb]="tIdx === fullScreenImageIndex"
-              (click)="selectFullScreenImage(tIdx)">
-              <img [src]="th" [alt]="'Thumbnail ' + (tIdx + 1)" draggable="false" />
+      @if (fullScreenFood) {
+        <div
+          class="fs-viewer-container"
+          (mouseup)="stopMouseDrag($event)"
+          (mouseleave)="stopMouseDrag($event)">
+          <div class="fs-top-bar">
+            <button class="fs-round-btn" (click)="closeFullScreenViewer()" title="Back">
+              <ion-icon name="arrow-back-outline"></ion-icon>
+            </button>
+            <div class="fs-title-box">
+              <h4>{{ fullScreenFood.name }}</h4>
+              <span class="fs-counter">{{ fullScreenImageIndex + 1 }} / {{ getFoodImages(fullScreenFood).length }}</span>
             </div>
-          </div>
-
-          <div class="fs-action-bar">
-            <div class="fs-meta">
-              <span class="fs-price">₱{{ fullScreenFood.price.toFixed(2) }}</span>
-              <span class="fs-status" [style.color]="!isSoldOut(fullScreenFood) ? '#22c55e' : '#ef4444'">
-                {{ !isSoldOut(fullScreenFood) ? '• ' + getAvailableStock(fullScreenFood) + ' available' : '• Sold Out' }}
-              </span>
-            </div>
-
-            <button 
-              class="fs-add-cart-btn" 
-              (click)="openVariationModal(fullScreenFood, 'cart', $event)"
-              [disabled]="isSoldOut(fullScreenFood)">
+            <button class="fs-round-btn" (click)="closeFullScreenViewer(); goToCart()" title="View Cart">
               <ion-icon name="cart-outline"></ion-icon>
-              <span>Choose Options & Add</span>
+              @if (cartCount > 0) {
+                <span class="fs-cart-badge">{{ cartCount }}</span>
+              }
             </button>
           </div>
+          <div
+            class="fs-horizontal-track"
+            id="fsSliderStage"
+            (scroll)="onFullScreenScroll($event)"
+            (wheel)="onMouseWheel($event, 'fsSliderStage')"
+            (mousedown)="startMouseDrag($event, 'fsSliderStage')"
+            (mousemove)="onMouseMove($event, 'fsSliderStage')">
+            @for (photo of getFoodImages(fullScreenFood); track photo; let pIdx = $index) {
+              <div
+                class="fs-slide-item"
+                >
+                <img [src]="photo" [alt]="fullScreenFood.name + ' full image ' + (pIdx + 1)" draggable="false" />
+              </div>
+            }
+          </div>
+          @if (fullScreenImageIndex > 0) {
+            <button
+              type="button"
+              class="fs-nav-arrow left"
+              (click)="prevFullScreenImage()">
+              <ion-icon name="chevron-back-outline"></ion-icon>
+            </button>
+          }
+          @if (fullScreenImageIndex < getFoodImages(fullScreenFood).length - 1) {
+            <button
+              type="button"
+              class="fs-nav-arrow right"
+              (click)="nextFullScreenImage()">
+              <ion-icon name="chevron-forward-outline"></ion-icon>
+            </button>
+          }
+          <div class="fs-bottom-dock">
+            @if (getFoodImages(fullScreenFood).length > 1) {
+              <div class="fs-thumbnails-strip">
+                @for (th of getFoodImages(fullScreenFood); track th; let tIdx = $index) {
+                  <div
+                    class="fs-thumb-item"
+                    [class.active-thumb]="tIdx === fullScreenImageIndex"
+                    (click)="selectFullScreenImage(tIdx)">
+                    <img [src]="th" [alt]="'Thumbnail ' + (tIdx + 1)" draggable="false" />
+                  </div>
+                }
+              </div>
+            }
+            <div class="fs-action-bar">
+              <div class="fs-meta">
+                <span class="fs-price">₱{{ fullScreenFood.price.toFixed(2) }}</span>
+                <span class="fs-status" [style.color]="!isSoldOut(fullScreenFood) ? '#22c55e' : '#ef4444'">
+                  {{ !isSoldOut(fullScreenFood) ? '• ' + getAvailableStock(fullScreenFood) + ' available' : '• Sold Out' }}
+                </span>
+              </div>
+              <button
+                class="fs-add-cart-btn"
+                (click)="openVariationModal(fullScreenFood, 'cart', $event)"
+                [disabled]="isSoldOut(fullScreenFood)">
+                <ion-icon name="cart-outline"></ion-icon>
+                <span>Choose Options & Add</span>
+              </button>
+            </div>
+          </div>
         </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
@@ -609,129 +608,148 @@
 
       <ion-content class="orders-modal-content ion-padding" [class.dark-theme]="isDarkMode">
         <div class="orders-modal-container">
-          <div *ngIf="orders.length === 0" class="empty-orders-state">
-            <ion-icon name="receipt-outline"></ion-icon>
-            <p>You haven't placed any orders yet.</p>
-          </div>
+          @if (orders.length === 0) {
+            <div class="empty-orders-state">
+              <ion-icon name="receipt-outline"></ion-icon>
+              <p>You haven't placed any orders yet.</p>
+            </div>
+          }
 
-          <ion-card *ngFor="let order of orders" class="history-card" [class.active-border]="order.status !== 'Completed' && order.status !== 'Cancelled'">
-            <ion-card-header>
-              <div class="history-card-header">
-                <div>
-                  <h4 class="order-id">Order #{{ order.id }}</h4>
-                  <span class="order-date">{{ order.createdAt | date:'medium' }}</span>
+          @for (order of orders; track order) {
+            <ion-card class="history-card" [class.active-border]="order.status !== 'Completed' && order.status !== 'Cancelled'">
+              <ion-card-header>
+                <div class="history-card-header">
+                  <div>
+                    <h4 class="order-id">Order #{{ order.id }}</h4>
+                    <span class="order-date">{{ order.createdAt | date:'medium' }}</span>
+                  </div>
+                  <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Cancelled' ? 'danger' : (order.status === 'Preparing' ? 'warning' : (order.status === 'Out for Delivery' ? 'tertiary' : 'primary')))">
+                    {{ order.status }}
+                  </ion-badge>
                 </div>
-                <ion-badge [color]="order.status === 'Completed' ? 'success' : (order.status === 'Cancelled' ? 'danger' : (order.status === 'Preparing' ? 'warning' : (order.status === 'Out for Delivery' ? 'tertiary' : 'primary')))">
-                  {{ order.status }}
-                </ion-badge>
-              </div>
-            </ion-card-header>
-
-            <ion-card-content>
-              <div *ngIf="order.status !== 'Completed' && order.status !== 'Cancelled'" class="modal-stepper">
-                <p class="stepper-title">Live Order Status:</p>
-                <div class="stepper-container">
-                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 1">
-                    <div class="step-circle">1</div>
-                    <span class="step-label">Order Placed</span>
-                  </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order) >= 2"></div>
-
-                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 2">
-                    <div class="step-circle">2</div>
-                    <span class="step-label">Preparing</span>
-                  </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order) >= 3"></div>
-
-                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 3">
-                    <div class="step-circle">3</div>
-                    <span class="step-label">{{ order.orderType === 'delivery' ? 'On the Way' : 'Ready' }}</span>
-                  </div>
-                  <div class="step-line" [class.filled]="getProgressStep(order) >= 4"></div>
-
-                  <div class="stepper-step" [class.completed]="getProgressStep(order) >= 4">
-                    <div class="step-circle">4</div>
-                    <span class="step-label">Delivered</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="history-meta">
-                <p>
-                  <strong>Mode: </strong>
-                  {{ order.orderType === 'delivery' ? '🛵 Delivery' : (order.orderType === 'dine-in' ? '🍽️ Dine-In' : '🛍️ Pick-Up') }}
-                </p>
-                <p *ngIf="order.deliveryAddress">
-                  <strong>Delivery To: </strong> {{ order.deliveryAddress }}
-                </p>
-                <p *ngIf="order.tableNumber">
-                  <strong>Table Number: </strong> {{ order.tableNumber }}
-                </p>
-                <p *ngIf="order.pickupTime">
-                  <strong>Pick-Up Time: </strong> {{ order.pickupTime }}
-                </p>
-                <p>
-                  <strong>Payment: </strong>
-                  {{ order.paymentMethod === 'shopeepay' ? 'Wallet (Paid Instantly)' : (order.paymentMethod === 'cod' ? (order.orderType === 'delivery' ? 'Cash on Delivery (COD)' : 'Cash at Counter') : 'Online Transaction') }}
-                </p>
-                <p *ngIf="order.notes" class="history-note">
-                  <strong>Note: </strong> {{ order.notes }}
-                </p>
-              </div>
-
-              <ion-list class="history-items-list">
-                <ion-item *ngFor="let item of order.items" lines="none">
-                  <ion-label>
-                    {{ item.quantity }}x {{ item.food?.name || item.name }}
-                    <small *ngIf="item.selectedOption" style="color: #ea580c; display: block;">Option: {{ cleanOptionLabel(item.selectedOption) }}</small>
-                  </ion-label>
-                  <span slot="end">₱{{ ((item.food?.price || item.price || 0) * item.quantity).toFixed(2) }}</span>
-                </ion-item>
-              </ion-list>
-
-              <div class="history-total-row">
-                <span>Total Amount</span>
-                <span class="total-val">₱{{ (order.totalAmount || order.total || 0).toFixed(2) }}</span>
-              </div>
-
-              <!-- CANCEL ORDER BUTTON (only while Pending / not yet accepted by admin) -->
-              <div *ngIf="order.status === 'Pending'" style="margin-top: 12px;">
-                <ion-button
-                  expand="block"
-                  fill="outline"
-                  color="danger"
-                  (click)="cancelOrder(order)">
-                  <ion-icon name="close-circle-outline" slot="start"></ion-icon>
-                  Cancel Order
-                </ion-button>
-              </div>
-
-              <div *ngIf="order.status === 'Completed'" class="completed-feedback-area">
-                <div *ngIf="order.rating" class="submitted-review-box">
-                  <div class="stars-header">
-                    <span class="review-label">Your Feedback on this Order:</span>
-                    <div class="stars-display">
-                      <ion-icon 
-                        *ngFor="let s of [1,2,3,4,5]" 
-                        [name]="s <= (order.rating || 0) ? 'star' : 'star-outline'" 
-                        color="warning">
-                      </ion-icon>
-                      <span class="rating-number">({{ order.rating }} / 5)</span>
+              </ion-card-header>
+              <ion-card-content>
+                @if (order.status !== 'Completed' && order.status !== 'Cancelled') {
+                  <div class="modal-stepper">
+                    <p class="stepper-title">Live Order Status:</p>
+                    <div class="stepper-container">
+                      <div class="stepper-step" [class.completed]="getProgressStep(order) >= 1">
+                        <div class="step-circle">1</div>
+                        <span class="step-label">Order Placed</span>
+                      </div>
+                      <div class="step-line" [class.filled]="getProgressStep(order) >= 2"></div>
+                      <div class="stepper-step" [class.completed]="getProgressStep(order) >= 2">
+                        <div class="step-circle">2</div>
+                        <span class="step-label">Preparing</span>
+                      </div>
+                      <div class="step-line" [class.filled]="getProgressStep(order) >= 3"></div>
+                      <div class="stepper-step" [class.completed]="getProgressStep(order) >= 3">
+                        <div class="step-circle">3</div>
+                        <span class="step-label">{{ order.orderType === 'delivery' ? 'On the Way' : 'Ready' }}</span>
+                      </div>
+                      <div class="step-line" [class.filled]="getProgressStep(order) >= 4"></div>
+                      <div class="stepper-step" [class.completed]="getProgressStep(order) >= 4">
+                        <div class="step-circle">4</div>
+                        <span class="step-label">Delivered</span>
+                      </div>
                     </div>
                   </div>
-                  <p class="submitted-comment" *ngIf="order.feedback && order.feedback.trim() && order.feedback !== 'Delicious food and fast service!' && order.feedback !== 'Delicious food and fast delivery!'">"{{ order.feedback }}"</p>
+                }
+                <div class="history-meta">
+                  <p>
+                    <strong>Mode: </strong>
+                    {{ order.orderType === 'delivery' ? '🛵 Delivery' : (order.orderType === 'dine-in' ? '🍽️ Dine-In' : '🛍️ Pick-Up') }}
+                  </p>
+                  @if (order.deliveryAddress) {
+                    <p>
+                      <strong>Delivery To: </strong> {{ order.deliveryAddress }}
+                    </p>
+                  }
+                  @if (order.tableNumber) {
+                    <p>
+                      <strong>Table Number: </strong> {{ order.tableNumber }}
+                    </p>
+                  }
+                  @if (order.pickupTime) {
+                    <p>
+                      <strong>Pick-Up Time: </strong> {{ order.pickupTime }}
+                    </p>
+                  }
+                  <p>
+                    <strong>Payment: </strong>
+                    {{ order.paymentMethod === 'shopeepay' ? 'Wallet (Paid Instantly)' : (order.paymentMethod === 'cod' ? (order.orderType === 'delivery' ? 'Cash on Delivery (COD)' : 'Cash at Counter') : 'Online Transaction') }}
+                  </p>
+                  @if (order.notes) {
+                    <p class="history-note">
+                      <strong>Note: </strong> {{ order.notes }}
+                    </p>
+                  }
                 </div>
-                <button
-                  type="button"
-                  *ngIf="!order.rating"
-                  class="rate-order-btn"
-                  (click)="openRatingModal(order)">
-                  <ion-icon name="star-outline"></ion-icon>
-                  Rate this Order
-                </button>
-              </div>
-            </ion-card-content>
-          </ion-card>
+                <ion-list class="history-items-list">
+                  @for (item of order.items; track item) {
+                    <ion-item lines="none">
+                      <ion-label>
+                        {{ item.quantity }}x {{ item.food?.name || item.name }}
+                        @if (item.selectedOption) {
+                          <small style="color: #ea580c; display: block;">Option: {{ cleanOptionLabel(item.selectedOption) }}</small>
+                        }
+                      </ion-label>
+                      <span slot="end">₱{{ ((item.food?.price || item.price || 0) * item.quantity).toFixed(2) }}</span>
+                    </ion-item>
+                  }
+                </ion-list>
+                <div class="history-total-row">
+                  <span>Total Amount</span>
+                  <span class="total-val">₱{{ (order.totalAmount || order.total || 0).toFixed(2) }}</span>
+                </div>
+                <!-- CANCEL ORDER BUTTON (only while Pending / not yet accepted by admin) -->
+                @if (order.status === 'Pending') {
+                  <div style="margin-top: 12px;">
+                    <ion-button
+                      expand="block"
+                      fill="outline"
+                      color="danger"
+                      (click)="cancelOrder(order)">
+                      <ion-icon name="close-circle-outline" slot="start"></ion-icon>
+                      Cancel Order
+                    </ion-button>
+                  </div>
+                }
+                @if (order.status === 'Completed') {
+                  <div class="completed-feedback-area">
+                    @if (order.rating) {
+                      <div class="submitted-review-box">
+                        <div class="stars-header">
+                          <span class="review-label">Your Feedback on this Order:</span>
+                          <div class="stars-display">
+                            @for (s of [1,2,3,4,5]; track s) {
+                              <ion-icon
+                                [name]="s <= (order.rating || 0) ? 'star' : 'star-outline'"
+                                color="warning">
+                              </ion-icon>
+                            }
+                            <span class="rating-number">({{ order.rating }} / 5)</span>
+                          </div>
+                        </div>
+                        @if (order.feedback && order.feedback.trim() && order.feedback !== 'Delicious food and fast service!' && order.feedback !== 'Delicious food and fast delivery!') {
+                          <p class="submitted-comment">"{{ order.feedback }}"</p>
+                        }
+                      </div>
+                    }
+                    @if (!order.rating) {
+                      <button
+                        type="button"
+                        class="rate-order-btn"
+                        (click)="openRatingModal(order)">
+                        <ion-icon name="star-outline"></ion-icon>
+                        Rate this Order
+                      </button>
+                    }
+                  </div>
+                }
+              </ion-card-content>
+            </ion-card>
+          }
         </div>
       </ion-content>
     </ng-template>
@@ -752,18 +770,21 @@
         </div>
 
         <div class="rating-body">
-          <p class="rate-order-line" *ngIf="ratingOrder">
-            Order #{{ ratingOrder.id }} &bull; {{ ratingOrder.orderType }}
-          </p>
+          @if (ratingOrder) {
+            <p class="rate-order-line">
+              Order #{{ ratingOrder.id }} &bull; {{ ratingOrder.orderType }}
+            </p>
+          }
 
           <p class="rate-label">How was your food?</p>
           <div class="rate-stars">
-            <ion-icon
-              *ngFor="let s of [1,2,3,4,5]"
-              [name]="s <= selectedRating ? 'star' : 'star-outline'"
-              [class.lit]="s <= selectedRating"
-              (click)="setRating(s)">
-            </ion-icon>
+            @for (s of [1,2,3,4,5]; track s) {
+              <ion-icon
+                [name]="s <= selectedRating ? 'star' : 'star-outline'"
+                [class.lit]="s <= selectedRating"
+                (click)="setRating(s)">
+              </ion-icon>
+            }
           </div>
           <p class="rate-caption">
             {{ selectedRating === 0 ? 'Tap the stars to rate' : (selectedRating === 1 ? 'Poor' : selectedRating === 2 ? 'Fair' : selectedRating === 3 ? 'Good' : selectedRating === 4 ? 'Great' : 'Excellent!') }}
@@ -797,46 +818,53 @@
     (didDismiss)="closeReviewsModal()"
     class="rating-modal">
     <ng-template>
-      <div class="rating-sheet reviews-sheet" *ngIf="reviewsModalFood" [class.dark-theme]="isDarkMode">
-        <div class="rating-sheet-head">
-          <h3>{{ reviewsModalFood.name }} Reviews</h3>
-          <button type="button" class="rate-close" (click)="closeReviewsModal()">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
-        </div>
-
-        <div class="reviews-summary-bar">
-          <div class="summary-stars">
-            <ion-icon
-              *ngFor="let s of [1, 2, 3, 4, 5]"
-              [name]="getStarIcon(reviewsModalFood.rating, s)">
-            </ion-icon>
+      @if (reviewsModalFood) {
+        <div class="rating-sheet reviews-sheet" [class.dark-theme]="isDarkMode">
+          <div class="rating-sheet-head">
+            <h3>{{ reviewsModalFood.name }} Reviews</h3>
+            <button type="button" class="rate-close" (click)="closeReviewsModal()">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
           </div>
-          <span class="summary-score">{{ (reviewsModalFood.rating || 5).toFixed(1) }} / 5.0</span>
-          <span class="summary-count">({{ getReviewsWithFeedback(reviewsModalFood).length }} feedback)</span>
-        </div>
-
-        <div class="reviews-list-body">
-          <div *ngIf="getReviewsWithFeedback(reviewsModalFood).length === 0" class="no-reviews-msg">
-            No customer feedback yet. Order and rate this food to be the first!
-          </div>
-
-          <div *ngFor="let rev of getReviewsWithFeedback(reviewsModalFood)" class="review-entry-card">
-            <div class="review-entry-top">
-              <strong class="rev-author">{{ rev.customerName || 'Verified Customer' }}</strong>
-              <span class="rev-date" *ngIf="rev.createdAt">{{ rev.createdAt | date:'mediumDate' }}</span>
+          <div class="reviews-summary-bar">
+            <div class="summary-stars">
+              @for (s of [1, 2, 3, 4, 5]; track s) {
+                <ion-icon
+                  [name]="getStarIcon(reviewsModalFood.rating, s)">
+                </ion-icon>
+              }
             </div>
-            <div class="rev-stars-row">
-              <ion-icon
-                *ngFor="let s of [1, 2, 3, 4, 5]"
-                [name]="getStarIcon(rev.rating, s)">
-              </ion-icon>
-              <span class="rev-num">{{ rev.rating }} / 5</span>
-            </div>
-            <p class="rev-comment-text">"{{ rev.comment }}"</p>
+            <span class="summary-score">{{ (reviewsModalFood.rating || 5).toFixed(1) }} / 5.0</span>
+            <span class="summary-count">({{ getReviewsWithFeedback(reviewsModalFood).length }} feedback)</span>
+          </div>
+          <div class="reviews-list-body">
+            @if (getReviewsWithFeedback(reviewsModalFood).length === 0) {
+              <div class="no-reviews-msg">
+                No customer feedback yet. Order and rate this food to be the first!
+              </div>
+            }
+            @for (rev of getReviewsWithFeedback(reviewsModalFood); track rev) {
+              <div class="review-entry-card">
+                <div class="review-entry-top">
+                  <strong class="rev-author">{{ rev.customerName || 'Verified Customer' }}</strong>
+                  @if (rev.createdAt) {
+                    <span class="rev-date">{{ rev.createdAt | date:'mediumDate' }}</span>
+                  }
+                </div>
+                <div class="rev-stars-row">
+                  @for (s of [1, 2, 3, 4, 5]; track s) {
+                    <ion-icon
+                      [name]="getStarIcon(rev.rating, s)">
+                    </ion-icon>
+                  }
+                  <span class="rev-num">{{ rev.rating }} / 5</span>
+                </div>
+                <p class="rev-comment-text">"{{ rev.comment }}"</p>
+              </div>
+            }
           </div>
         </div>
-      </div>
+      }
     </ng-template>
   </ion-modal>
 
@@ -846,93 +874,87 @@
     (didDismiss)="closeOptionModal()"
     class="shopee-variation-bottom-sheet">
     <ng-template>
-      <div class="var-sheet-wrapper shopee-modal-wrapper" *ngIf="selectedFoodForModal" [class.dark-theme]="isDarkMode">
-
-        <!-- Header Info -->
-        <div class="var-top-header modal-top-row">
-          <div class="var-thumb-box food-thumb-box" (click)="openFullScreenViewer(selectedFoodForModal, 0, $event)">
-            <img [src]="selectedFoodForModal.imageUrl" [alt]="selectedFoodForModal.name" />
-            <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
-          </div>
-
-          <div class="var-meta-box food-pricing-meta">
-            <h4 class="var-meal-name">{{ selectedFoodForModal.name }}</h4>
-            <div class="var-price-row prices">
-              <span class="var-sale-price curr-price">₱{{ (computedPrice * chosenQuantity).toFixed(2) }}</span>
-              <span class="var-orig-price orig-price">₱{{ (computedPrice * chosenQuantity * 1.35).toFixed(0) }}</span>
+      @if (selectedFoodForModal) {
+        <div class="var-sheet-wrapper shopee-modal-wrapper" [class.dark-theme]="isDarkMode">
+          <!-- Header Info -->
+          <div class="var-top-header modal-top-row">
+            <div class="var-thumb-box food-thumb-box" (click)="openFullScreenViewer(selectedFoodForModal, 0, $event)">
+              <img [src]="selectedFoodForModal.imageUrl" [alt]="selectedFoodForModal.name" />
+              <span class="thumb-zoom-icon"><ion-icon name="expand-outline"></ion-icon></span>
             </div>
-            <p class="var-stock-text stock-text">Stock: {{ getAvailableStock(selectedFoodForModal) }} available</p>
+            <div class="var-meta-box food-pricing-meta">
+              <h4 class="var-meal-name">{{ selectedFoodForModal.name }}</h4>
+              <div class="var-price-row prices">
+                <span class="var-sale-price curr-price">₱{{ (computedPrice * chosenQuantity).toFixed(2) }}</span>
+                <span class="var-orig-price orig-price">₱{{ (computedPrice * chosenQuantity * 1.35).toFixed(0) }}</span>
+              </div>
+              <p class="var-stock-text stock-text">Stock: {{ getAvailableStock(selectedFoodForModal) }} available</p>
+            </div>
+            <button type="button" class="var-close-btn btn-close-modal" (click)="closeOptionModal()" title="Close">
+              <ion-icon name="close-outline"></ion-icon>
+            </button>
           </div>
-
-          <button type="button" class="var-close-btn btn-close-modal" (click)="closeOptionModal()" title="Close">
-            <ion-icon name="close-outline"></ion-icon>
-          </button>
+          <!-- Variation Choice & Size Separated -->
+          <div class="var-scrollable-body modal-section-body">
+            <!-- Variation Choice -->
+            <div class="var-options-section">
+              <h4 class="var-section-label section-sub-title">Variation Choice</h4>
+              <div class="var-chips-grid variation-pills-row">
+                @for (choice of getVariationChoices(selectedFoodForModal); track choice) {
+                  <button
+                    type="button"
+                    class="var-chip choice-pill-btn"
+                    [class.active]="chosenOptionName === choice"
+                    (click)="selectChoiceName(choice)">
+                    {{ choice }}
+                  </button>
+                }
+              </div>
+            </div>
+            <!-- Size -->
+            <div class="var-options-section">
+              <h4 class="var-section-label section-sub-title">Size</h4>
+              <div class="var-chips-grid variation-pills-row">
+                @for (sz of getVariationSizes(selectedFoodForModal); track sz) {
+                  <button
+                    type="button"
+                    class="var-chip choice-pill-btn"
+                    [class.active]="chosenSizeName === sz"
+                    (click)="selectChoiceSize(sz)">
+                    {{ sz }}
+                  </button>
+                }
+              </div>
+            </div>
+            <!-- Quantity Stepper -->
+            <div class="var-quantity-section quantity-row">
+              <span class="var-qty-label qty-label">Quantity</span>
+              <div class="var-stepper-box stepper-box">
+                <button type="button" class="step-btn" (click)="decrementQuantity()">-</button>
+                <span class="step-num step-val">{{ chosenQuantity }}</span>
+                <button type="button" class="step-btn" (click)="incrementQuantity()">+</button>
+              </div>
+            </div>
+          </div>
+          <!-- Action Buttons -->
+          <div class="var-bottom-footer meal-footer modal-action-footer">
+            <button
+              type="button"
+              class="var-submit-btn order-now-submit btn-buy-now-red"
+              (click)="confirmBuyNow()"
+              [disabled]="isSoldOut(selectedFoodForModal)">
+              Buy Now
+            </button>
+            <button
+              type="button"
+              class="var-submit-btn add-cart-submit"
+              (click)="confirmModalAddToCart()"
+              [disabled]="isSoldOut(selectedFoodForModal)">
+              Add to Cart
+            </button>
+          </div>
         </div>
-
-        <!-- Variation Choice & Size Separated -->
-        <div class="var-scrollable-body modal-section-body">
-          <!-- Variation Choice -->
-          <div class="var-options-section">
-            <h4 class="var-section-label section-sub-title">Variation Choice</h4>
-
-            <div class="var-chips-grid variation-pills-row">
-              <button
-                type="button"
-                *ngFor="let choice of getVariationChoices(selectedFoodForModal)"
-                class="var-chip choice-pill-btn"
-                [class.active]="chosenOptionName === choice"
-                (click)="selectChoiceName(choice)">
-                {{ choice }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Size -->
-          <div class="var-options-section">
-            <h4 class="var-section-label section-sub-title">Size</h4>
-
-            <div class="var-chips-grid variation-pills-row">
-              <button
-                type="button"
-                *ngFor="let sz of getVariationSizes(selectedFoodForModal)"
-                class="var-chip choice-pill-btn"
-                [class.active]="chosenSizeName === sz"
-                (click)="selectChoiceSize(sz)">
-                {{ sz }}
-              </button>
-            </div>
-          </div>
-
-          <!-- Quantity Stepper -->
-          <div class="var-quantity-section quantity-row">
-            <span class="var-qty-label qty-label">Quantity</span>
-            <div class="var-stepper-box stepper-box">
-              <button type="button" class="step-btn" (click)="decrementQuantity()">-</button>
-              <span class="step-num step-val">{{ chosenQuantity }}</span>
-              <button type="button" class="step-btn" (click)="incrementQuantity()">+</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="var-bottom-footer meal-footer modal-action-footer">
-          <button
-            type="button"
-            class="var-submit-btn order-now-submit btn-buy-now-red"
-            (click)="confirmBuyNow()"
-            [disabled]="isSoldOut(selectedFoodForModal)">
-            Buy Now
-          </button>
-          <button
-            type="button"
-            class="var-submit-btn add-cart-submit"
-            (click)="confirmModalAddToCart()"
-            [disabled]="isSoldOut(selectedFoodForModal)">
-            Add to Cart
-          </button>
-        </div>
-
-      </div>
+      }
     </ng-template>
   </ion-modal>
 

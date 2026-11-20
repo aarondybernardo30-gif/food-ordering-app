@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { 
@@ -27,22 +27,21 @@ import { AuthService } from '../../services/auth';
   styleUrls: ['./admin-auth.page.scss'],
   standalone: true,
   imports: [
-    CommonModule, 
-    FormsModule, 
+    FormsModule,
     ReactiveFormsModule,
-    IonHeader, 
-    IonToolbar, 
-    IonContent, 
-    IonItem, 
-    IonInput, 
-    IonButton, 
-    IonSegment, 
-    IonSegmentButton, 
-    IonLabel, 
-    IonIcon, 
-    IonCard, 
+    IonHeader,
+    IonToolbar,
+    IonContent,
+    IonItem,
+    IonInput,
+    IonButton,
+    IonSegment,
+    IonSegmentButton,
+    IonLabel,
+    IonIcon,
+    IonCard,
     IonCardContent
-  ]
+]
 })
 export class AdminAuthPage {
   private fb = inject(FormBuilder);

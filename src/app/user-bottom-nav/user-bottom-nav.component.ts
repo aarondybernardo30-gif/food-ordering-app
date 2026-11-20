@@ -1,5 +1,5 @@
 import { Component, Input, OnInit, inject, ChangeDetectorRef, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router } from '@angular/router';
 import { IonIcon, IonBadge } from '@ionic/angular';
 import { addIcons } from 'ionicons';
@@ -19,7 +19,7 @@ import { AuthService } from '../services/auth';
   templateUrl: './user-bottom-nav.component.html',
   styleUrls: ['./user-bottom-nav.component.scss'],
   standalone: true,
-  imports: [CommonModule, IonIcon, IonBadge],
+  imports: [IonIcon, IonBadge],
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class UserBottomNavComponent implements OnInit {

@@ -1,12 +1,14 @@
+
 name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
 
 jobs:
   build-apk:
+    name: Build Customer APK
     runs-on: ubuntu-latest
 
     steps:
@@ -21,16 +23,16 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
 
-      - name: Install dependencies & build web assets
+      - name: Build Customer web assets
         run: |
           npm install
           npm run build
           npx cap sync android
 
-      - name: Build Debug APK
+      - name: Build Customer APK
         run: |
           cd android
           chmod +x gradlew
@@ -43,6 +45,7 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
 
   build-rider-apk:
+    name: Build Rider APK with Capgo
     runs-on: ubuntu-latest
 
     steps:
@@ -57,37 +60,123 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
 
-      - name: Configure Rider App Mode & Android ID
+      - name: Configure Rider identity
+        shell: bash
         run: |
-          node -e '
-            const fs = require("fs");
-            fs.writeFileSync("src/app/app.mode.ts", "export const APP_MODE: \"customer\" | \"rider\" = \"rider\";\n");
+          node <<'NODE'
+          const fs = require('fs');
+          const riderId = 'io.ionic.rider';
 
-            let cap = fs.readFileSync("capacitor.config.ts", "utf8");
-            cap = cap.replace(/appId:\s*["'\''].*?["'\'']/, "appId: \"io.ionic.rider\"");
-            cap = cap.replace(/appName:\s*["'\''].*?["'\'']/, "appName: \"FoodOrdering Rider\"");
-            fs.writeFileSync("capacitor.config.ts", cap);
+          // Enable Rider interface.
+          fs.writeFileSync(
+            'src/app/app.mode.ts',
+            "export const APP_MODE: 'customer' | 'rider' = 'rider';\n"
+          );
 
-            let gradle = fs.readFileSync("android/app/build.gradle", "utf8");
-            gradle = gradle.replace(/applicationId\s+"[^"]+"/, "applicationId \"io.ionic.rider\"");
-            fs.writeFileSync("android/app/build.gradle", gradle);
+          // Update BOTH Capacitor app IDs.
+          let cap = fs.readFileSync(
+            'capacitor.config.ts',
+            'utf8'
+          );
 
-            let strings = fs.readFileSync("android/app/src/main/res/values/strings.xml", "utf8");
-            strings = strings.replace(/<string name="app_name">.*?<\/string>/, "<string name=\"app_name\">FoodOrdering Rider</string>");
-            strings = strings.replace(/<string name="title_activity_main">.*?<\/string>/, "<string name=\"title_activity_main\">FoodOrdering Rider</string>");
-            fs.writeFileSync("android/app/src/main/res/values/strings.xml", strings);
-          '
+          const pattern = /\bappId\s*:\s*['"][^'"]+['"]/g;
+          const matches = cap.match(pattern) || [];
 
-      - name: Install dependencies & build Rider web assets
+          if (matches.length !== 2) {
+            throw new Error(
+              'Expected main appId and Capgo appId'
+            );
+          }
+
+          cap = cap.replace(
+            pattern,
+            `appId: '${riderId}'`
+          );
+
+          cap = cap.replace(
+            /appName\s*:\s*['"][^'"]+['"]/,
+            "appName: 'FoodOrdering Rider'"
+          );
+
+          fs.writeFileSync('capacitor.config.ts', cap);
+
+          // Update Android package identity.
+          const gradlePath = 'android/app/build.gradle';
+          let gradle = fs.readFileSync(gradlePath, 'utf8');
+
+          if (!/applicationId\s+["'][^"']+["']/.test(gradle)) {
+            throw new Error('Android applicationId missing');
+          }
+
+          gradle = gradle.replace(
+            /applicationId\s+["'][^"']+["']/,
+            `applicationId "${riderId}"`
+          );
+
+          fs.writeFileSync(gradlePath, gradle);
+
+          // Update Rider display name.
+          const stringsPath =
+            'android/app/src/main/res/values/strings.xml';
+
+          let strings = fs.readFileSync(stringsPath, 'utf8');
+
+          strings = strings.replace(
+            /<string name="app_name">.*?<\/string>/,
+            '<string name="app_name">FoodOrdering Rider</string>'
+          );
+
+          strings = strings.replace(
+            /<string name="title_activity_main">.*?<\/string>/,
+            '<string name="title_activity_main">FoodOrdering Rider</string>'
+          );
+
+          fs.writeFileSync(stringsPath, strings);
+          NODE
+
+      - name: Build Rider web assets
         run: |
           npm install
           npm run build
           npx cap sync android
 
-      - name: Build Rider Debug APK
+      - name: Verify Rider OTA configuration
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+
+          const config = JSON.parse(
+            fs.readFileSync(
+              'android/app/src/main/assets/capacitor.config.json',
+              'utf8'
+            )
+          );
+
+          if (config.appId !== 'io.ionic.rider') {
+            throw new Error('Incorrect Rider app ID');
+          }
+
+          if (
+            config.plugins?.CapacitorUpdater?.appId !==
+            'io.ionic.rider'
+          ) {
+            throw new Error('Incorrect Rider Capgo ID');
+          }
+
+          if (
+            config.plugins.CapacitorUpdater.defaultChannel !==
+            'production'
+          ) {
+            throw new Error('Incorrect Rider OTA channel');
+          }
+
+          console.log('Rider Capgo OTA verified.');
+          NODE
+
+      - name: Build Rider APK
         run: |
           cd android
           chmod +x gradlew

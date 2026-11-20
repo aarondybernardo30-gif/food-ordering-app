@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Order } from '../models/food.model';
 import { OrderService } from './order';
+import { CustomerOrderHistoryService } from './customer-order-history';
 import { AuthService } from './auth';
 
 export type MembershipTier = 'Starter' | 'Bronze' | 'Silver' | 'Gold';
@@ -45,6 +46,7 @@ const FOUR_WEEKS_MS = 28 * DAY_MS;
 })
 export class MembershipService {
   private orderService = inject(OrderService, { optional: true });
+  private customerOrderHistory = inject(CustomerOrderHistoryService);
   private authService = inject(AuthService, { optional: true });
 
   private latestOrders: Order[] = [];
@@ -55,7 +57,7 @@ export class MembershipService {
 
   constructor() {
     if (this.orderService?.orders$) {
-      this.orderService.orders$.subscribe((orders) => {
+      this.customerOrderHistory.orders$.subscribe((orders) => {
         this.latestOrders = orders || [];
         this.recompute();
       });

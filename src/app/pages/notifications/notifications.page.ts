@@ -22,6 +22,7 @@ import {
   restaurantOutline
 } from 'ionicons/icons';
 import { OrderService } from '../../services/order';
+import { CustomerOrderHistoryService } from '../../services/customer-order-history';
 import { ThemeService } from '../../services/theme.service';
 import { Order } from '../../models/food.model';
 import { UserBottomNavComponent } from '../../user-bottom-nav/user-bottom-nav.component';
@@ -45,6 +46,7 @@ import { UserBottomNavComponent } from '../../user-bottom-nav/user-bottom-nav.co
 })
 export class NotificationsPage implements OnInit {
   private orderService = inject(OrderService);
+  private customerOrderHistory = inject(CustomerOrderHistoryService);
   private router = inject(Router);
   public themeService = inject(ThemeService);
 
@@ -72,7 +74,7 @@ export class NotificationsPage implements OnInit {
     });
 
     if (this.orderService && this.orderService.orders$) {
-      this.orderService.orders$.subscribe((data: Order[]) => {
+      this.customerOrderHistory.orders$.subscribe((data: Order[]) => {
         this.orders = data || [];
       });
     }

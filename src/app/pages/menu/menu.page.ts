@@ -57,6 +57,7 @@ import {
 } from 'ionicons/icons';
 import { FoodService } from '../../services/food';
 import { OrderService } from '../../services/order';
+import { CustomerOrderHistoryService } from '../../services/customer-order-history';
 import { CartService } from '../../services/cart';
 import { WalletService } from '../../services/wallet';
 import { FeaturedMealService, FeaturedMealItem, FeaturedMealVariation, MealSchedule } from '../../services/featured-meal';
@@ -132,6 +133,7 @@ export class MenuPage implements OnInit {
   private cartService = inject(CartService);
   private featuredMealService = inject(FeaturedMealService);
   private orderService = inject(OrderService);
+  private customerOrderHistory = inject(CustomerOrderHistoryService);
   private walletService: any = inject(WalletService, { optional: true });
   public themeService = inject(ThemeService);
   private buyNow = inject(BuyNowService);
@@ -541,7 +543,7 @@ export class MenuPage implements OnInit {
 
   // --- Orders (LIVE from OrderService) ---
   private initOrderTracking() {
-    this.orderService.orders$.subscribe(orders => {
+    this.customerOrderHistory.orders$.subscribe(orders => {
       this.orders = orders || [];
       this.activeOrder =
         this.orders.find(o => o.status !== 'Completed' && o.status !== 'Cancelled') || null;

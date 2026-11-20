@@ -40,6 +40,7 @@ import {
   medalOutline
 } from 'ionicons/icons';
 import { OrderService } from '../../services/order';
+import { CustomerOrderHistoryService } from '../../services/customer-order-history';
 import { CartService } from '../../services/cart';
 import { WalletService } from '../../services/wallet';
 import { ThemeService } from '../../services/theme.service';
@@ -78,6 +79,7 @@ export class MePage implements OnInit {
   @ViewChild('vouchersModal') vouchersModal?: IonModal;
 
   private orderService = inject(OrderService, { optional: true });
+  private customerOrderHistory = inject(CustomerOrderHistoryService);
   private cartService = inject(CartService);
   public walletService: any = inject(WalletService, { optional: true });
   private authService = inject(AuthService);
@@ -219,7 +221,7 @@ export class MePage implements OnInit {
 
     // 2. Orders subscription + live membership evaluation
     if (this.orderService && this.orderService.orders$) {
-      this.orderService.orders$.subscribe((orders: Order[]) => {
+      this.customerOrderHistory.orders$.subscribe((orders: Order[]) => {
         this.applyOrdersList(orders || []);
       });
     }
